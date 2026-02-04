@@ -5,7 +5,7 @@ A minimal, modern logo mark for "Resource Builder" - a therapy materials creatio
 
 Square format, suitable for app icon.
 
-Design concept: Abstract representation of stacked cards or building blocks, suggesting creation and organization. Alternatively, a stylized pencil/brush combined with a heart or smile, representing creative care.
+Design concept: Representation of stacked cards or building blocks, suggesting creation and organization. Alternatively, a stylized pencil/brush combined with a heart or smile, representing creative care.
 
 Colors:
 - Primary: Warm coral (#FF6B6B)
