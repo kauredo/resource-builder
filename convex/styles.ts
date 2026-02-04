@@ -81,3 +81,44 @@ export const deleteStyle = mutation({
     await ctx.db.delete(args.styleId);
   },
 });
+
+// Get or create a preset style (avoids duplicates when clicking presets)
+export const getOrCreatePresetStyle = mutation({
+  args: {
+    userId: v.id("users"),
+    name: v.string(),
+    colors: v.object({
+      primary: v.string(),
+      secondary: v.string(),
+      accent: v.string(),
+      background: v.string(),
+      text: v.string(),
+    }),
+    typography: v.object({
+      headingFont: v.string(),
+      bodyFont: v.string(),
+    }),
+    illustrationStyle: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check if this preset already exists for the user
+    const existing = await ctx.db
+      .query("styles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) =>
+        q.and(q.eq(q.field("name"), args.name), q.eq(q.field("isPreset"), true))
+      )
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    // Create new preset style
+    return await ctx.db.insert("styles", {
+      ...args,
+      isPreset: true,
+      createdAt: Date.now(),
+    });
+  },
+});

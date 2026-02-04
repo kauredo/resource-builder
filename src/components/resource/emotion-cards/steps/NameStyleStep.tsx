@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,6 @@ export function NameStyleStep({
   isFirstTimeUser = true,
 }: NameStyleStepProps) {
   const user = useQuery(api.users.currentUser);
-  const createStyle = useMutation(api.styles.createStyle);
   const hasAppliedInitialStyle = useRef(false);
 
   // Auto-select initial style from URL param (only once)
@@ -38,45 +37,27 @@ export function NameStyleStep({
     if (
       initialStyleName &&
       !hasAppliedInitialStyle.current &&
-      !styleId &&
-      user?._id
+      !stylePreset
     ) {
       const preset = STYLE_PRESETS.find((p) => p.name === initialStyleName);
       if (preset) {
         hasAppliedInitialStyle.current = true;
-        // Create style record for the preset
-        createStyle({
-          userId: user._id,
-          name: preset.name,
-          isPreset: true,
-          colors: preset.colors,
-          typography: preset.typography,
-          illustrationStyle: preset.illustrationStyle,
-        }).then((newStyleId) => {
-          onUpdate({ styleId: newStyleId, stylePreset: preset });
-        });
+        // Just set the preset data - no DB record needed
+        onUpdate({ styleId: null, stylePreset: preset });
       }
     }
-  }, [initialStyleName, styleId, user?._id, createStyle, onUpdate]);
+  }, [initialStyleName, stylePreset, onUpdate]);
 
-  const handleStyleSelect = async (
+  const handleStyleSelect = (
     selectedStyleId: Id<"styles"> | null,
     preset: StylePreset | null
   ) => {
     if (selectedStyleId) {
-      // User selected their own style
+      // User selected their own custom style (from DB)
       onUpdate({ styleId: selectedStyleId, stylePreset: preset });
-    } else if (preset && user?._id) {
-      // User selected a preset - create a style record for it
-      const newStyleId = await createStyle({
-        userId: user._id,
-        name: preset.name,
-        isPreset: true,
-        colors: preset.colors,
-        typography: preset.typography,
-        illustrationStyle: preset.illustrationStyle,
-      });
-      onUpdate({ styleId: newStyleId, stylePreset: preset });
+    } else if (preset) {
+      // User selected a preset - just store the data, no DB record yet
+      onUpdate({ styleId: null, stylePreset: preset });
     }
   };
 

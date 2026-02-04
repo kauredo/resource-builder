@@ -7,22 +7,48 @@ const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const MODEL = "models/gemini-3-pro-image-preview";
 // const MODEL = "models/gemini-2.0-flash-exp-image-generation";
 
+// Style data for image generation (can be passed directly instead of styleId)
+const styleDataValidator = v.object({
+  colors: v.object({
+    primary: v.string(),
+    secondary: v.string(),
+    accent: v.string(),
+  }),
+  illustrationStyle: v.string(),
+});
+
 // Generate a single emotion card image
 export const generateEmotionCard = action({
   args: {
     resourceId: v.id("resources"),
     emotion: v.string(),
     description: v.optional(v.string()),
-    styleId: v.id("styles"),
+    // Accept either styleId OR style data directly
+    styleId: v.optional(v.id("styles")),
+    style: v.optional(styleDataValidator),
     characterId: v.optional(v.id("characters")),
   },
   handler: async (ctx, args) => {
-    // Get the style
-    const style = await ctx.runQuery(api.styles.getStyle, {
-      styleId: args.styleId,
-    });
-    if (!style) {
-      throw new Error("Style not found");
+    // Get style from either styleId or direct style data
+    let styleData: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
+
+    if (args.style) {
+      // Use directly provided style data
+      styleData = args.style;
+    } else if (args.styleId) {
+      // Fetch from database
+      const style = await ctx.runQuery(api.styles.getStyle, {
+        styleId: args.styleId,
+      });
+      if (!style) {
+        throw new Error("Style not found");
+      }
+      styleData = {
+        colors: style.colors,
+        illustrationStyle: style.illustrationStyle,
+      };
+    } else {
+      throw new Error("Either styleId or style data must be provided");
     }
 
     // Get character if provided
@@ -39,10 +65,7 @@ export const generateEmotionCard = action({
     // Build the prompt
     const prompt = buildEmotionCardPrompt({
       emotion: args.emotion,
-      style: {
-        colors: style.colors,
-        illustrationStyle: style.illustrationStyle,
-      },
+      style: styleData,
       characterPromptFragment,
       description: args.description,
     });
@@ -73,7 +96,6 @@ export const generateEmotionCard = action({
           ],
           generationConfig: {
             responseModalities: ["image", "text"],
-            responseMimeType: "image/png",
           },
         }),
       },

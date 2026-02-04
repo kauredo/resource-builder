@@ -79,6 +79,7 @@ export function EmotionCardsWizard() {
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
   const recordFirstResource = useMutation(api.users.recordFirstResource);
+  const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
@@ -112,7 +113,24 @@ export function EmotionCardsWizard() {
 
   // Save draft to Convex after Step 1
   const saveDraft = useCallback(async () => {
-    if (!user?._id || !state.styleId || !state.name) return null;
+    if (!user?._id || !state.name) return null;
+    if (!state.styleId && !state.stylePreset) return null;
+
+    // Ensure we have a styleId - create from preset if needed
+    let styleId = state.styleId;
+    if (!styleId && state.stylePreset) {
+      styleId = await getOrCreatePresetStyle({
+        userId: user._id,
+        name: state.stylePreset.name,
+        colors: state.stylePreset.colors,
+        typography: state.stylePreset.typography,
+        illustrationStyle: state.stylePreset.illustrationStyle,
+      });
+      // Update state with the new styleId
+      updateState({ styleId });
+    }
+
+    if (!styleId) return null;
 
     const content: EmotionCardContent = {
       cards: state.selectedEmotions.map((emotion) => ({
@@ -135,7 +153,7 @@ export function EmotionCardsWizard() {
       // Create new draft
       const resourceId = await createResource({
         userId: user._id,
-        styleId: state.styleId,
+        styleId,
         type: "emotion_cards",
         name: state.name,
         description: `Emotion card deck with ${state.selectedEmotions.length} cards`,
@@ -145,13 +163,13 @@ export function EmotionCardsWizard() {
       await recordFirstResource();
       return resourceId;
     }
-  }, [user?._id, state, createResource, updateResource, recordFirstResource]);
+  }, [user?._id, state, createResource, updateResource, recordFirstResource, getOrCreatePresetStyle, updateState]);
 
   // Navigation handlers
   const canGoNext = (): boolean => {
     switch (actualStep) {
       case 0: // Name & Style
-        return state.name.trim().length > 0 && state.styleId !== null;
+        return state.name.trim().length > 0 && (state.styleId !== null || state.stylePreset !== null);
       case 1: // Emotions
         return state.selectedEmotions.length > 0;
       case 2: // Character (optional)

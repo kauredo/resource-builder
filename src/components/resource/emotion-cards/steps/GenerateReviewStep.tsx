@@ -28,10 +28,17 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
   const [results, setResults] = useState<Map<string, GenerationResult>>(new Map());
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState<string | undefined>();
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const generateCard = useAction(api.images.generateEmotionCard);
 
-  // Get image URLs for completed cards
+  // Query the resource to restore previously generated images
+  const resource = useQuery(
+    api.resources.getResourceWithImages,
+    state.resourceId ? { resourceId: state.resourceId } : "skip"
+  );
+
+  // Get image URLs for completed cards (for newly generated ones)
   const completedStorageIds = Array.from(results.values())
     .filter((r) => r.status === "complete" && r.storageId)
     .map((r) => r.storageId as Id<"_storage">);
@@ -58,16 +65,45 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
     }
   }, [imageUrls]);
 
-  // Initialize results when step loads
+  // Initialize results when step loads - restore from resource if available
   useEffect(() => {
-    if (results.size === 0 && state.selectedEmotions.length > 0) {
-      const initial = new Map<string, GenerationResult>();
+    if (hasInitialized || state.selectedEmotions.length === 0) return;
+
+    const initial = new Map<string, GenerationResult>();
+
+    // Check if we have saved images on the resource
+    if (resource?.images && resource.images.length > 0) {
+      // Restore from saved images
+      for (const emotion of state.selectedEmotions) {
+        const savedImage = resource.images.find((img) => img.description === emotion);
+        if (savedImage) {
+          initial.set(emotion, {
+            emotion,
+            status: "complete",
+            storageId: savedImage.storageId,
+            url: savedImage.url ?? undefined,
+          });
+        } else {
+          initial.set(emotion, { emotion, status: "pending" });
+        }
+      }
+      // Update generation status if all are complete
+      const allComplete = state.selectedEmotions.every((e) =>
+        resource.images.some((img) => img.description === e)
+      );
+      if (allComplete) {
+        onUpdate({ generationStatus: "complete" });
+      }
+    } else {
+      // No saved images, start fresh
       for (const emotion of state.selectedEmotions) {
         initial.set(emotion, { emotion, status: "pending" });
       }
-      setResults(initial);
     }
-  }, [state.selectedEmotions, results.size]);
+
+    setResults(initial);
+    setHasInitialized(true);
+  }, [state.selectedEmotions, resource, hasInitialized, onUpdate]);
 
   // Update wizard state when generation completes
   useEffect(() => {
@@ -85,7 +121,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
 
   const generateSingleCard = useCallback(
     async (emotion: string) => {
-      if (!state.resourceId || !state.styleId) return;
+      if (!state.resourceId || !state.stylePreset) return;
 
       setResults((prev) => {
         const updated = new Map(prev);
@@ -97,7 +133,14 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         const result = await generateCard({
           resourceId: state.resourceId,
           emotion,
-          styleId: state.styleId,
+          style: {
+            colors: {
+              primary: state.stylePreset.colors.primary,
+              secondary: state.stylePreset.colors.secondary,
+              accent: state.stylePreset.colors.accent,
+            },
+            illustrationStyle: state.stylePreset.illustrationStyle,
+          },
           characterId: state.characterId ?? undefined,
         });
 
@@ -122,11 +165,11 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         });
       }
     },
-    [state.resourceId, state.styleId, state.characterId, generateCard]
+    [state.resourceId, state.stylePreset, state.characterId, generateCard]
   );
 
   const startGeneration = useCallback(async () => {
-    if (!state.resourceId || !state.styleId) return;
+    if (!state.resourceId || !state.stylePreset) return;
 
     setIsGenerating(true);
     onUpdate({ generationStatus: "generating" });
@@ -170,7 +213,14 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             const result = await generateCard({
               resourceId: state.resourceId!,
               emotion,
-              styleId: state.styleId!,
+              style: {
+                colors: {
+                  primary: state.stylePreset!.colors.primary,
+                  secondary: state.stylePreset!.colors.secondary,
+                  accent: state.stylePreset!.colors.accent,
+                },
+                illustrationStyle: state.stylePreset!.illustrationStyle,
+              },
               characterId: state.characterId ?? undefined,
             });
 
@@ -202,7 +252,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
     setCurrentEmotion(undefined);
   }, [
     state.resourceId,
-    state.styleId,
+    state.stylePreset,
     state.characterId,
     state.selectedEmotions,
     results,

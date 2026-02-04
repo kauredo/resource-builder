@@ -2,6 +2,8 @@
 
 A web application for therapists/psychologists to create consistent, branded therapy resources (emotion cards, board games, worksheets, etc.) for children and adolescents.
 
+> **Status:** Pre-production / Active Development. No real users yet. Database can be reset freely.
+
 ## Quick Start
 
 ```bash
@@ -40,8 +42,8 @@ src/
 │   ├── character/            # Character components
 │   └── resource/             # Resource builder components
 └── lib/
-    ├── gemini.ts             # Gemini API
-    ├── prompts.ts            # Prompt construction
+    ├── utils.ts              # Tailwind class merging (cn)
+    ├── style-presets.ts      # Built-in style presets
     └── pdf.ts                # PDF generation
 
 convex/

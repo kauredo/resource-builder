@@ -172,14 +172,14 @@ export function StylePicker({
         </div>
       </div>
 
-      {/* User's Custom Styles */}
-      {userStyles && userStyles.length > 0 && (
+      {/* User's Custom Styles - only show non-preset styles */}
+      {userStyles && userStyles.filter(s => !s.isPreset).length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
             Your Custom Styles
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {userStyles.map((style) => {
+            {userStyles.filter(s => !s.isPreset).map((style) => {
               const isSelected = selectedStyleId === style._id;
               return (
                 <button
