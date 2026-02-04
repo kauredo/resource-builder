@@ -186,6 +186,21 @@ Solo therapists and psychologists who work with children and adolescents. They u
 - Overly childish design (unprofessional, not taken seriously)
 - Complex/overwhelming interfaces (cluttered, intimidating)
 
+**AI Slop to Avoid** (dead giveaways of AI-generated design):
+
+- Sparkles icon (✨) — the #1 AI tell, never use it unless for indicating AI-generated content
+- Purple-to-blue gradients
+- Cyan/neon accents on dark backgrounds
+- Glassmorphism everywhere
+- "Hero metrics" layouts (big number cards)
+- Identical card grids (3 cards, same structure)
+- Gradient text on headings
+- Generic fonts (Inter, Roboto)
+- Overuse of blur/glow effects
+- Cards with rounded corners and soft shadows everywhere
+- Overuse of gradients
+- Overuse of animations
+
 **Theme**: Light mode only — matches therapy/clinical context and is print-preview friendly.
 
 ### Design Principles

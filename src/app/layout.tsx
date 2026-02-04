@@ -1,24 +1,30 @@
-import type { Metadata } from "next";
-import { Nunito, Open_Sans } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./convex-client-provider";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+const fraunces = Fraunces({
+  variable: "--font-heading",
   subsets: ["latin"],
   display: "swap",
 });
 
-const openSans = Open_Sans({
-  variable: "--font-open-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Resource Builder | Therapy Materials Made Easy",
+  title: "Resource Builder | Therapy Materials Made Beautiful",
   description:
-    "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more.",
+    "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#faf8f5", // Warm cream background
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -29,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${nunito.variable} ${openSans.variable} font-sans antialiased`}
+        className={`${fraunces.variable} ${plusJakarta.variable} font-sans antialiased`}
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>

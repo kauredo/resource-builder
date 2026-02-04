@@ -13,6 +13,15 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    root: true,
+    parser: "@typescript-eslint/parser",
+    plugins: ["@typescript-eslint"],
+    extends: ["next/core-web-vitals", "next/typescript"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
