@@ -16,9 +16,13 @@ export const { auth, signIn, signOut, store } = convexAuth({
       const now = Date.now();
       const trialEndsAt = now + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
 
-      // Extract name from profile or email
+      // Extract name from profile, params (formData), or email fallback
       const email = args.profile?.email as string;
-      const name = (args.profile?.name as string) || email?.split("@")[0] || "User";
+      const name =
+        (args.profile?.name as string) ||
+        (args.params?.name as string) ||
+        email?.split("@")[0] ||
+        "User";
 
       const userId = await ctx.db.insert("users", {
         email,
