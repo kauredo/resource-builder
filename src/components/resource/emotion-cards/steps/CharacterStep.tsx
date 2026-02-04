@@ -51,8 +51,8 @@ export function CharacterStep({
         type="button"
         onClick={() => onUpdate({ characterId: null })}
         className={cn(
-          "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-          "hover:border-coral/40 hover:bg-coral/5",
+          "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer",
+          "transition-colors duration-150 hover:border-coral/40 hover:bg-coral/5",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
           characterId === null
             ? "border-coral bg-coral/5"
@@ -104,8 +104,8 @@ export function CharacterStep({
                   type="button"
                   onClick={() => onUpdate({ characterId: character._id })}
                   className={cn(
-                    "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-                    "hover:border-teal/40 hover:bg-teal/5",
+                    "flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer",
+                    "transition-colors duration-150 hover:border-teal/40 hover:bg-teal/5",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
                     isSelected
                       ? "border-teal bg-teal/5"

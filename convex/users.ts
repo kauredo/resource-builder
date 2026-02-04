@@ -120,6 +120,43 @@ export const ensureUser = mutation({
   },
 });
 
+// Update the current user's name
+export const updateUserName = mutation({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUserId = await getAuthUserId(ctx);
+    if (!authUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get the auth user to access email
+    const authUser = await ctx.db.get(authUserId);
+    if (!authUser) {
+      throw new Error("Auth user not found");
+    }
+
+    const email = authUser.email as string | undefined;
+    if (!email) {
+      throw new Error("No email found");
+    }
+
+    // Find the user and update their name
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, { name: args.name });
+    return user._id;
+  },
+});
+
 export const updateSubscription = mutation({
   args: {
     userId: v.id("users"),
@@ -133,5 +170,78 @@ export const updateSubscription = mutation({
   handler: async (ctx, args) => {
     const { userId, ...updates } = args;
     await ctx.db.patch(userId, updates);
+  },
+});
+
+// Mark onboarding as completed
+export const completeOnboarding = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const authUserId = await getAuthUserId(ctx);
+    if (!authUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    const authUser = await ctx.db.get(authUserId);
+    if (!authUser) {
+      throw new Error("Auth user not found");
+    }
+
+    const email = authUser.email as string | undefined;
+    if (!email) {
+      throw new Error("No email found");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, { onboardingCompleted: true });
+    return user._id;
+  },
+});
+
+// Record when user creates their first resource
+export const recordFirstResource = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const authUserId = await getAuthUserId(ctx);
+    if (!authUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    const authUser = await ctx.db.get(authUserId);
+    if (!authUser) {
+      throw new Error("Auth user not found");
+    }
+
+    const email = authUser.email as string | undefined;
+    if (!email) {
+      throw new Error("No email found");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Only update if not already set
+    if (!user.firstResourceCreatedAt) {
+      await ctx.db.patch(user._id, {
+        firstResourceCreatedAt: Date.now(),
+        onboardingCompleted: true, // Creating first resource completes onboarding
+      });
+    }
+
+    return user._id;
   },
 });

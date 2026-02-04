@@ -7,6 +7,7 @@
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const MODEL = "models/gemini-3-pro-image-preview";
+// const MODEL = "models/gemini-2.0-flash-exp-image-generation";
 
 interface GenerateImageOptions {
   prompt: string;
@@ -50,7 +51,7 @@ export async function generateImage({
             responseMimeType: "image/png",
           },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -83,7 +84,7 @@ export async function generateImage({
     // Find the image part
     const imagePart = parts.find(
       (part: { inlineData?: { data: string; mimeType: string } }) =>
-        part.inlineData
+        part.inlineData,
     );
     if (!imagePart?.inlineData) {
       return {

@@ -69,11 +69,12 @@ export function StylePicker({
                 onClick={() => onSelect(null, preset)}
                 aria-pressed={isSelected}
                 className={cn(
-                  "group relative overflow-hidden rounded-2xl transition-all duration-200 text-left h-44",
+                  "group relative overflow-hidden rounded-2xl text-left h-44 cursor-pointer",
+                  "transition-all duration-200 ease-out motion-reduce:transition-none",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
                   isSelected
                     ? "ring-2 ring-coral ring-offset-2 scale-[1.02]"
-                    : "hover:scale-[1.02] hover:shadow-lg"
+                    : "hover:scale-[1.02] hover:shadow-lg motion-reduce:hover:scale-100"
                 )}
                 style={{
                   ["--primary" as string]: preset.colors.primary,
@@ -192,11 +193,12 @@ export function StylePicker({
                   })}
                   aria-pressed={isSelected}
                   className={cn(
-                    "group relative overflow-hidden rounded-2xl transition-all duration-200 text-left h-36",
+                    "group relative overflow-hidden rounded-2xl text-left h-36 cursor-pointer",
+                    "transition-all duration-200 ease-out motion-reduce:transition-none",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
                     isSelected
                       ? "ring-2 ring-teal ring-offset-2 scale-[1.02]"
-                      : "hover:scale-[1.02] hover:shadow-lg"
+                      : "hover:scale-[1.02] hover:shadow-lg motion-reduce:hover:scale-100"
                   )}
                   style={{ backgroundColor: style.colors.background }}
                 >

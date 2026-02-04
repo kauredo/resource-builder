@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,8 @@ const STEP_TITLES = [
 
 export function EmotionCardsWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStyleName = searchParams.get("style");
   const user = useQuery(api.users.currentUser);
   const userCharacters = useQuery(
     api.characters.getUserCharacters,
@@ -76,6 +78,7 @@ export function EmotionCardsWizard() {
 
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const recordFirstResource = useMutation(api.users.recordFirstResource);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
@@ -138,9 +141,11 @@ export function EmotionCardsWizard() {
         description: `Emotion card deck with ${state.selectedEmotions.length} cards`,
         content,
       });
+      // Record this as the user's first resource (for onboarding analytics)
+      await recordFirstResource();
       return resourceId;
     }
-  }, [user?._id, state, createResource, updateResource]);
+  }, [user?._id, state, createResource, updateResource, recordFirstResource]);
 
   // Navigation handlers
   const canGoNext = (): boolean => {
@@ -204,6 +209,8 @@ export function EmotionCardsWizard() {
             styleId={state.styleId}
             stylePreset={state.stylePreset}
             onUpdate={updateState}
+            initialStyleName={initialStyleName}
+            isFirstTimeUser={!user?.firstResourceCreatedAt}
           />
         );
       case 1:
@@ -211,6 +218,7 @@ export function EmotionCardsWizard() {
           <EmotionSelectionStep
             selectedEmotions={state.selectedEmotions}
             onUpdate={updateState}
+            isFirstTimeUser={!user?.firstResourceCreatedAt}
           />
         );
       case 2:
@@ -226,6 +234,7 @@ export function EmotionCardsWizard() {
           <LayoutOptionsStep
             layout={state.layout}
             onUpdate={updateState}
+            isFirstTimeUser={!user?.firstResourceCreatedAt}
           />
         );
       case 4:
@@ -261,7 +270,7 @@ export function EmotionCardsWizard() {
       <div className="mb-6">
         <button
           onClick={handleCancel}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 mb-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
         >
           <ArrowLeft className="size-3.5" aria-hidden="true" />
           Dashboard

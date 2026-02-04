@@ -11,11 +11,13 @@ import {
 } from "@/types";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HelpTip } from "@/components/onboarding/HelpTip";
 import type { WizardState } from "../EmotionCardsWizard";
 
 interface EmotionSelectionStepProps {
   selectedEmotions: string[];
   onUpdate: (updates: Partial<WizardState>) => void;
+  isFirstTimeUser?: boolean;
 }
 
 interface CollapsibleSectionProps {
@@ -47,7 +49,7 @@ function CollapsibleSection({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
+        className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
       >
         <div className="flex items-center gap-3">
           {isOpen ? (
@@ -73,7 +75,7 @@ function CollapsibleSection({
             <button
               type="button"
               onClick={allSelected ? onDeselectAll : onSelectAll}
-              className="text-xs text-coral hover:underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+              className="text-xs text-coral cursor-pointer hover:underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               {allSelected ? "Deselect all" : "Select all"}
             </button>
@@ -97,6 +99,7 @@ function CollapsibleSection({
 export function EmotionSelectionStep({
   selectedEmotions,
   onUpdate,
+  isFirstTimeUser = true,
 }: EmotionSelectionStepProps) {
   const [customEmotion, setCustomEmotion] = useState("");
   const [customEmotions, setCustomEmotions] = useState<string[]>([]);
@@ -136,6 +139,14 @@ export function EmotionSelectionStep({
 
   return (
     <div className="space-y-4">
+      {/* First-time help tip - only show for new users */}
+      {isFirstTimeUser && (
+        <HelpTip>
+          Starting with 4–6 emotions keeps your first deck focused. You can
+          always create more decks with different combinations.
+        </HelpTip>
+      )}
+
       {/* Header with count and quick actions */}
       <div className="flex items-center justify-between">
         <div>
@@ -215,7 +226,7 @@ export function EmotionSelectionStep({
           type="button"
           onClick={() => setShowCustom(!showCustom)}
           aria-expanded={showCustom}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
+          className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
         >
           <div className="flex items-center gap-3">
             {showCustom ? (

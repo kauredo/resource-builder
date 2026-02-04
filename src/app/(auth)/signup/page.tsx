@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,6 +21,7 @@ import { Loader2, Pencil } from "lucide-react";
 
 export default function SignupPage() {
   const { signIn } = useAuthActions();
+  const updateUserName = useMutation(api.users.updateUserName);
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,10 +38,14 @@ export default function SignupPage() {
       const formData = new FormData();
       formData.set("email", email);
       formData.set("password", password);
-      formData.set("name", name);
       formData.set("flow", "signUp");
 
       await signIn("password", formData);
+
+      // Update the user's name after signup
+      if (name.trim()) {
+        await updateUserName({ name: name.trim() });
+      }
 
       router.push("/dashboard");
     } catch (err) {

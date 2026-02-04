@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { StylePicker } from "../StylePicker";
 import { StylePreset } from "@/types";
 import { STYLE_PRESETS } from "@/lib/style-presets";
+import { HelpTip } from "@/components/onboarding/HelpTip";
 import type { WizardState } from "../EmotionCardsWizard";
 
 interface NameStyleStepProps {
@@ -15,6 +17,8 @@ interface NameStyleStepProps {
   styleId: Id<"styles"> | null;
   stylePreset: StylePreset | null;
   onUpdate: (updates: Partial<WizardState>) => void;
+  initialStyleName?: string | null;
+  isFirstTimeUser?: boolean;
 }
 
 export function NameStyleStep({
@@ -22,9 +26,38 @@ export function NameStyleStep({
   styleId,
   stylePreset,
   onUpdate,
+  initialStyleName,
+  isFirstTimeUser = true,
 }: NameStyleStepProps) {
   const user = useQuery(api.users.currentUser);
   const createStyle = useMutation(api.styles.createStyle);
+  const hasAppliedInitialStyle = useRef(false);
+
+  // Auto-select initial style from URL param (only once)
+  useEffect(() => {
+    if (
+      initialStyleName &&
+      !hasAppliedInitialStyle.current &&
+      !styleId &&
+      user?._id
+    ) {
+      const preset = STYLE_PRESETS.find((p) => p.name === initialStyleName);
+      if (preset) {
+        hasAppliedInitialStyle.current = true;
+        // Create style record for the preset
+        createStyle({
+          userId: user._id,
+          name: preset.name,
+          isPreset: true,
+          colors: preset.colors,
+          typography: preset.typography,
+          illustrationStyle: preset.illustrationStyle,
+        }).then((newStyleId) => {
+          onUpdate({ styleId: newStyleId, stylePreset: preset });
+        });
+      }
+    }
+  }, [initialStyleName, styleId, user?._id, createStyle, onUpdate]);
 
   const handleStyleSelect = async (
     selectedStyleId: Id<"styles"> | null,
@@ -57,6 +90,14 @@ export function NameStyleStep({
 
   return (
     <div className="space-y-8">
+      {/* First-time help tip - only show for new users */}
+      {isFirstTimeUser && (
+        <HelpTip>
+          Think of your style as this deck&apos;s personality — it shapes every
+          illustration we create together.
+        </HelpTip>
+      )}
+
       {/* Deck Name */}
       <div className="space-y-2">
         <Label htmlFor="deck-name" className="text-base font-medium">

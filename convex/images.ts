@@ -4,7 +4,8 @@ import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const MODEL = "models/gemini-2.0-flash-exp-image-generation";
+const MODEL = "models/gemini-3-pro-image-preview";
+// const MODEL = "models/gemini-2.0-flash-exp-image-generation";
 
 // Generate a single emotion card image
 export const generateEmotionCard = action({
@@ -75,7 +76,7 @@ export const generateEmotionCard = action({
             responseMimeType: "image/png",
           },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -99,7 +100,7 @@ export const generateEmotionCard = action({
     // Find the image part
     const imagePart = parts.find(
       (part: { inlineData?: { data: string; mimeType: string } }) =>
-        part.inlineData
+        part.inlineData,
     );
     if (!imagePart?.inlineData) {
       throw new Error("No image in response");
@@ -159,7 +160,7 @@ export const generateEmotionCardBatch = action({
       const batch = args.emotions.slice(i, i + BATCH_SIZE);
 
       const batchResults = await Promise.allSettled(
-        batch.map(async (emotion) => {
+        batch.map(async emotion => {
           try {
             const result = await ctx.runAction(api.images.generateEmotionCard, {
               resourceId: args.resourceId,
@@ -179,7 +180,7 @@ export const generateEmotionCardBatch = action({
               error: error instanceof Error ? error.message : "Unknown error",
             };
           }
-        })
+        }),
       );
 
       for (const result of batchResults) {
@@ -257,7 +258,7 @@ function buildEmotionCardPrompt({
 
   // Add color guidance
   parts.push(
-    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`
+    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
   );
 
   return parts.join(". ");

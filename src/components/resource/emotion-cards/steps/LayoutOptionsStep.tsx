@@ -3,14 +3,16 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Grid2x2, Grid3x3, LayoutGrid, Scissors, Type, FileText } from "lucide-react";
+import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HelpTip } from "@/components/onboarding/HelpTip";
 import type { EmotionCardLayout } from "@/types";
 import type { WizardState } from "../EmotionCardsWizard";
 
 interface LayoutOptionsStepProps {
   layout: EmotionCardLayout;
   onUpdate: (updates: Partial<WizardState>) => void;
+  isFirstTimeUser?: boolean;
 }
 
 const CARDS_PER_PAGE_OPTIONS = [
@@ -34,7 +36,11 @@ const CARDS_PER_PAGE_OPTIONS = [
   },
 ];
 
-export function LayoutOptionsStep({ layout, onUpdate }: LayoutOptionsStepProps) {
+export function LayoutOptionsStep({
+  layout,
+  onUpdate,
+  isFirstTimeUser = true,
+}: LayoutOptionsStepProps) {
   const updateLayout = (updates: Partial<EmotionCardLayout>) => {
     onUpdate({
       layout: { ...layout, ...updates },
@@ -43,11 +49,13 @@ export function LayoutOptionsStep({ layout, onUpdate }: LayoutOptionsStepProps) 
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="text-muted-foreground">
-          Configure how your emotion cards will be laid out when printed.
-        </p>
-      </div>
+      {/* First-time help tip - only show for new users */}
+      {isFirstTimeUser && (
+        <HelpTip>
+          Most therapists like 6 cards per page. Go with 4 for younger kids who
+          need larger cards, or 9 for a compact travel deck.
+        </HelpTip>
+      )}
 
       {/* Cards per page */}
       <section>

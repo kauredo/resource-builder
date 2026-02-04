@@ -15,6 +15,9 @@ export default defineSchema({
     trialEndsAt: v.optional(v.number()),
     stripeCustomerId: v.optional(v.string()),
     createdAt: v.number(),
+    // Onboarding tracking
+    onboardingCompleted: v.optional(v.boolean()),
+    firstResourceCreatedAt: v.optional(v.number()),
   }).index("by_email", ["email"]),
 
   styles: defineTable({

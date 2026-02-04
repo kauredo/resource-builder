@@ -251,7 +251,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                   onClick={() => {
                     setPdfUrl(null);
                   }}
-                  className="text-sm text-foreground/70 hover:text-coral underline underline-offset-2 transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                  className="text-sm text-foreground/70 cursor-pointer hover:text-coral underline underline-offset-2 transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Regenerate PDF
                 </button>

@@ -249,23 +249,46 @@ Solo therapists and psychologists who work with children and adolescents. They u
 
 ### Components
 
-- Use shadcn/ui as the foundation
-- Extend with custom variants when needed
-- Keep components focused and composable
+- **Prefer shadcn/ui components** over raw HTML elements
+- Use `<Button>` instead of `<button>` — it includes focus states, cursor styles, disabled states
+- Use `<Input>`, `<Label>`, `<Checkbox>`, etc. from `@/components/ui/*`
+- Only use raw `<button>` for highly custom interactive elements (chips, cards, toggles)
+- When using raw `<button>`, always include:
+  - `cursor-pointer` (browsers default to `cursor: default`)
+  - `focus-visible:ring-2 focus-visible:ring-{color}` for keyboard focus
+  - `transition-colors duration-150` for hover feedback
+  - `motion-reduce:transition-none` to respect user preferences
+
+### Interactive Element Checklist
+
+Every clickable element needs:
+
+```
+cursor-pointer                           # Visual affordance
+focus-visible:outline-none               # Remove default outline
+focus-visible:ring-2                     # Custom focus ring
+focus-visible:ring-{brand-color}         # Use coral, teal, or primary
+focus-visible:ring-offset-2              # Spacing from element
+transition-colors duration-150           # Smooth hover
+motion-reduce:transition-none            # Accessibility
+```
 
 ### Styling
 
 - Tailwind CSS v4 utility classes
 - Design tokens via CSS variables for theming
 - Consistent spacing scale (4px base)
+- Use `size-{n}` instead of `w-{n} h-{n}` for square elements
 
 ### Accessibility
 
 - All interactive elements keyboard accessible
 - ARIA labels on icon-only buttons
-- Focus indicators visible
+- Focus indicators visible (use `focus-visible:`, not `focus:`)
 - Color contrast meets WCAG AA (4.5:1 text, 3:1 UI)
-- Respect reduced motion preferences
+- Respect reduced motion with `motion-reduce:` variants
+- Use `aria-pressed` for toggle buttons
+- Use `aria-expanded` for collapsible sections
 
 ---
 
