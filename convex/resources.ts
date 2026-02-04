@@ -103,8 +103,21 @@ export const addImageToResource = mutation({
       prompt: args.prompt,
     };
 
+    // Remove any existing image with the same description (emotion) and delete from storage
+    const existingImage = resource.images.find(
+      (img) => img.description === args.description
+    );
+    if (existingImage) {
+      await ctx.storage.delete(existingImage.storageId);
+    }
+
+    // Filter out the old image and add the new one
+    const filteredImages = resource.images.filter(
+      (img) => img.description !== args.description
+    );
+
     await ctx.db.patch(args.resourceId, {
-      images: [...resource.images, newImage],
+      images: [...filteredImages, newImage],
       updatedAt: Date.now(),
     });
   },
@@ -114,6 +127,36 @@ export const deleteResource = mutation({
   args: { resourceId: v.id("resources") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.resourceId);
+  },
+});
+
+// Remove specific images from a resource (for edit mode emotion removal)
+export const removeImagesFromResource = mutation({
+  args: {
+    resourceId: v.id("resources"),
+    emotionsToRemove: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const resource = await ctx.db.get(args.resourceId);
+    if (!resource) throw new Error("Resource not found");
+
+    // Filter out images that match the emotions to remove
+    const updatedImages = resource.images.filter(
+      (img) => !args.emotionsToRemove.includes(img.description)
+    );
+
+    // Delete the storage files for removed images
+    const imagesToDelete = resource.images.filter((img) =>
+      args.emotionsToRemove.includes(img.description)
+    );
+    for (const img of imagesToDelete) {
+      await ctx.storage.delete(img.storageId);
+    }
+
+    await ctx.db.patch(args.resourceId, {
+      images: updatedImages,
+      updatedAt: Date.now(),
+    });
   },
 });
 

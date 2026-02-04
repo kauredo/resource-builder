@@ -142,6 +142,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             illustrationStyle: state.stylePreset.illustrationStyle,
           },
           characterId: state.characterId ?? undefined,
+          includeText: state.includeTextInImage,
         });
 
         setResults((prev) => {
@@ -165,7 +166,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         });
       }
     },
-    [state.resourceId, state.stylePreset, state.characterId, generateCard]
+    [state.resourceId, state.stylePreset, state.characterId, state.includeTextInImage, generateCard]
   );
 
   const startGeneration = useCallback(async () => {
@@ -222,6 +223,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
                 illustrationStyle: state.stylePreset!.illustrationStyle,
               },
               characterId: state.characterId ?? undefined,
+              includeText: state.includeTextInImage,
             });
 
             setResults((prev) => {
@@ -254,8 +256,97 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
     state.resourceId,
     state.stylePreset,
     state.characterId,
+    state.includeTextInImage,
     state.selectedEmotions,
     results,
+    generateCard,
+    onUpdate,
+  ]);
+
+  const regenerateAll = useCallback(async () => {
+    if (!state.resourceId || !state.stylePreset) return;
+
+    setIsGenerating(true);
+    onUpdate({ generationStatus: "generating" });
+
+    // Reset ALL cards to pending
+    setResults(() => {
+      const updated = new Map<string, GenerationResult>();
+      for (const emotion of state.selectedEmotions) {
+        updated.set(emotion, { emotion, status: "pending" });
+      }
+      return updated;
+    });
+
+    // Generate ALL cards with concurrency limit
+    const BATCH_SIZE = 3;
+    const allEmotions = state.selectedEmotions;
+
+    for (let i = 0; i < allEmotions.length; i += BATCH_SIZE) {
+      const batch = allEmotions.slice(i, i + BATCH_SIZE);
+
+      // Mark batch as generating
+      setResults((prev) => {
+        const updated = new Map(prev);
+        for (const emotion of batch) {
+          updated.set(emotion, { emotion, status: "generating" });
+        }
+        return updated;
+      });
+
+      setCurrentEmotion(batch[0]);
+
+      // Generate batch in parallel
+      await Promise.allSettled(
+        batch.map(async (emotion) => {
+          try {
+            const result = await generateCard({
+              resourceId: state.resourceId!,
+              emotion,
+              style: {
+                colors: {
+                  primary: state.stylePreset!.colors.primary,
+                  secondary: state.stylePreset!.colors.secondary,
+                  accent: state.stylePreset!.colors.accent,
+                },
+                illustrationStyle: state.stylePreset!.illustrationStyle,
+              },
+              characterId: state.characterId ?? undefined,
+              includeText: state.includeTextInImage,
+            });
+
+            setResults((prev) => {
+              const updated = new Map(prev);
+              updated.set(emotion, {
+                emotion,
+                status: "complete",
+                storageId: result.storageId as Id<"_storage">,
+              });
+              return updated;
+            });
+          } catch (error) {
+            setResults((prev) => {
+              const updated = new Map(prev);
+              updated.set(emotion, {
+                emotion,
+                status: "error",
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
+              return updated;
+            });
+          }
+        })
+      );
+    }
+
+    setIsGenerating(false);
+    setCurrentEmotion(undefined);
+  }, [
+    state.resourceId,
+    state.stylePreset,
+    state.characterId,
+    state.includeTextInImage,
+    state.selectedEmotions,
     generateCard,
     onUpdate,
   ]);
@@ -367,17 +458,29 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         currentEmotion={currentEmotion}
       />
 
-      {/* Regenerate all button */}
-      {!isGenerating && failedCount > 0 && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={startGeneration}
-            className="gap-2"
-          >
-            <RefreshCw className="size-4" aria-hidden="true" />
-            Retry Failed ({failedCount})
-          </Button>
+      {/* Action buttons */}
+      {!isGenerating && (
+        <div className="flex justify-center gap-3">
+          {failedCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={startGeneration}
+              className="gap-2"
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Retry Failed ({failedCount})
+            </Button>
+          )}
+          {completedCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={regenerateAll}
+              className="gap-2"
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Regenerate All
+            </Button>
+          )}
         </div>
       )}
 

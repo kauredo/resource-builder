@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmotionChip } from "../EmotionChip";
@@ -8,6 +8,7 @@ import {
   PRIMARY_EMOTIONS,
   SECONDARY_EMOTIONS,
   NUANCED_EMOTIONS,
+  ALL_EMOTIONS,
 } from "@/types";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ interface EmotionSelectionStepProps {
   selectedEmotions: string[];
   onUpdate: (updates: Partial<WizardState>) => void;
   isFirstTimeUser?: boolean;
+  emotionsWithImages?: string[];
 }
 
 interface CollapsibleSectionProps {
@@ -28,6 +30,7 @@ interface CollapsibleSectionProps {
   onToggleEmotion: (emotion: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  emotionsWithImages?: string[];
 }
 
 function CollapsibleSection({
@@ -38,6 +41,7 @@ function CollapsibleSection({
   onToggleEmotion,
   onSelectAll,
   onDeselectAll,
+  emotionsWithImages = [],
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const selectedCount = emotions.filter((e) => selectedEmotions.includes(e)).length;
@@ -87,6 +91,7 @@ function CollapsibleSection({
                 emotion={emotion}
                 isSelected={selectedEmotions.includes(emotion)}
                 onToggle={() => onToggleEmotion(emotion)}
+                hasExistingImage={emotionsWithImages.includes(emotion)}
               />
             ))}
           </div>
@@ -100,10 +105,29 @@ export function EmotionSelectionStep({
   selectedEmotions,
   onUpdate,
   isFirstTimeUser = true,
+  emotionsWithImages = [],
 }: EmotionSelectionStepProps) {
   const [customEmotion, setCustomEmotion] = useState("");
   const [customEmotions, setCustomEmotions] = useState<string[]>([]);
   const [showCustom, setShowCustom] = useState(false);
+  const hasInitializedCustom = useRef(false);
+
+  // Initialize custom emotions from selectedEmotions (for edit mode)
+  // Custom emotions are any that aren't in the preset lists
+  useEffect(() => {
+    if (hasInitializedCustom.current || selectedEmotions.length === 0) return;
+
+    const presetEmotions = new Set(ALL_EMOTIONS as readonly string[]);
+    const customFromSelected = selectedEmotions.filter(
+      (e) => !presetEmotions.has(e)
+    );
+
+    if (customFromSelected.length > 0) {
+      hasInitializedCustom.current = true;
+      setCustomEmotions(customFromSelected);
+      setShowCustom(true); // Auto-expand if there are custom emotions
+    }
+  }, [selectedEmotions]);
 
   const toggleEmotion = (emotion: string) => {
     const updated = selectedEmotions.includes(emotion)
@@ -197,6 +221,7 @@ export function EmotionSelectionStep({
           onToggleEmotion={toggleEmotion}
           onSelectAll={() => selectAll(PRIMARY_EMOTIONS)}
           onDeselectAll={() => deselectAll(PRIMARY_EMOTIONS)}
+          emotionsWithImages={emotionsWithImages}
         />
 
         <CollapsibleSection
@@ -207,6 +232,7 @@ export function EmotionSelectionStep({
           onToggleEmotion={toggleEmotion}
           onSelectAll={() => selectAll(SECONDARY_EMOTIONS)}
           onDeselectAll={() => deselectAll(SECONDARY_EMOTIONS)}
+          emotionsWithImages={emotionsWithImages}
         />
 
         <CollapsibleSection
@@ -217,6 +243,7 @@ export function EmotionSelectionStep({
           onToggleEmotion={toggleEmotion}
           onSelectAll={() => selectAll(NUANCED_EMOTIONS)}
           onDeselectAll={() => deselectAll(NUANCED_EMOTIONS)}
+          emotionsWithImages={emotionsWithImages}
         />
       </div>
 
@@ -285,6 +312,7 @@ export function EmotionSelectionStep({
                     onToggle={() => toggleEmotion(emotion)}
                     isCustom
                     onRemove={() => removeCustomEmotion(emotion)}
+                    hasExistingImage={emotionsWithImages.includes(emotion)}
                   />
                 ))}
               </div>

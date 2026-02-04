@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, X, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmotionChipProps {
@@ -9,6 +9,7 @@ interface EmotionChipProps {
   onToggle: () => void;
   isCustom?: boolean;
   onRemove?: () => void;
+  hasExistingImage?: boolean;
 }
 
 export function EmotionChip({
@@ -17,6 +18,7 @@ export function EmotionChip({
   onToggle,
   isCustom = false,
   onRemove,
+  hasExistingImage = false,
 }: EmotionChipProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Backspace" || e.key === "Delete") {
@@ -51,6 +53,11 @@ export function EmotionChip({
       >
         {isSelected && <Check className="size-3.5" aria-hidden="true" />}
         {emotion}
+        {hasExistingImage && (
+          <span title="Has generated image">
+            <Image className="size-3 text-teal ml-0.5" aria-hidden="true" />
+          </span>
+        )}
       </button>
       {isCustom && onRemove && (
         <button

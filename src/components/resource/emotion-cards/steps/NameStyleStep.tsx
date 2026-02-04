@@ -10,6 +10,7 @@ import { StylePicker } from "../StylePicker";
 import { StylePreset } from "@/types";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { HelpTip } from "@/components/onboarding/HelpTip";
+import { Lock } from "lucide-react";
 import type { WizardState } from "../EmotionCardsWizard";
 
 interface NameStyleStepProps {
@@ -19,6 +20,7 @@ interface NameStyleStepProps {
   onUpdate: (updates: Partial<WizardState>) => void;
   initialStyleName?: string | null;
   isFirstTimeUser?: boolean;
+  isEditMode?: boolean;
 }
 
 export function NameStyleStep({
@@ -28,6 +30,7 @@ export function NameStyleStep({
   onUpdate,
   initialStyleName,
   isFirstTimeUser = true,
+  isEditMode = false,
 }: NameStyleStepProps) {
   const user = useQuery(api.users.currentUser);
   const hasAppliedInitialStyle = useRef(false);
@@ -103,15 +106,46 @@ export function NameStyleStep({
         <Label className="text-base font-medium">
           Visual Style
         </Label>
-        <p className="text-sm text-muted-foreground mb-4">
-          Choose a style for your emotion cards. This determines colors, fonts, and illustration style.
-        </p>
-        <StylePicker
-          selectedStyleId={styleId}
-          selectedPreset={stylePreset}
-          onSelect={handleStyleSelect}
-          userId={user._id}
-        />
+        {isEditMode ? (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              Style is locked after creation. Changing it would require regenerating all images.
+            </p>
+            {/* Locked style display */}
+            {stylePreset && (
+              <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
+                <div className="flex gap-1.5">
+                  <div
+                    className="w-6 h-6 rounded-md shadow-sm"
+                    style={{ backgroundColor: stylePreset.colors.primary }}
+                  />
+                  <div
+                    className="w-6 h-6 rounded-md shadow-sm"
+                    style={{ backgroundColor: stylePreset.colors.secondary }}
+                  />
+                  <div
+                    className="w-6 h-6 rounded-md shadow-sm"
+                    style={{ backgroundColor: stylePreset.colors.accent }}
+                  />
+                </div>
+                <span className="font-medium">{stylePreset.name}</span>
+                <Lock className="size-4 text-muted-foreground ml-auto" aria-hidden="true" />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose a style for your emotion cards. This determines colors, fonts, and illustration style.
+            </p>
+            <StylePicker
+              selectedStyleId={styleId}
+              selectedPreset={stylePreset}
+              onSelect={handleStyleSelect}
+              userId={user._id}
+            />
+          </>
+        )}
       </div>
 
     </div>

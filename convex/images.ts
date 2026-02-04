@@ -27,6 +27,7 @@ export const generateEmotionCard = action({
     styleId: v.optional(v.id("styles")),
     style: v.optional(styleDataValidator),
     characterId: v.optional(v.id("characters")),
+    includeText: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Get style from either styleId or direct style data
@@ -68,6 +69,7 @@ export const generateEmotionCard = action({
       style: styleData,
       characterPromptFragment,
       description: args.description,
+      includeText: args.includeText ?? false,
     });
 
     // Get API key from environment
@@ -248,6 +250,7 @@ function buildEmotionCardPrompt({
   style,
   characterPromptFragment,
   description,
+  includeText = false,
 }: {
   emotion: string;
   style: {
@@ -260,6 +263,7 @@ function buildEmotionCardPrompt({
   };
   characterPromptFragment?: string;
   description?: string;
+  includeText?: boolean;
 }): string {
   const parts: string[] = [];
 
@@ -281,6 +285,20 @@ function buildEmotionCardPrompt({
   // Add color guidance
   parts.push(
     `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+  );
+
+  // Text instruction - explicitly tell the model whether to include text
+  if (includeText) {
+    parts.push(`Include the word "${emotion}" as text in the image`);
+  } else {
+    parts.push(
+      "IMPORTANT: Do NOT include any text, words, letters, or labels in the image. The illustration should be purely visual with no written text whatsoever",
+    );
+  }
+
+  // Additional quality guidance
+  parts.push(
+    "Create a single cohesive square illustration (1:1 aspect ratio) with a clean background suitable for a therapy emotion card",
   );
 
   return parts.join(". ");

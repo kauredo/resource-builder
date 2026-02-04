@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
@@ -14,6 +14,7 @@ import { CharacterStep } from "./steps/CharacterStep";
 import { LayoutOptionsStep } from "./steps/LayoutOptionsStep";
 import { GenerateReviewStep } from "./steps/GenerateReviewStep";
 import { ExportStep } from "./steps/ExportStep";
+import { STYLE_PRESETS } from "@/lib/style-presets";
 import type { EmotionCardContent, EmotionCardLayout, StylePreset } from "@/types";
 
 // Wizard state types
@@ -25,6 +26,8 @@ export interface WizardState {
 
   // Step 2: Emotions
   selectedEmotions: string[];
+  // Track original emotions for edit mode (to detect changes)
+  originalEmotions: string[];
 
   // Step 3: Character (optional)
   characterId: Id<"characters"> | null;
@@ -32,12 +35,18 @@ export interface WizardState {
   // Step 4: Layout
   layout: EmotionCardLayout;
 
+  // Image generation options
+  includeTextInImage: boolean;
+
   // Resource tracking
   resourceId: Id<"resources"> | null;
 
   // Generation tracking
   generatedCards: Map<string, { storageId: Id<"_storage">; url: string }>;
   generationStatus: "idle" | "generating" | "complete" | "error";
+
+  // Edit mode tracking
+  isEditMode: boolean;
 }
 
 const INITIAL_STATE: WizardState = {
@@ -45,6 +54,7 @@ const INITIAL_STATE: WizardState = {
   styleId: null,
   stylePreset: null,
   selectedEmotions: [],
+  originalEmotions: [],
   characterId: null,
   layout: {
     cardsPerPage: 6,
@@ -52,9 +62,11 @@ const INITIAL_STATE: WizardState = {
     showLabels: true,
     showDescriptions: false,
   },
+  includeTextInImage: false,
   resourceId: null,
   generatedCards: new Map(),
   generationStatus: "idle",
+  isEditMode: false,
 };
 
 const STEP_TITLES = [
@@ -66,7 +78,11 @@ const STEP_TITLES = [
   "Export",
 ];
 
-export function EmotionCardsWizard() {
+interface EmotionCardsWizardProps {
+  resourceId?: Id<"resources">;
+}
+
+export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsWizardProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStyleName = searchParams.get("style");
@@ -76,14 +92,63 @@ export function EmotionCardsWizard() {
     user?._id ? { userId: user._id } : "skip"
   );
 
+  // Query existing resource for edit mode
+  const existingResource = useQuery(
+    api.resources.getResourceWithImages,
+    editResourceId ? { resourceId: editResourceId } : "skip"
+  );
+  const existingStyle = useQuery(
+    api.styles.getStyle,
+    existingResource?.styleId ? { styleId: existingResource.styleId } : "skip"
+  );
+
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const removeImagesFromResource = useMutation(api.resources.removeImagesFromResource);
   const recordFirstResource = useMutation(api.users.recordFirstResource);
   const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [isNavigating, setIsNavigating] = useState(false);
+  const hasInitializedEditMode = useRef(false);
+
+  // Initialize state from existing resource in edit mode
+  useEffect(() => {
+    if (
+      editResourceId &&
+      existingResource &&
+      existingStyle &&
+      !hasInitializedEditMode.current
+    ) {
+      hasInitializedEditMode.current = true;
+      const content = existingResource.content as EmotionCardContent;
+      const emotions = content.cards.map((c) => c.emotion);
+
+      // Build stylePreset from existing style
+      const stylePreset: StylePreset = {
+        name: existingStyle.name,
+        colors: existingStyle.colors,
+        typography: existingStyle.typography,
+        illustrationStyle: existingStyle.illustrationStyle,
+      };
+
+      setState({
+        name: existingResource.name,
+        styleId: existingResource.styleId,
+        stylePreset,
+        selectedEmotions: emotions,
+        originalEmotions: emotions,
+        characterId: content.cards[0]?.characterId as Id<"characters"> | null ?? null,
+        layout: content.layout,
+        includeTextInImage: false, // Default to no text in images
+        resourceId: existingResource._id,
+        generatedCards: new Map(),
+        generationStatus: existingResource.images.length > 0 ? "complete" : "idle",
+        isEditMode: true,
+      });
+    }
+  }, [editResourceId, existingResource, existingStyle]);
 
   // Check if character step should be shown (only if user has characters)
   const hasCharacters = userCharacters && userCharacters.length > 0;
@@ -148,6 +213,20 @@ export function EmotionCardsWizard() {
         name: state.name,
         content,
       });
+
+      // In edit mode, clean up images for removed emotions
+      if (state.isEditMode && state.originalEmotions.length > 0) {
+        const removedEmotions = state.originalEmotions.filter(
+          (e) => !state.selectedEmotions.includes(e)
+        );
+        if (removedEmotions.length > 0) {
+          await removeImagesFromResource({
+            resourceId: state.resourceId,
+            emotionsToRemove: removedEmotions,
+          });
+        }
+      }
+
       return state.resourceId;
     } else {
       // Create new draft
@@ -163,7 +242,7 @@ export function EmotionCardsWizard() {
       await recordFirstResource();
       return resourceId;
     }
-  }, [user?._id, state, createResource, updateResource, recordFirstResource, getOrCreatePresetStyle, updateState]);
+  }, [user?._id, state, createResource, updateResource, removeImagesFromResource, recordFirstResource, getOrCreatePresetStyle, updateState]);
 
   // Navigation handlers
   const canGoNext = (): boolean => {
@@ -214,8 +293,17 @@ export function EmotionCardsWizard() {
   };
 
   const handleCancel = () => {
-    router.push("/dashboard");
+    if (state.isEditMode && state.resourceId) {
+      router.push(`/dashboard/resources/${state.resourceId}`);
+    } else {
+      router.push("/dashboard");
+    }
   };
+
+  // Compute emotions that already have generated images (for edit mode)
+  const emotionsWithImages = existingResource?.images
+    .map((img) => img.description)
+    .filter(Boolean) ?? [];
 
   // Render current step
   const renderStep = () => {
@@ -229,6 +317,7 @@ export function EmotionCardsWizard() {
             onUpdate={updateState}
             initialStyleName={initialStyleName}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
+            isEditMode={state.isEditMode}
           />
         );
       case 1:
@@ -237,6 +326,7 @@ export function EmotionCardsWizard() {
             selectedEmotions={state.selectedEmotions}
             onUpdate={updateState}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
+            emotionsWithImages={emotionsWithImages}
           />
         );
       case 2:
@@ -251,6 +341,7 @@ export function EmotionCardsWizard() {
         return (
           <LayoutOptionsStep
             layout={state.layout}
+            includeTextInImage={state.includeTextInImage}
             onUpdate={updateState}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
           />
@@ -274,7 +365,9 @@ export function EmotionCardsWizard() {
     }
   };
 
-  if (!user) {
+  // Show loading state while user or edit mode data is loading
+  const isLoadingEditData = editResourceId && (!existingResource || !existingStyle);
+  if (!user || isLoadingEditData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading">
         <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
@@ -291,10 +384,10 @@ export function EmotionCardsWizard() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 mb-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
         >
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Dashboard
+          {state.isEditMode ? "Back to Resource" : "Dashboard"}
         </button>
         <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
-          {STEP_TITLES[actualStep]}
+          {state.isEditMode ? `Edit: ${STEP_TITLES[actualStep]}` : STEP_TITLES[actualStep]}
         </h1>
       </div>
 
@@ -362,7 +455,13 @@ export function EmotionCardsWizard() {
         ) : (
           <Button
             className="btn-coral min-w-[120px]"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => {
+              if (state.isEditMode && state.resourceId) {
+                router.push(`/dashboard/resources/${state.resourceId}`);
+              } else {
+                router.push("/dashboard");
+              }
+            }}
           >
             Done
             <Check className="size-4" aria-hidden="true" />

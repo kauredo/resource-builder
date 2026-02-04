@@ -3,7 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText } from "lucide-react";
+import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTip } from "@/components/onboarding/HelpTip";
 import type { EmotionCardLayout } from "@/types";
@@ -11,6 +11,7 @@ import type { WizardState } from "../EmotionCardsWizard";
 
 interface LayoutOptionsStepProps {
   layout: EmotionCardLayout;
+  includeTextInImage: boolean;
   onUpdate: (updates: Partial<WizardState>) => void;
   isFirstTimeUser?: boolean;
 }
@@ -38,6 +39,7 @@ const CARDS_PER_PAGE_OPTIONS = [
 
 export function LayoutOptionsStep({
   layout,
+  includeTextInImage,
   onUpdate,
   isFirstTimeUser = true,
 }: LayoutOptionsStepProps) {
@@ -145,6 +147,33 @@ export function LayoutOptionsStep({
               </div>
               <p className="text-sm text-muted-foreground">
                 Include a brief description of each emotion.
+              </p>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      {/* Image generation options */}
+      <section>
+        <Label className="text-base font-medium mb-4 block">
+          Image Style
+        </Label>
+        <div className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <Checkbox
+              checked={includeTextInImage}
+              onCheckedChange={(checked) =>
+                onUpdate({ includeTextInImage: checked === true })
+              }
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="font-medium">Include emotion text in image</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Add the emotion word directly into the generated illustration. Leave unchecked for text-free images.
               </p>
             </div>
           </label>
