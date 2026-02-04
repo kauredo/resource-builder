@@ -225,7 +225,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
     return (
       <div className="space-y-6">
         {/* Hero section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/10 to-teal/5 border border-coral/20 p-8 text-center">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/8 to-teal/5 border border-coral/20 p-8 text-center">
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
             <div className="absolute top-4 left-8 w-16 h-16 rounded-2xl bg-coral/10 rotate-12" />
@@ -249,10 +249,10 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             <Button
               size="lg"
               onClick={startGeneration}
-              className="btn-coral gap-2 text-base px-8"
+              className="btn-coral gap-2 text-base px-8 min-h-[48px]"
             >
               <Wand2 className="size-5" aria-hidden="true" />
-              Create {state.selectedEmotions.length} Cards
+              Create {state.selectedEmotions.length} Card{state.selectedEmotions.length !== 1 ? "s" : ""}
             </Button>
           </div>
         </div>

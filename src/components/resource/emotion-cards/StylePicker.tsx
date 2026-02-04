@@ -65,9 +65,11 @@ export function StylePicker({
             return (
               <button
                 key={preset.name}
+                type="button"
                 onClick={() => onSelect(null, preset)}
+                aria-pressed={isSelected}
                 className={cn(
-                  "group relative overflow-hidden rounded-2xl transition-all text-left h-44",
+                  "group relative overflow-hidden rounded-2xl transition-all duration-200 text-left h-44",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
                   isSelected
                     ? "ring-2 ring-coral ring-offset-2 scale-[1.02]"
@@ -162,7 +164,7 @@ export function StylePicker({
                 )}
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-200" />
               </button>
             );
           })}
@@ -181,14 +183,16 @@ export function StylePicker({
               return (
                 <button
                   key={style._id}
+                  type="button"
                   onClick={() => onSelect(style._id, {
                     name: style.name,
                     colors: style.colors,
                     typography: style.typography,
                     illustrationStyle: style.illustrationStyle,
                   })}
+                  aria-pressed={isSelected}
                   className={cn(
-                    "group relative overflow-hidden rounded-2xl transition-all text-left h-36",
+                    "group relative overflow-hidden rounded-2xl transition-all duration-200 text-left h-36",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
                     isSelected
                       ? "ring-2 ring-teal ring-offset-2 scale-[1.02]"

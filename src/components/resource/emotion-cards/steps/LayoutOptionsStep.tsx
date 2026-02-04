@@ -70,6 +70,7 @@ export function LayoutOptionsStep({ layout, onUpdate }: LayoutOptionsStepProps) 
                 className={cn(
                   "relative flex flex-col items-center p-4 rounded-xl border-2 cursor-pointer transition-all",
                   "hover:border-coral/40 hover:bg-coral/5",
+                  "focus-within:ring-2 focus-within:ring-coral focus-within:ring-offset-2",
                   isSelected
                     ? "border-coral bg-coral/5"
                     : "border-border bg-card"

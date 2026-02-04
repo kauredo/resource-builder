@@ -224,7 +224,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
               </Button>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center gap-2 text-green-600 mb-2">
+                <div className="flex items-center gap-2 text-coral mb-2">
                   <Check className="size-5" aria-hidden="true" />
                   <span className="font-medium">PDF ready!</span>
                 </div>
@@ -251,7 +251,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                   onClick={() => {
                     setPdfUrl(null);
                   }}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                  className="text-sm text-foreground/70 hover:text-coral underline underline-offset-2 transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Regenerate PDF
                 </button>

@@ -28,7 +28,7 @@ export function CardPreview({
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-xl border-2 overflow-hidden bg-card transition-all",
+        "relative flex flex-col rounded-xl border-2 overflow-hidden bg-card transition-colors duration-200",
         isGenerating && "border-coral/40",
         hasError && "border-destructive/40",
         !isGenerating && !hasError && "border-border"
@@ -59,13 +59,19 @@ export function CardPreview({
               className="object-cover"
             />
             {/* Regenerate overlay */}
-            {onRegenerate && isHovered && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+            {onRegenerate && (
+              <div
+                className={cn(
+                  "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200",
+                  isHovered ? "opacity-100" : "opacity-0"
+                )}
+              >
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={onRegenerate}
                   className="gap-1.5"
+                  tabIndex={isHovered ? 0 : -1}
                 >
                   <RefreshCw className="size-3.5" aria-hidden="true" />
                   Regenerate

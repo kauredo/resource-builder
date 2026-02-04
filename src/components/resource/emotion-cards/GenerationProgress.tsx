@@ -31,12 +31,12 @@ export function GenerationProgress({
         <div className="flex items-center gap-3">
           {isComplete ? (
             hasErrors ? (
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <AlertCircle className="size-5 text-amber-600" aria-hidden="true" />
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <AlertCircle className="size-5 text-amber-700" aria-hidden="true" />
               </div>
             ) : (
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="size-5 text-green-600" aria-hidden="true" />
+              <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center">
+                <Check className="size-5 text-teal" aria-hidden="true" />
               </div>
             )
           ) : (
@@ -83,8 +83,8 @@ export function GenerationProgress({
             : `${Math.round(progress)}% complete`}
         </span>
         {!isComplete && (
-          <span className="tabular-nums">
-            ~{Math.ceil((total - completed - failed) * 5)} seconds remaining
+          <span>
+            {total - completed - failed <= 2 ? "Almost done..." : "This may take a moment"}
           </span>
         )}
       </div>

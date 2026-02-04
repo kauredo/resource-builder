@@ -92,52 +92,6 @@ export function NameStyleStep({
         />
       </div>
 
-      {/* Style Preview */}
-      {stylePreset && (
-        <div className="rounded-xl border bg-card p-6">
-          <h4 className="font-medium mb-4">Style Preview</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Color palette */}
-            <div>
-              <span className="text-sm text-muted-foreground">Colors</span>
-              <div className="flex gap-2 mt-2">
-                {Object.entries(stylePreset.colors).map(([name, color]) => (
-                  <div key={name} className="flex flex-col items-center gap-1">
-                    <div
-                      className="w-10 h-10 rounded-lg shadow-sm border"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Typography */}
-            <div>
-              <span className="text-sm text-muted-foreground">Typography</span>
-              <div className="mt-2 space-y-1">
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Heading:</span>{" "}
-                  {stylePreset.typography.headingFont}
-                </p>
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Body:</span>{" "}
-                  {stylePreset.typography.bodyFont}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Illustration style description */}
-          <div className="mt-4 pt-4 border-t">
-            <span className="text-sm text-muted-foreground">Illustration Style</span>
-            <p className="text-sm mt-1">{stylePreset.illustrationStyle}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

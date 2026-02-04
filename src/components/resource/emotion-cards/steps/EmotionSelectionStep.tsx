@@ -46,7 +46,8 @@ function CollapsibleSection({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
+        aria-expanded={isOpen}
+        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
       >
         <div className="flex items-center gap-3">
           {isOpen ? (
@@ -141,10 +142,14 @@ export function EmotionSelectionStep({
           <p className="text-muted-foreground">
             Select emotions for your deck
           </p>
-          <p className={cn(
-            "text-sm font-medium tabular-nums mt-1",
-            selectedEmotions.length > 0 ? "text-coral" : "text-muted-foreground"
-          )}>
+          <p
+            className={cn(
+              "text-sm font-medium tabular-nums mt-1",
+              selectedEmotions.length > 0 ? "text-coral" : "text-muted-foreground"
+            )}
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {selectedEmotions.length} emotion{selectedEmotions.length !== 1 ? "s" : ""} selected
           </p>
         </div>
@@ -209,7 +214,8 @@ export function EmotionSelectionStep({
         <button
           type="button"
           onClick={() => setShowCustom(!showCustom)}
-          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
+          aria-expanded={showCustom}
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
         >
           <div className="flex items-center gap-3">
             {showCustom ? (
@@ -245,6 +251,7 @@ export function EmotionSelectionStep({
                 }}
                 autoComplete="off"
                 name="custom-emotion"
+                aria-label="Custom emotion name"
                 className="flex-1"
               />
               <Button

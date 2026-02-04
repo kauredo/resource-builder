@@ -272,16 +272,18 @@ export function EmotionCardsWizard() {
       </div>
 
       {/* Compact progress indicator */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
+      <nav className="mb-6 flex items-center gap-3" aria-label="Wizard progress">
+        <div className="flex items-center gap-1.5" role="list">
           {Array.from({ length: totalDisplaySteps }).map((_, i) => {
             const isComplete = i < currentStep;
             const isCurrent = i === currentStep;
             return (
               <div
                 key={i}
+                role="listitem"
+                aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "h-1.5 rounded-full transition-all",
+                  "h-1.5 rounded-full transition-all duration-200",
                   isCurrent ? "w-6 bg-coral" : "w-1.5",
                   isComplete ? "bg-coral" : "",
                   !isComplete && !isCurrent ? "bg-muted" : ""
@@ -291,9 +293,9 @@ export function EmotionCardsWizard() {
           })}
         </div>
         <span className="text-sm text-muted-foreground tabular-nums">
-          {currentStep + 1} of {totalDisplaySteps}
+          Step {currentStep + 1} of {totalDisplaySteps}
         </span>
-      </div>
+      </nav>
 
       {/* Step content */}
       <div className="min-h-[400px]">
@@ -306,6 +308,7 @@ export function EmotionCardsWizard() {
           variant="outline"
           onClick={handleBack}
           disabled={currentStep === 0 || isNavigating}
+          className="min-w-[100px]"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back
@@ -313,14 +316,14 @@ export function EmotionCardsWizard() {
 
         {actualStep < 5 ? (
           <Button
-            className="btn-coral"
+            className="btn-coral min-w-[120px]"
             onClick={handleNext}
             disabled={!canGoNext() || isNavigating}
           >
             {isNavigating ? (
               <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                Continue
+                Saving...
               </>
             ) : (
               <>
@@ -331,7 +334,7 @@ export function EmotionCardsWizard() {
           </Button>
         ) : (
           <Button
-            className="btn-coral"
+            className="btn-coral min-w-[120px]"
             onClick={() => router.push("/dashboard")}
           >
             Done
