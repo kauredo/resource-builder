@@ -1,0 +1,253 @@
+# Resource Builder
+
+A web application for therapists/psychologists to create consistent, branded therapy resources (emotion cards, board games, worksheets, etc.) for children and adolescents.
+
+## Quick Start
+
+```bash
+npm install
+npx convex dev      # Start Convex (separate terminal)
+npm run dev         # Start Next.js
+```
+
+## Tech Stack
+
+| Layer     | Technology                                        |
+| --------- | ------------------------------------------------- |
+| Framework | Next.js 15 (App Router)                           |
+| Database  | Convex                                            |
+| Auth      | Convex Auth                                       |
+| Image Gen | Gemini 3 Pro Image (`gemini-3-pro-image-preview`) |
+| PDF       | @react-pdf/renderer                               |
+| Styling   | Tailwind CSS v4                                   |
+| UI        | shadcn/ui                                         |
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx              # Landing page
+│   ├── (auth)/               # Login, Signup
+│   └── (dashboard)/          # Protected app
+│       ├── styles/           # Style management
+│       ├── characters/       # Character management
+│       ├── resources/        # Resource builder
+│       └── library/          # Saved resources
+├── components/
+│   ├── ui/                   # shadcn components
+│   ├── style/                # Style picker, editor
+│   ├── character/            # Character components
+│   └── resource/             # Resource builder components
+└── lib/
+    ├── gemini.ts             # Gemini API
+    ├── prompts.ts            # Prompt construction
+    └── pdf.ts                # PDF generation
+
+convex/
+├── schema.ts                 # Database schema
+├── users.ts                  # User queries/mutations
+├── styles.ts                 # Style queries/mutations
+├── characters.ts             # Character queries/mutations
+├── resources.ts              # Resource queries/mutations
+└── images.ts                 # Image generation actions
+```
+
+## Data Models
+
+### User
+
+- `subscription`: "trial" | "active" | "expired"
+- `trialEndsAt`: Trial expiration timestamp
+- `stripeCustomerId`: For Stripe integration
+
+### Style
+
+- `colors`: { primary, secondary, accent, background, text }
+- `typography`: { headingFont, bodyFont }
+- `illustrationStyle`: Text description for AI prompts
+- `isPreset`: System presets vs user-created
+
+### Character
+
+- `name`, `description`, `personality`
+- `referenceImages`: Stored in Convex
+- `promptFragment`: Detailed prompt for AI consistency
+
+### Resource
+
+- `type`: "emotion_cards" | "board_game" | "worksheet" | "poster" | "flashcards"
+- `content`: Type-specific content (EmotionCardContent, etc.)
+- `images`: Generated images with descriptions and prompts
+- `status`: "draft" | "complete"
+
+## Style Presets
+
+1. **Warm & Playful** — Coral, teal, sunny yellow. Soft rounded shapes.
+2. **Calm & Minimal** — Sage greens. Simple line art, white space.
+3. **Bold & Colorful** — Purple, blue, cyan. High contrast, geometric.
+4. **Nature & Earthy** — Olive, tan. Organic shapes, woodland creatures.
+5. **Whimsical Fantasy** — Lavender, purple. Dreamy pastels, sparkles.
+
+## Emotion Presets
+
+**Primary:** Happy, Sad, Angry, Scared, Surprised, Disgusted
+
+**Secondary:** Excited, Calm, Worried, Frustrated, Proud, Embarrassed
+
+**Nuanced:** Disappointed, Overwhelmed, Lonely, Confused, Jealous, Hopeful, Grateful, Nervous
+
+## Key Conventions
+
+### Image Generation
+
+- Always include the style's `illustrationStyle` in every prompt
+- When using a character, prepend its `promptFragment`
+- Store the full prompt used alongside each generated image
+- Store descriptions for regeneration capability
+
+### PDF Generation
+
+- Server-side using @react-pdf/renderer
+- Support multiple layouts: 4, 6, or 9 cards per page
+- Include cut lines for card decks
+
+### Authentication
+
+- No free tier — trial period (14 days) then subscription
+- Convex Auth for simplicity
+- Stripe for subscription management
+
+## Environment Variables
+
+```env
+# Convex
+CONVEX_DEPLOYMENT=
+NEXT_PUBLIC_CONVEX_URL=
+
+# Google AI (Gemini)
+GOOGLE_AI_API_KEY=
+```
+
+## MVP Scope
+
+Focus on **Emotion Cards** resource type first:
+
+1. Style selection/creation
+2. Emotion selection from presets + custom
+3. Optional character assignment
+4. AI image generation per card
+5. PDF export with print-ready layout
+
+## User Flows
+
+### Onboarding
+
+Sign up → Welcome → Style wizard (preset/describe/build) → Preview → Optional character → Ready
+
+### Create Emotion Cards
+
+New resource → Name deck → Select emotions → Choose layout → Generate images → Review/regenerate → Export PDF
+
+---
+
+# Project Rules
+
+## Design Context
+
+### Users
+
+Solo therapists and psychologists who work with children and adolescents. They use CBT, play therapy, and integrated/3rd gen therapies. They need to create professional, consistent therapy materials (emotion cards, board games, worksheets) quickly, primarily for printing and in-session use where screens are avoided. They're creative professionals who value both efficiency and the ability to craft personalized resources.
+
+### Brand Personality
+
+**Supportive, Creative, Reliable**
+
+- **Supportive**: The app feels like a helpful creative partner, not a cold tool
+- **Creative**: Sparks inspiration and makes resource creation feel enjoyable
+- **Reliable**: Just works, delivers consistent quality, earns trust over time
+
+**Emotional Goal**: Playful & Inspiring — therapists should feel creative energy and delight when using the app, with a spark that invites experimentation.
+
+### Aesthetic Direction
+
+**Visual Tone**: Warm, inviting, with subtle playfulness. Professional enough to feel trustworthy, but not sterile. Creative tool energy without being overwhelming.
+
+**References**:
+
+- **Canva**: Approachable creation tool, template-driven, friendly onboarding
+- **Framer**: Visual flair, creative polish, attention to micro-interactions
+- **Linear**: Minimal, fast, focused, refined details
+
+**Anti-References** (explicitly avoid):
+
+- Clinical/medical software aesthetic (cold, institutional)
+- Generic SaaS dashboards (forgettable, corporate)
+- Overly childish design (unprofessional, not taken seriously)
+- Complex/overwhelming interfaces (cluttered, intimidating)
+
+**Theme**: Light mode only — matches therapy/clinical context and is print-preview friendly.
+
+### Design Principles
+
+1. **Calm Confidence**: The interface should feel quietly capable. Reduce visual noise. Let the therapist's created content be the star, not the UI chrome.
+
+2. **Guided Creativity**: Offer clear paths (presets, templates) while allowing customization. Never make users stare at a blank canvas — always provide a starting point.
+
+3. **Playful Polish**: Small moments of delight in transitions, feedback, and micro-interactions. Not cartoonish, but warm and alive.
+
+4. **Print-First Thinking**: Everything created will likely be printed. Previews should feel tangible. Color choices should work on paper. Consider cut lines and assembly.
+
+5. **Accessible by Default**: WCAG AA compliance. Good contrast ratios, keyboard navigation, screen reader support. Therapists may have their own accessibility needs.
+
+---
+
+## Technical Context
+
+### Stack
+
+- Next.js 15 (App Router)
+- Tailwind CSS v4
+- shadcn/ui components
+- Convex (database + auth)
+- Gemini 3 Pro Image (AI generation)
+- @react-pdf/renderer (PDF export)
+
+### Key Patterns
+
+- Per-therapist style system (colors, typography, illustration style)
+- Character persistence with AI prompt fragments
+- Image generation stores prompts for regeneration
+- Server-side PDF generation
+
+### Style Presets
+
+1. Warm & Playful — coral, teal, yellow, soft shapes
+2. Calm & Minimal — sage greens, line art, white space
+3. Bold & Colorful — purple, blue, cyan, geometric
+4. Nature & Earthy — olive, tan, woodland creatures
+5. Whimsical Fantasy — lavender, pastels, sparkles
+
+---
+
+## Code Conventions
+
+### Components
+
+- Use shadcn/ui as the foundation
+- Extend with custom variants when needed
+- Keep components focused and composable
+
+### Styling
+
+- Tailwind CSS v4 utility classes
+- Design tokens via CSS variables for theming
+- Consistent spacing scale (4px base)
+
+### Accessibility
+
+- All interactive elements keyboard accessible
+- ARIA labels on icon-only buttons
+- Focus indicators visible
+- Color contrast meets WCAG AA (4.5:1 text, 3:1 UI)
+- Respect reduced motion preferences
