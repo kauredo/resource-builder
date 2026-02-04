@@ -116,3 +116,25 @@ export const deleteResource = mutation({
     await ctx.db.delete(args.resourceId);
   },
 });
+
+// Get resource with resolved image URLs
+export const getResourceWithImages = query({
+  args: { resourceId: v.id("resources") },
+  handler: async (ctx, args) => {
+    const resource = await ctx.db.get(args.resourceId);
+    if (!resource) return null;
+
+    // Get URLs for all images
+    const imagesWithUrls = await Promise.all(
+      resource.images.map(async (image) => ({
+        ...image,
+        url: await ctx.storage.getUrl(image.storageId),
+      }))
+    );
+
+    return {
+      ...resource,
+      images: imagesWithUrls,
+    };
+  },
+});

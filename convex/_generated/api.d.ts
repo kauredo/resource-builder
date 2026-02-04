@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as characters from "../characters.js";
 import type * as http from "../http.js";
+import type * as images from "../images.js";
 import type * as resources from "../resources.js";
 import type * as styles from "../styles.js";
 import type * as users from "../users.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   characters: typeof characters;
   http: typeof http;
+  images: typeof images;
   resources: typeof resources;
   styles: typeof styles;
   users: typeof users;

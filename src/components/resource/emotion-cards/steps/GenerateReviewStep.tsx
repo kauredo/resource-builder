@@ -1,0 +1,359 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useAction, useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
+import { CardPreview } from "../CardPreview";
+import { GenerationProgress } from "../GenerationProgress";
+import { Wand2, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { WizardState } from "../EmotionCardsWizard";
+
+interface GenerateReviewStepProps {
+  state: WizardState;
+  onUpdate: (updates: Partial<WizardState>) => void;
+}
+
+interface GenerationResult {
+  emotion: string;
+  storageId?: Id<"_storage">;
+  url?: string;
+  status: "pending" | "generating" | "complete" | "error";
+  error?: string;
+}
+
+export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps) {
+  const [results, setResults] = useState<Map<string, GenerationResult>>(new Map());
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState<string | undefined>();
+
+  const generateCard = useAction(api.images.generateEmotionCard);
+
+  // Get image URLs for completed cards
+  const completedStorageIds = Array.from(results.values())
+    .filter((r) => r.status === "complete" && r.storageId)
+    .map((r) => r.storageId as Id<"_storage">);
+
+  const imageUrls = useQuery(
+    api.images.getImageUrls,
+    completedStorageIds.length > 0 ? { storageIds: completedStorageIds } : "skip"
+  );
+
+  // Update URLs when they come in
+  useEffect(() => {
+    if (imageUrls) {
+      setResults((prev) => {
+        const updated = new Map(prev);
+        for (const [storageId, url] of Object.entries(imageUrls)) {
+          for (const [emotion, result] of updated.entries()) {
+            if (result.storageId === storageId && url) {
+              updated.set(emotion, { ...result, url });
+            }
+          }
+        }
+        return updated;
+      });
+    }
+  }, [imageUrls]);
+
+  // Initialize results when step loads
+  useEffect(() => {
+    if (results.size === 0 && state.selectedEmotions.length > 0) {
+      const initial = new Map<string, GenerationResult>();
+      for (const emotion of state.selectedEmotions) {
+        initial.set(emotion, { emotion, status: "pending" });
+      }
+      setResults(initial);
+    }
+  }, [state.selectedEmotions, results.size]);
+
+  // Update wizard state when generation completes
+  useEffect(() => {
+    const allComplete = Array.from(results.values()).every(
+      (r) => r.status === "complete" || r.status === "error"
+    );
+    const anyComplete = Array.from(results.values()).some(
+      (r) => r.status === "complete"
+    );
+
+    if (allComplete && anyComplete && results.size > 0) {
+      onUpdate({ generationStatus: "complete" });
+    }
+  }, [results, onUpdate]);
+
+  const generateSingleCard = useCallback(
+    async (emotion: string) => {
+      if (!state.resourceId || !state.styleId) return;
+
+      setResults((prev) => {
+        const updated = new Map(prev);
+        updated.set(emotion, { emotion, status: "generating" });
+        return updated;
+      });
+
+      try {
+        const result = await generateCard({
+          resourceId: state.resourceId,
+          emotion,
+          styleId: state.styleId,
+          characterId: state.characterId ?? undefined,
+        });
+
+        setResults((prev) => {
+          const updated = new Map(prev);
+          updated.set(emotion, {
+            emotion,
+            status: "complete",
+            storageId: result.storageId as Id<"_storage">,
+          });
+          return updated;
+        });
+      } catch (error) {
+        setResults((prev) => {
+          const updated = new Map(prev);
+          updated.set(emotion, {
+            emotion,
+            status: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+          return updated;
+        });
+      }
+    },
+    [state.resourceId, state.styleId, state.characterId, generateCard]
+  );
+
+  const startGeneration = useCallback(async () => {
+    if (!state.resourceId || !state.styleId) return;
+
+    setIsGenerating(true);
+    onUpdate({ generationStatus: "generating" });
+
+    // Reset pending/error cards
+    setResults((prev) => {
+      const updated = new Map(prev);
+      for (const [emotion, result] of updated.entries()) {
+        if (result.status !== "complete") {
+          updated.set(emotion, { emotion, status: "pending" });
+        }
+      }
+      return updated;
+    });
+
+    // Generate cards with concurrency limit
+    const BATCH_SIZE = 3;
+    const pendingEmotions = state.selectedEmotions.filter((emotion) => {
+      const result = results.get(emotion);
+      return !result || result.status !== "complete";
+    });
+
+    for (let i = 0; i < pendingEmotions.length; i += BATCH_SIZE) {
+      const batch = pendingEmotions.slice(i, i + BATCH_SIZE);
+
+      // Mark batch as generating
+      setResults((prev) => {
+        const updated = new Map(prev);
+        for (const emotion of batch) {
+          updated.set(emotion, { emotion, status: "generating" });
+        }
+        return updated;
+      });
+
+      setCurrentEmotion(batch[0]);
+
+      // Generate batch in parallel
+      await Promise.allSettled(
+        batch.map(async (emotion) => {
+          try {
+            const result = await generateCard({
+              resourceId: state.resourceId!,
+              emotion,
+              styleId: state.styleId!,
+              characterId: state.characterId ?? undefined,
+            });
+
+            setResults((prev) => {
+              const updated = new Map(prev);
+              updated.set(emotion, {
+                emotion,
+                status: "complete",
+                storageId: result.storageId as Id<"_storage">,
+              });
+              return updated;
+            });
+          } catch (error) {
+            setResults((prev) => {
+              const updated = new Map(prev);
+              updated.set(emotion, {
+                emotion,
+                status: "error",
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
+              return updated;
+            });
+          }
+        })
+      );
+    }
+
+    setIsGenerating(false);
+    setCurrentEmotion(undefined);
+  }, [
+    state.resourceId,
+    state.styleId,
+    state.characterId,
+    state.selectedEmotions,
+    results,
+    generateCard,
+    onUpdate,
+  ]);
+
+  const completedCount = Array.from(results.values()).filter(
+    (r) => r.status === "complete"
+  ).length;
+  const failedCount = Array.from(results.values()).filter(
+    (r) => r.status === "error"
+  ).length;
+  const hasStarted = Array.from(results.values()).some(
+    (r) => r.status !== "pending"
+  );
+
+  // Pre-generation view
+  if (!hasStarted) {
+    return (
+      <div className="space-y-6">
+        {/* Hero section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/10 to-teal/5 border border-coral/20 p-8 text-center">
+          {/* Decorative background elements */}
+          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="absolute top-4 left-8 w-16 h-16 rounded-2xl bg-coral/10 rotate-12" />
+            <div className="absolute bottom-6 right-12 w-12 h-12 rounded-xl bg-teal/10 -rotate-6" />
+            <div className="absolute top-1/2 right-1/4 w-8 h-8 rounded-lg bg-coral/5 rotate-45" />
+          </div>
+
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+              <Wand2 className="size-8 text-coral" aria-hidden="true" />
+            </div>
+
+            <h3 className="font-serif text-2xl font-medium mb-2">
+              Ready to create your deck
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              AI will generate unique illustrations for each emotion,
+              styled to match your selection.
+            </p>
+
+            <Button
+              size="lg"
+              onClick={startGeneration}
+              className="btn-coral gap-2 text-base px-8"
+            >
+              <Wand2 className="size-5" aria-hidden="true" />
+              Create {state.selectedEmotions.length} Cards
+            </Button>
+          </div>
+        </div>
+
+        {/* Preview of what will be generated */}
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Cards to generate
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {state.selectedEmotions.map((emotion, i) => (
+              <div
+                key={emotion}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-sm font-medium",
+                  "bg-muted/50 text-foreground/80"
+                )}
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                }}
+              >
+                {emotion}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Style reminder */}
+        {state.stylePreset && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border">
+            <div className="flex gap-1.5">
+              <div
+                className="w-5 h-5 rounded-md shadow-sm"
+                style={{ backgroundColor: state.stylePreset.colors.primary }}
+              />
+              <div
+                className="w-5 h-5 rounded-md shadow-sm"
+                style={{ backgroundColor: state.stylePreset.colors.secondary }}
+              />
+              <div
+                className="w-5 h-5 rounded-md shadow-sm"
+                style={{ backgroundColor: state.stylePreset.colors.accent }}
+              />
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Using <span className="font-medium text-foreground">{state.stylePreset.name}</span> style
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // During/after generation view
+  return (
+    <div className="space-y-6">
+      {/* Progress */}
+      <GenerationProgress
+        total={state.selectedEmotions.length}
+        completed={completedCount}
+        failed={failedCount}
+        currentEmotion={currentEmotion}
+      />
+
+      {/* Regenerate all button */}
+      {!isGenerating && failedCount > 0 && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={startGeneration}
+            className="gap-2"
+          >
+            <RefreshCw className="size-4" aria-hidden="true" />
+            Retry Failed ({failedCount})
+          </Button>
+        </div>
+      )}
+
+      {/* Card grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {state.selectedEmotions.map((emotion) => {
+          const result = results.get(emotion);
+          const url = result?.storageId && imageUrls?.[result.storageId];
+
+          return (
+            <CardPreview
+              key={emotion}
+              emotion={emotion}
+              imageUrl={url || null}
+              isGenerating={result?.status === "generating"}
+              hasError={result?.status === "error"}
+              showLabel={true}
+              onRegenerate={
+                !isGenerating && result?.status !== "generating"
+                  ? () => generateSingleCard(emotion)
+                  : undefined
+              }
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
