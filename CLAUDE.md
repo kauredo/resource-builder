@@ -251,3 +251,48 @@ Solo therapists and psychologists who work with children and adolescents. They u
 - Focus indicators visible
 - Color contrast meets WCAG AA (4.5:1 text, 3:1 UI)
 - Respect reduced motion preferences
+
+---
+
+## Development Workflow
+
+### Building New UI
+
+For each major page or feature:
+
+1. **`/frontend-design`** — Get aesthetic direction before coding. Establishes visual tone, layout approach, and differentiation.
+2. **Build** — Implement with that direction in mind.
+3. **`/interface-guidelines`** — Verify interactions, keyboard support, form behavior.
+4. **`/critique`** — Holistic design critique. Does it actually work? Is it memorable?
+
+### Polish & Ship
+
+Before considering a feature complete:
+
+1. **`/design-polish`** — Systematic final pass. Spacing, alignment, micro-interactions.
+2. **`/design-review`** — Accessibility and visual audit. Catches issues.
+
+### Orchestration
+
+- **`/ui-finesse-workflow`** — Use when starting complex UI work. Reminds you which skill to use when.
+
+### Other Useful Skills
+
+| Skill       | When to Use                                 |
+| ----------- | ------------------------------------------- |
+| `/bolder`   | Design feels too safe or generic            |
+| `/quieter`  | Design is too aggressive or overwhelming    |
+| `/simplify` | Too much complexity, needs clarity          |
+| `/clarify`  | Interface text is confusing                 |
+| `/harden`   | Strengthen against edge cases, i18n, errors |
+| `/animate`  | Add strategic motion and micro-interactions |
+| `/colorize` | Design is too monochromatic                 |
+| `/audit`    | Generate comprehensive issue report         |
+
+### Workflow Summary
+
+```
+/frontend-design → Build → /interface-guidelines → /critique → /design-polish → /design-review
+```
+
+Skip steps for trivial changes. Use full cycle for major features.
