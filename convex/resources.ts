@@ -4,10 +4,25 @@ import { mutation, query } from "./_generated/server";
 export const getUserResources = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const resources = await ctx.db
       .query("resources")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
+
+    // Get thumbnail URL for first image of each resource
+    const resourcesWithThumbnails = await Promise.all(
+      resources.map(async (resource) => {
+        const thumbnailUrl = resource.images.length > 0
+          ? await ctx.storage.getUrl(resource.images[0].storageId)
+          : null;
+        return {
+          ...resource,
+          thumbnailUrl,
+        };
+      })
+    );
+
+    return resourcesWithThumbnails;
   },
 });
 

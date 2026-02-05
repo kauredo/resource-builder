@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
+import { ResourceCard } from "@/components/resource/ResourceCard";
 import {
   Plus,
   Palette,
@@ -180,40 +181,21 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {resources
                 .sort((a, b) => b.updatedAt - a.updatedAt)
                 .slice(0, 6)
                 .map((resource) => (
-                  <Link
+                  <ResourceCard
                     key={resource._id}
-                    href={`/dashboard/resources/${resource._id}`}
-                    className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-                  >
-                    <div className="p-4 rounded-xl border border-border bg-card hover:border-coral/40 hover:shadow-md transition-all duration-150 motion-reduce:transition-none">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="size-10 rounded-lg bg-coral/10 flex items-center justify-center shrink-0">
-                          <FileStack className="size-5 text-coral" aria-hidden="true" />
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          resource.status === "complete"
-                            ? "bg-teal/10 text-teal"
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {resource.status === "complete" ? "Complete" : "Draft"}
-                        </span>
-                      </div>
-                      <h3 className="font-medium text-foreground mb-1 truncate group-hover:text-coral transition-colors duration-150">
-                        {resource.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {resource.type.replace("_", " ")} · {resource.images.length} cards
-                      </p>
-                      <p className="text-xs text-muted-foreground/70 mt-2">
-                        {new Date(resource.updatedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Link>
+                    id={resource._id}
+                    name={resource.name}
+                    type={resource.type}
+                    status={resource.status}
+                    cardCount={resource.images.length}
+                    updatedAt={resource.updatedAt}
+                    thumbnailUrl={resource.thumbnailUrl}
+                  />
                 ))}
             </div>
           )}

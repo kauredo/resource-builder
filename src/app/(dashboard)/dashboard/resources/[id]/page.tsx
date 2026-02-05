@@ -51,6 +51,7 @@ export default function ResourceDetailPage({ params }: PageProps) {
     resource?.styleId ? { styleId: resource.styleId } : "skip"
   );
   const deleteResource = useMutation(api.resources.deleteResource);
+  const updateResource = useMutation(api.resources.updateResource);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
@@ -89,6 +90,14 @@ export default function ResourceDetailPage({ params }: PageProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
+      // Mark resource as complete after successful download
+      if (resource.status === "draft") {
+        await updateResource({
+          resourceId: resource._id,
+          status: "complete",
+        });
+      }
+
       setPdfReady(true);
       setTimeout(() => setPdfReady(false), 3000);
     } catch (error) {
@@ -96,7 +105,7 @@ export default function ResourceDetailPage({ params }: PageProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource]);
+  }, [resource, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -115,27 +124,27 @@ export default function ResourceDetailPage({ params }: PageProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="status" aria-label="Loading resource">
         {/* Skeleton header */}
         <div className="mb-8" aria-hidden="true">
-          <div className="h-4 w-20 bg-muted rounded animate-pulse mb-4" />
+          <div className="h-4 w-20 bg-muted rounded animate-pulse motion-reduce:animate-none mb-4" />
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <div className="h-8 w-48 bg-muted rounded animate-pulse mb-2" />
-              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-8 w-48 bg-muted rounded animate-pulse motion-reduce:animate-none mb-2" />
+              <div className="h-4 w-32 bg-muted rounded animate-pulse motion-reduce:animate-none" />
             </div>
             <div className="flex gap-2">
-              <div className="h-9 w-28 bg-muted rounded animate-pulse" />
-              <div className="h-9 w-20 bg-muted rounded animate-pulse" />
-              <div className="size-9 bg-muted rounded animate-pulse" />
+              <div className="h-9 w-28 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+              <div className="h-9 w-20 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+              <div className="size-9 bg-muted rounded animate-pulse motion-reduce:animate-none" />
             </div>
           </div>
         </div>
         {/* Skeleton grid */}
-        <div className="h-4 w-40 bg-muted rounded animate-pulse mb-4" aria-hidden="true" />
+        <div className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-4" aria-hidden="true" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5" aria-hidden="true">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="rounded-xl border bg-card overflow-hidden">
-              <div className="aspect-square bg-muted animate-pulse" />
+              <div className="aspect-square bg-muted animate-pulse motion-reduce:animate-none" />
               <div className="p-3">
-                <div className="h-4 w-16 bg-muted rounded animate-pulse mx-auto" />
+                <div className="h-4 w-16 bg-muted rounded animate-pulse motion-reduce:animate-none mx-auto" />
               </div>
             </div>
           ))}
@@ -169,11 +178,11 @@ export default function ResourceDetailPage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 mb-4 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+          href="/dashboard/resources"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 mb-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
         >
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          My Decks
+          Resources
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -207,14 +216,17 @@ export default function ResourceDetailPage({ params }: PageProps) {
                 <Layers className="size-4" aria-hidden="true" />
                 <span className="tabular-nums">{cardCount}</span> card{cardCount !== 1 ? "s" : ""}
               </span>
-              <span className="flex items-center gap-1.5">
+              <time
+                className="flex items-center gap-1.5"
+                dateTime={new Date(resource.updatedAt).toISOString()}
+              >
                 <Calendar className="size-4" aria-hidden="true" />
                 {new Date(resource.updatedAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
                 })}
-              </span>
+              </time>
             </div>
           </div>
 
