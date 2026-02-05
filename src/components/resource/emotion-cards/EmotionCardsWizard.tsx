@@ -14,7 +14,13 @@ import { CharacterStep } from "./steps/CharacterStep";
 import { LayoutOptionsStep } from "./steps/LayoutOptionsStep";
 import { GenerateReviewStep } from "./steps/GenerateReviewStep";
 import { ExportStep } from "./steps/ExportStep";
-import type { EmotionCardContent, EmotionCardLayout, StylePreset } from "@/types";
+import { WizardPreview } from "./WizardPreview";
+import type {
+  EmotionCardContent,
+  EmotionCardLayout,
+  StylePreset,
+  StyleFrames,
+} from "@/types";
 
 // Wizard state types
 export interface WizardState {
@@ -81,7 +87,9 @@ interface EmotionCardsWizardProps {
   resourceId?: Id<"resources">;
 }
 
-export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsWizardProps = {}) {
+export function EmotionCardsWizard({
+  resourceId: editResourceId,
+}: EmotionCardsWizardProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStyleId = searchParams.get("styleId") as Id<"styles"> | null;
@@ -107,9 +115,19 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
     initialStyleId ? { styleId: initialStyleId } : "skip"
   );
 
+  // Query style with frame URLs for preview
+  const selectedStyleId =
+    initialStyleId || existingResource?.styleId || undefined;
+  const styleWithFrames = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    selectedStyleId ? { styleId: selectedStyleId } : "skip"
+  );
+
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
-  const removeImagesFromResource = useMutation(api.resources.removeImagesFromResource);
+  const removeImagesFromResource = useMutation(
+    api.resources.removeImagesFromResource
+  );
   const recordFirstResource = useMutation(api.users.recordFirstResource);
   const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
 
@@ -168,12 +186,14 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
         stylePreset,
         selectedEmotions: emotions,
         originalEmotions: emotions,
-        characterId: content.cards[0]?.characterId as Id<"characters"> | null ?? null,
+        characterId:
+          (content.cards[0]?.characterId as Id<"characters"> | null) ?? null,
         layout: content.layout,
         includeTextInImage: false, // Default to no text in images
         resourceId: existingResource._id,
         generatedCards: new Map(),
-        generationStatus: existingResource.images.length > 0 ? "complete" : "idle",
+        generationStatus:
+          existingResource.images.length > 0 ? "complete" : "idle",
         isEditMode: true,
       });
     }
@@ -188,13 +208,6 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
       return displayStep + 1; // Skip character step
     }
     return displayStep;
-  };
-
-  const getDisplayStepIndex = (actualStep: number): number => {
-    if (!hasCharacters && actualStep >= 3) {
-      return actualStep - 1;
-    }
-    return actualStep;
   };
 
   const totalDisplaySteps = hasCharacters ? 6 : 5;
@@ -271,13 +284,25 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
       await recordFirstResource();
       return resourceId;
     }
-  }, [user?._id, state, createResource, updateResource, removeImagesFromResource, recordFirstResource, getOrCreatePresetStyle, updateState]);
+  }, [
+    user?._id,
+    state,
+    createResource,
+    updateResource,
+    removeImagesFromResource,
+    recordFirstResource,
+    getOrCreatePresetStyle,
+    updateState,
+  ]);
 
   // Navigation handlers
   const canGoNext = (): boolean => {
     switch (actualStep) {
       case 0: // Name & Style
-        return state.name.trim().length > 0 && (state.styleId !== null || state.stylePreset !== null);
+        return (
+          state.name.trim().length > 0 &&
+          (state.styleId !== null || state.stylePreset !== null)
+        );
       case 1: // Emotions
         return state.selectedEmotions.length > 0;
       case 2: // Character (optional)
@@ -330,9 +355,28 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
   };
 
   // Compute emotions that already have generated images (for edit mode)
-  const emotionsWithImages = existingResource?.images
-    .map((img) => img.description)
-    .filter(Boolean) ?? [];
+  const emotionsWithImages =
+    existingResource?.images.map((img) => img.description).filter(Boolean) ??
+    [];
+
+  // Get first generated image URL for preview
+  const firstGeneratedImageUrl =
+    existingResource?.images[0]?.url ??
+    (state.generatedCards.size > 0
+      ? Array.from(state.generatedCards.values())[0]?.url
+      : null);
+
+  // Get first emotion for preview
+  const previewEmotion = state.selectedEmotions[0] || "Happy";
+
+  // Determine if we should show the preview sidebar (steps 0-3)
+  const showPreviewSidebar = actualStep <= 3;
+
+  // Get style data for preview
+  const previewStyle = styleWithFrames || state.stylePreset;
+  const previewColors = previewStyle?.colors;
+  const previewTypography = previewStyle?.typography;
+  const previewFrameUrls = styleWithFrames?.frameUrls;
 
   // Render current step
   const renderStep = () => {
@@ -376,36 +420,31 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
           />
         );
       case 4:
-        return (
-          <GenerateReviewStep
-            state={state}
-            onUpdate={updateState}
-          />
-        );
+        return <GenerateReviewStep state={state} onUpdate={updateState} />;
       case 5:
-        return (
-          <ExportStep
-            state={state}
-            onUpdate={updateState}
-          />
-        );
+        return <ExportStep state={state} onUpdate={updateState} />;
       default:
         return null;
     }
   };
 
   // Show loading state while user or edit mode data is loading
-  const isLoadingEditData = editResourceId && (!existingResource || !existingStyle);
+  const isLoadingEditData =
+    editResourceId && (!existingResource || !existingStyle);
   if (!user || isLoadingEditData) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading">
+      <div
+        className="flex items-center justify-center min-h-[400px]"
+        role="status"
+        aria-label="Loading"
+      >
         <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -416,12 +455,17 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
           {state.isEditMode ? "Back to Resource" : "Dashboard"}
         </button>
         <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
-          {state.isEditMode ? `Edit: ${STEP_TITLES[actualStep]}` : STEP_TITLES[actualStep]}
+          {state.isEditMode
+            ? `Edit: ${STEP_TITLES[actualStep]}`
+            : STEP_TITLES[actualStep]}
         </h1>
       </div>
 
       {/* Compact progress indicator */}
-      <nav className="mb-6 flex items-center gap-3" aria-label="Wizard progress">
+      <nav
+        className="mb-6 flex items-center gap-3"
+        aria-label="Wizard progress"
+      >
         <div className="flex items-center gap-1.5" role="list">
           {Array.from({ length: totalDisplaySteps }).map((_, i) => {
             const isComplete = i < currentStep;
@@ -446,9 +490,28 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
         </span>
       </nav>
 
-      {/* Step content */}
+      {/* Main content area with optional preview */}
       <div className="min-h-[400px]">
-        {renderStep()}
+        {showPreviewSidebar ? (
+          <div className="flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-start">
+            {/* Step content - takes available space */}
+            <div className="flex-1 min-w-0">{renderStep()}</div>
+
+            {/* Preview - fixed width, sticky on desktop */}
+            <aside className="w-full md:w-auto md:sticky md:top-8 flex justify-center md:justify-start pb-4 md:pb-0 border-b md:border-b-0 border-border/50">
+              <WizardPreview
+                colors={previewColors}
+                typography={previewTypography}
+                frameUrls={previewFrameUrls}
+                layout={state.layout}
+                generatedImageUrl={firstGeneratedImageUrl}
+                emotion={previewEmotion}
+              />
+            </aside>
+          </div>
+        ) : (
+          renderStep()
+        )}
       </div>
 
       {/* Navigation */}
@@ -471,7 +534,10 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
           >
             {isNavigating ? (
               <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                <span
+                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
                 Saving...
               </>
             ) : (

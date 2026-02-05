@@ -16,14 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Loader2,
-  RefreshCw,
-  Trash2,
-  Frame,
-  Type,
-  Layers,
-} from "lucide-react";
+import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames, FrameType } from "@/types";
 
@@ -50,35 +43,27 @@ interface FrameGeneratorProps {
 interface FrameTypeConfig {
   type: FrameType;
   label: string;
-  description: string;
-  dimensions: string;
-  icon: React.ReactNode;
+  shortDesc: string;
   aspectRatio: string;
 }
 
 const FRAME_TYPES: FrameTypeConfig[] = [
   {
     type: "border",
-    label: "Border Frame",
-    description: "Decorative border that wraps around the entire card",
-    dimensions: "768×1024px, transparent center",
-    icon: <Frame className="size-5" aria-hidden="true" />,
+    label: "Border",
+    shortDesc: "Card border decoration",
     aspectRatio: "aspect-[3/4]",
   },
   {
     type: "textBacking",
     label: "Text Backing",
-    description: "Semi-transparent shape behind card labels",
-    dimensions: "1024×256px, 40-60% opacity",
-    icon: <Type className="size-5" aria-hidden="true" />,
+    shortDesc: "Behind card labels",
     aspectRatio: "aspect-[2/1]",
   },
   {
     type: "fullCard",
-    label: "Full Card Template",
-    description: "Complete trading card frame with image and text areas",
-    dimensions: "768×1024px, transparent image area",
-    icon: <Layers className="size-5" aria-hidden="true" />,
+    label: "Full Card",
+    shortDesc: "Complete card template",
     aspectRatio: "aspect-[3/4]",
   },
 ];
@@ -89,7 +74,9 @@ export function FrameGenerator({
   frames,
   frameUrls,
 }: FrameGeneratorProps) {
-  const [generatingTypes, setGeneratingTypes] = useState<Set<FrameType>>(new Set());
+  const [generatingTypes, setGeneratingTypes] = useState<Set<FrameType>>(
+    new Set(),
+  );
   const [deletingType, setDeletingType] = useState<FrameType | null>(null);
 
   const generateFrame = useAction(api.frameActions.generateFrame);
@@ -128,8 +115,8 @@ export function FrameGenerator({
           illustrationStyle: style.illustrationStyle,
         }).catch(error => {
           console.error(`Failed to generate ${frameType}:`, error);
-        })
-      )
+        }),
+      ),
     );
 
     setGeneratingTypes(new Set());
@@ -149,39 +136,43 @@ export function FrameGenerator({
     }
   };
 
-  // Check if any frames exist
   const hasAnyFrames = frames && Object.keys(frames).length > 0;
   const isGeneratingAny = generatingTypes.size > 0;
   const isAnyOperationInProgress = isGeneratingAny || deletingType !== null;
 
   return (
     <div className="space-y-4">
-      {/* Generate All button */}
-      <div className="flex justify-end">
+      {/* Generate All button - compact */}
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-xs text-muted-foreground">
+          Generate decorative frames for your cards
+        </p>
         <Button
           onClick={handleGenerateAll}
           disabled={isAnyOperationInProgress}
           variant="outline"
-          className="gap-2"
+          size="sm"
+          className="gap-1.5 shrink-0"
         >
           {isGeneratingAny ? (
             <>
               <Loader2
-                className="size-4 animate-spin motion-reduce:animate-none"
+                className="size-3.5 animate-spin motion-reduce:animate-none"
                 aria-hidden="true"
               />
-              Generating {generatingTypes.size} frames...
+              Generating...
             </>
           ) : (
             <>
-              <RefreshCw className="size-4" aria-hidden="true" />
+              <RefreshCw className="size-3.5" aria-hidden="true" />
               {hasAnyFrames ? "Regenerate All" : "Generate All"}
             </>
           )}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Compact frame cards */}
+      <div className="grid grid-cols-3 gap-3">
         {FRAME_TYPES.map(config => {
           const hasFrame = frames?.[config.type];
           const frameUrl = frameUrls?.[config.type];
@@ -190,37 +181,41 @@ export function FrameGenerator({
           const isDisabled = isAnyOperationInProgress;
 
           return (
-            <div key={config.type} className="group relative flex flex-col">
-              {/* Preview area - prominent */}
-              <div className="relative mb-3">
+            <div
+              key={config.type}
+              className="group relative flex flex-col rounded-lg border border-border/50 overflow-hidden bg-background justify-between"
+            >
+              {/* Preview - compact */}
+              <div className="relative">
                 <FramePreview
                   url={frameUrl ?? null}
                   alt={`${config.label} preview`}
                   aspectRatio={config.aspectRatio}
-                  size="lg"
+                  size="sm"
                 />
 
-                {/* Actions - always visible for mobile/touch accessibility */}
-                {hasFrame && (
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                {/* Loading overlay */}
+                {isGenerating && (
+                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                    <Loader2
+                      className="size-5 animate-spin text-coral"
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
+
+                {/* Action buttons - visible on hover or when frame exists */}
+                {hasFrame && !isGenerating && (
+                  <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleGenerate(config.type)}
                       disabled={isDisabled}
-                      className="h-7 px-2 gap-1 bg-white/90 hover:bg-white text-foreground shadow-sm transition-colors duration-150"
+                      className="h-6 w-6 bg-white/90 hover:bg-white shadow-sm"
                     >
-                      {isGenerating ? (
-                        <Loader2
-                          className="size-3 animate-spin motion-reduce:animate-none"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <RefreshCw className="size-3" aria-hidden="true" />
-                      )}
-                      <span className="text-xs">
-                        {isGenerating ? "..." : "Redo"}
-                      </span>
+                      <RefreshCw className="size-3" aria-hidden="true" />
+                      <span className="sr-only">Regenerate</span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -228,11 +223,11 @@ export function FrameGenerator({
                           variant="secondary"
                           size="icon"
                           disabled={isDisabled}
-                          className="h-7 w-7 bg-white/90 hover:bg-white text-muted-foreground hover:text-destructive shadow-sm transition-colors duration-150"
+                          className="h-6 w-6 bg-white/90 hover:bg-white text-muted-foreground hover:text-destructive shadow-sm"
                         >
                           {isDeleting ? (
                             <Loader2
-                              className="size-3 animate-spin motion-reduce:animate-none"
+                              className="size-3 animate-spin"
                               aria-hidden="true"
                             />
                           ) : (
@@ -247,8 +242,8 @@ export function FrameGenerator({
                             Delete {config.label}?
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete this frame asset. You
-                            can generate a new one at any time.
+                            This will permanently delete this frame. You can
+                            generate a new one at any time.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -266,69 +261,30 @@ export function FrameGenerator({
                 )}
               </div>
 
-              {/* Info */}
-              <div className="flex items-start gap-2 mb-2">
-                <span className="text-muted-foreground">{config.icon}</span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-medium text-foreground leading-tight">
-                    {config.label}
-                  </h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {config.description}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">
-                    {config.dimensions}
-                  </p>
-                </div>
-              </div>
+              {/* Label and action */}
+              <div className="p-2.5">
+                <h3 className="text-xs font-medium text-foreground">
+                  {config.label}
+                </h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {config.shortDesc}
+                </p>
 
-              {/* Generate button or timestamp */}
-              {hasFrame ? (
-                <time
-                  dateTime={new Date(
-                    frames[config.type]!.generatedAt,
-                  ).toISOString()}
-                  className="text-[11px] text-muted-foreground/70 mt-auto tabular-nums"
-                >
-                  Generated{" "}
-                  {new Date(
-                    frames[config.type]!.generatedAt,
-                  ).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </time>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => handleGenerate(config.type)}
-                  disabled={isDisabled}
-                  className="btn-coral mt-auto w-full"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2
-                        className="size-3.5 animate-spin motion-reduce:animate-none mr-1.5"
-                        aria-hidden="true"
-                      />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate"
-                  )}
-                </Button>
-              )}
+                {!hasFrame && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleGenerate(config.type)}
+                    disabled={isDisabled}
+                    className="btn-coral mt-2 w-full h-7 text-xs"
+                  >
+                    {isGenerating ? "Generating..." : "Generate"}
+                  </Button>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
-
-      <p className="text-xs text-muted-foreground pt-2">
-        These frames appear in layout options when creating cards with this
-        style.
-      </p>
     </div>
   );
 }

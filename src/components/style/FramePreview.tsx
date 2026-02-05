@@ -22,7 +22,7 @@ export function FramePreview({
   };
 
   return (
-    <div className={`${sizeClasses[size]}`}>
+    <div className={`${sizeClasses[size]} mx-auto h-full`}>
       {/* Transparency grid with softer colors */}
       <div
         className={`relative ${aspectRatio} rounded-md overflow-hidden`}
@@ -50,7 +50,9 @@ export function FramePreview({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="w-8 h-8 mx-auto mb-1 rounded border-2 border-dashed border-muted-foreground/20" />
-              <span className="text-[10px] text-muted-foreground/50">Empty</span>
+              <span className="text-[10px] text-muted-foreground/50">
+                Empty
+              </span>
             </div>
           </div>
         )}
