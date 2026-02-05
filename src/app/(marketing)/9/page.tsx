@@ -1,205 +1,210 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 /**
- * DESIGN 9: TEEN MINIMAL
+ * DESIGN 9: ORBITAL / RADIAL
  *
- * Aesthetic: Ultra-clean, sophisticated, monochromatic with a single
- * accent color. Speaks to older adolescents (15-18) who appreciate
- * minimalism and don't want to be treated like children.
+ * Concept: Everything arranged in circles. Emotion cards orbit a center point.
+ * Radial menus, circular text, rotating elements. Feels like a solar system
+ * of emotions. Unique, mesmerizing, unforgettable navigation.
  *
- * Focus: Older teens
+ * Memorable element: The orbital card arrangement and circular layout
  */
 
-export default function TeenMinimalPage() {
-  return (
-    <div className="min-h-screen bg-white text-[#111]">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#111] focus:text-white focus:px-4 focus:py-2"
-      >
-        Skip to main content
-      </a>
+export default function OrbitalPage() {
+  const [rotation, setRotation] = useState(0);
+  const [activeOrbit, setActiveOrbit] = useState<number | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotation((r) => r + 0.1);
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  const emotions = [
+    { name: "Joy", color: "#E8B86D" },
+    { name: "Calm", color: "#7BA897" },
+    { name: "Sad", color: "#7B8FAF" },
+    { name: "Brave", color: "#AF7B8F" },
+    { name: "Worried", color: "#8FAF7B" },
+    { name: "Proud", color: "#D4956A" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] text-[#F5F0E8] overflow-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
-        <nav className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between border-b border-[#111]/5">
-          <Link href="/9" className="text-sm tracking-widest uppercase">
-            RB
+      <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex items-center justify-between">
+        <Link href="/9" className="text-sm tracking-[0.2em] uppercase opacity-60 hover:opacity-100">
+          Resource Builder
+        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/login" className="text-sm opacity-60 hover:opacity-100">
+            Login
           </Link>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/login"
-              className="text-xs tracking-wider text-[#111]/50 hover:text-[#111] transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="text-xs tracking-wider text-[#5B8C5A] hover:text-[#4A7349] transition-colors"
-            >
-              Start →
-            </Link>
-          </div>
-        </nav>
+          <Link
+            href="/signup"
+            className="text-sm px-5 py-2 rounded-full border border-[#F5F0E8]/30 hover:bg-[#F5F0E8] hover:text-[#0A0A0A] transition-colors"
+          >
+            Start Free
+          </Link>
+        </div>
       </header>
 
-      <main id="main">
-        {/* Hero */}
-        <section className="pt-32 pb-24 px-6">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-3xl md:text-4xl font-light leading-snug mb-6">
-              Therapy resources
-              <br />
-              <span className="text-[#5B8C5A]">without the cringe.</span>
-            </h1>
-            <p className="text-[#111]/50 max-w-md mb-10">
-              Create clean, minimal emotion cards for teen clients.
-              No cartoon animals. No baby colors.
-            </p>
+      <main className="min-h-screen flex items-center justify-center relative">
+        {/* Orbital rings */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {[200, 320, 440].map((size, i) => (
+            <div
+              key={size}
+              className="absolute rounded-full border border-[#F5F0E8]/5"
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                transform: `rotate(${rotation * (i % 2 === 0 ? 1 : -1) * 0.5}deg)`,
+              }}
+            />
+          ))}
+        </div>
 
-            <Link
-              href="/signup"
-              className="inline-block text-sm tracking-wider border-b border-[#111] pb-1 hover:text-[#5B8C5A] hover:border-[#5B8C5A] transition-colors"
+        {/* Center content */}
+        <div className="relative z-10 text-center">
+          {/* Center orb */}
+          <div
+            className="w-40 h-40 rounded-full mx-auto mb-8 flex items-center justify-center relative"
+            style={{
+              background: "radial-gradient(circle at 30% 30%, #D4956A, #8B5A2B)",
+              boxShadow: "0 0 60px rgba(212, 149, 106, 0.4), inset 0 0 30px rgba(0,0,0,0.3)",
+            }}
+          >
+            <span
+              className="text-2xl text-white font-light"
+              style={{ fontFamily: "Georgia, serif" }}
             >
-              Try free for 14 days
-            </Link>
+              Create
+            </span>
           </div>
-        </section>
 
-        {/* Minimal cards */}
-        <section className="py-16 px-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex gap-2 justify-center">
-              <div className="w-24 h-32 border border-[#111]/10 flex flex-col items-center justify-center">
-                <div className="w-10 h-10 rounded-full border border-[#111]/20 mb-2" />
-                <span className="text-[10px] tracking-wider text-[#111]/40 uppercase">Anxious</span>
-              </div>
-              <div className="w-24 h-32 bg-[#5B8C5A] flex flex-col items-center justify-center text-white">
-                <div className="w-10 h-10 rounded-full border border-white/30 mb-2" />
-                <span className="text-[10px] tracking-wider text-white/70 uppercase">Calm</span>
-              </div>
-              <div className="w-24 h-32 border border-[#111]/10 flex flex-col items-center justify-center">
-                <div className="w-10 h-10 rounded-full border border-[#111]/20 mb-2" />
-                <span className="text-[10px] tracking-wider text-[#111]/40 uppercase">Numb</span>
-              </div>
-              <div className="w-24 h-32 bg-[#111] flex flex-col items-center justify-center text-white">
-                <div className="w-10 h-10 rounded-full border border-white/20 mb-2" />
-                <span className="text-[10px] tracking-wider text-white/50 uppercase">Angry</span>
-              </div>
-            </div>
-          </div>
-        </section>
+          <h1
+            className="text-4xl md:text-6xl font-light mb-4"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
+            Emotion Cards
+          </h1>
+          <p className="text-lg opacity-50 mb-8">
+            Materials that orbit around healing.
+          </p>
 
-        {/* How */}
-        <section className="py-24 px-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-16">
-              <div>
-                <p className="text-[10px] tracking-widest text-[#5B8C5A] mb-3">01</p>
-                <p className="text-sm text-[#111]/70">
-                  Pick a minimal style or go custom. Your aesthetic, not ours.
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] tracking-widest text-[#5B8C5A] mb-3">02</p>
-                <p className="text-sm text-[#111]/70">
-                  Choose real emotions. Overwhelmed. Disconnected. Not just "sad."
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] tracking-widest text-[#5B8C5A] mb-3">03</p>
-                <p className="text-sm text-[#111]/70">
-                  Generate clean illustrations. Print. Use in sessions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+          <Link
+            href="/signup"
+            className="inline-block px-8 py-4 rounded-full bg-[#D4956A] text-[#0A0A0A] font-medium hover:scale-105 transition-transform"
+          >
+            Start Free Trial
+          </Link>
+        </div>
 
-        {/* Features */}
-        <section className="py-24 px-6 bg-[#FAFAFA]">
-          <div className="max-w-3xl mx-auto">
-            <p className="text-[10px] tracking-widest text-[#111]/30 mb-8 uppercase">
-              Why it works with teens
-            </p>
+        {/* Orbiting emotion cards */}
+        {emotions.map((emotion, i) => {
+          const angle = (i / emotions.length) * Math.PI * 2 + rotation * 0.02;
+          const radius = 280;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius * 0.4; // Elliptical orbit
+          const scale = (Math.sin(angle) + 2) / 3; // Depth effect
+          const zIndex = Math.round(scale * 10);
 
-            <div className="space-y-8">
-              <div className="flex gap-6">
-                <div className="w-1 bg-[#5B8C5A]" />
-                <div>
-                  <p className="font-medium mb-1">Respects their maturity</p>
-                  <p className="text-sm text-[#111]/50">
-                    Clean design that doesn't patronize. Teens notice when things are "for babies."
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-6">
-                <div className="w-1 bg-[#5B8C5A]" />
-                <div>
-                  <p className="font-medium mb-1">Complex emotions included</p>
-                  <p className="text-sm text-[#111]/50">
-                    Numbness. Disconnection. Burnout. The feelings teens actually experience.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-6">
-                <div className="w-1 bg-[#5B8C5A]" />
-                <div>
-                  <p className="font-medium mb-1">Physical materials</p>
-                  <p className="text-sm text-[#111]/50">
-                    Printed cards they can hold. A break from screens.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Quote */}
-        <section className="py-24 px-6">
-          <div className="max-w-2xl mx-auto">
-            <blockquote className="text-lg text-[#111]/70 mb-6">
-              "The minimal design actually gets buy-in from my older clients.
-              They don't roll their eyes at these."
-            </blockquote>
-            <p className="text-xs tracking-wider text-[#111]/30 uppercase">
-              — Adolescent Therapist
-            </p>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-24 px-6">
-          <div className="max-w-xl mx-auto text-center">
-            <p className="text-2xl font-light mb-8">
-              Resources that don't try too hard.
-            </p>
-            <Link
-              href="/signup"
-              className="inline-block px-8 py-3 bg-[#111] text-white text-sm tracking-wider hover:bg-[#5B8C5A] transition-colors"
+          return (
+            <div
+              key={emotion.name}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 cursor-pointer"
+              style={{
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${hoveredCard === emotion.name ? 1.2 : scale})`,
+                zIndex: hoveredCard === emotion.name ? 100 : zIndex,
+                opacity: scale * 0.7 + 0.3,
+              }}
+              onMouseEnter={() => setHoveredCard(emotion.name)}
+              onMouseLeave={() => setHoveredCard(null)}
             >
-              Start free
-            </Link>
-            <p className="mt-4 text-xs text-[#111]/30">
-              14 days · No card required
-            </p>
-          </div>
-        </section>
+              <div
+                className="w-24 h-32 rounded-xl flex flex-col items-center justify-center text-white shadow-xl"
+                style={{
+                  backgroundColor: emotion.color,
+                  boxShadow: hoveredCard === emotion.name
+                    ? `0 0 40px ${emotion.color}80`
+                    : `0 10px 30px rgba(0,0,0,0.3)`,
+                }}
+              >
+                <div className="w-12 h-12 rounded-full bg-white/20 mb-2" />
+                <span className="text-sm font-medium">{emotion.name}</span>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Feature orbits - smaller items */}
+        {["Style", "Generate", "Print", "Share"].map((feature, i) => {
+          const angle = (i / 4) * Math.PI * 2 - rotation * 0.01 + Math.PI / 4;
+          const radius = 420;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius * 0.3;
+
+          return (
+            <div
+              key={feature}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs tracking-widest uppercase opacity-40 hover:opacity-100 transition-opacity cursor-default"
+              style={{
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+              }}
+            >
+              {feature}
+            </div>
+          );
+        })}
       </main>
 
-      <footer className="py-8 px-6 border-t border-[#111]/5">
-        <div className="max-w-4xl mx-auto flex items-center justify-between text-xs text-[#111]/30">
-          <p>© 2025</p>
-          <nav>
-            <ul className="flex gap-6">
-              <li><Link href="/privacy" className="hover:text-[#111]">Privacy</Link></li>
-              <li><Link href="/terms" className="hover:text-[#111]">Terms</Link></li>
-            </ul>
-          </nav>
+      {/* Bottom arc info */}
+      <div className="fixed bottom-0 left-0 right-0 pb-8">
+        <div className="max-w-4xl mx-auto px-8">
+          {/* Curved text effect using SVG */}
+          <svg viewBox="0 0 800 100" className="w-full h-24 opacity-30">
+            <defs>
+              <path id="curve" d="M 0,100 Q 400,0 800,100" fill="transparent" />
+            </defs>
+            <text className="text-xs tracking-[0.5em] uppercase fill-current">
+              <textPath href="#curve" startOffset="50%" textAnchor="middle">
+                500+ Therapists • 20+ Emotions • 5 Style Presets • 14 Days Free
+              </textPath>
+            </text>
+          </svg>
         </div>
+      </div>
+
+      {/* Circular navigation hint */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <div className="w-16 h-16 rounded-full border border-[#F5F0E8]/20 flex items-center justify-center">
+          <div
+            className="w-8 h-8 rounded-full border-2 border-[#D4956A] border-t-transparent"
+            style={{ animation: "spin 2s linear infinite" }}
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="fixed bottom-8 left-8 z-50 text-xs opacity-30">
+        <nav className="flex gap-4">
+          <Link href="/privacy" className="hover:opacity-100">Privacy</Link>
+          <Link href="/terms" className="hover:opacity-100">Terms</Link>
+        </nav>
       </footer>
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
