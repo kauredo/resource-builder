@@ -14,7 +14,6 @@ import { CharacterStep } from "./steps/CharacterStep";
 import { LayoutOptionsStep } from "./steps/LayoutOptionsStep";
 import { GenerateReviewStep } from "./steps/GenerateReviewStep";
 import { ExportStep } from "./steps/ExportStep";
-import { STYLE_PRESETS } from "@/lib/style-presets";
 import type { EmotionCardContent, EmotionCardLayout, StylePreset } from "@/types";
 
 // Wizard state types
@@ -85,7 +84,7 @@ interface EmotionCardsWizardProps {
 export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsWizardProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialStyleName = searchParams.get("style");
+  const initialStyleId = searchParams.get("styleId") as Id<"styles"> | null;
   const user = useQuery(api.users.currentUser);
   const userCharacters = useQuery(
     api.characters.getUserCharacters,
@@ -102,6 +101,12 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
     existingResource?.styleId ? { styleId: existingResource.styleId } : "skip"
   );
 
+  // Query initial style from URL param (for "Use Style" button from styles page)
+  const initialStyle = useQuery(
+    api.styles.getStyle,
+    initialStyleId ? { styleId: initialStyleId } : "skip"
+  );
+
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
   const removeImagesFromResource = useMutation(api.resources.removeImagesFromResource);
@@ -112,6 +117,30 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [isNavigating, setIsNavigating] = useState(false);
   const hasInitializedEditMode = useRef(false);
+  const hasInitializedFromUrl = useRef(false);
+
+  // Initialize state from URL styleId param (e.g., from "Use Style" button)
+  useEffect(() => {
+    if (
+      initialStyleId &&
+      initialStyle &&
+      !editResourceId &&
+      !hasInitializedFromUrl.current &&
+      !state.styleId
+    ) {
+      hasInitializedFromUrl.current = true;
+      setState((prev) => ({
+        ...prev,
+        styleId: initialStyleId,
+        stylePreset: {
+          name: initialStyle.name,
+          colors: initialStyle.colors,
+          typography: initialStyle.typography,
+          illustrationStyle: initialStyle.illustrationStyle,
+        },
+      }));
+    }
+  }, [initialStyleId, initialStyle, editResourceId, state.styleId]);
 
   // Initialize state from existing resource in edit mode
   useEffect(() => {
@@ -315,7 +344,6 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
             styleId={state.styleId}
             stylePreset={state.stylePreset}
             onUpdate={updateState}
-            initialStyleName={initialStyleName}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
             isEditMode={state.isEditMode}
           />
@@ -344,6 +372,7 @@ export function EmotionCardsWizard({ resourceId: editResourceId }: EmotionCardsW
             includeTextInImage={state.includeTextInImage}
             onUpdate={updateState}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
+            styleId={state.styleId}
           />
         );
       case 4:

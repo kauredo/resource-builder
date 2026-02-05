@@ -1,19 +1,23 @@
 "use client";
 
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText, ImageIcon } from "lucide-react";
+import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText, ImageIcon, Frame, SeparatorHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTip } from "@/components/onboarding/HelpTip";
-import type { EmotionCardLayout } from "@/types";
+import type { EmotionCardLayout, StyleFrames } from "@/types";
 import type { WizardState } from "../EmotionCardsWizard";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 
 interface LayoutOptionsStepProps {
   layout: EmotionCardLayout;
   includeTextInImage: boolean;
   onUpdate: (updates: Partial<WizardState>) => void;
   isFirstTimeUser?: boolean;
+  styleId?: Id<"styles"> | null;
 }
 
 const CARDS_PER_PAGE_OPTIONS = [
@@ -42,10 +46,29 @@ export function LayoutOptionsStep({
   includeTextInImage,
   onUpdate,
   isFirstTimeUser = true,
+  styleId,
 }: LayoutOptionsStepProps) {
+  // Query style with frames if styleId is provided
+  const style = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    styleId ? { styleId } : "skip"
+  );
+
+  const frames = style?.frames as StyleFrames | undefined;
+  const hasAnyFrames = frames && (frames.border || frames.divider || frames.textBacking);
+
   const updateLayout = (updates: Partial<EmotionCardLayout>) => {
     onUpdate({
       layout: { ...layout, ...updates },
+    });
+  };
+
+  const updateFrameUsage = (frameType: keyof NonNullable<EmotionCardLayout["useFrames"]>, enabled: boolean) => {
+    updateLayout({
+      useFrames: {
+        ...layout.useFrames,
+        [frameType]: enabled,
+      },
     });
   };
 
@@ -179,6 +202,82 @@ export function LayoutOptionsStep({
           </label>
         </div>
       </section>
+
+      {/* Frame options - only show if style has frames */}
+      {hasAnyFrames && (
+        <section>
+          <Label className="text-base font-medium mb-4 block">
+            Decorative Frames
+          </Label>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add decorative elements from your style to enhance the cards.
+          </p>
+          <div className="space-y-4">
+            {frames?.border && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={layout.useFrames?.border ?? false}
+                  onCheckedChange={(checked) =>
+                    updateFrameUsage("border", checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Frame className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-medium">Border frame</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Wrap each card with a decorative border.
+                  </p>
+                </div>
+              </label>
+            )}
+
+            {frames?.divider && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={layout.useFrames?.divider ?? false}
+                  onCheckedChange={(checked) =>
+                    updateFrameUsage("divider", checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <SeparatorHorizontal className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-medium">Divider</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Add a decorative line between image and text.
+                  </p>
+                </div>
+              </label>
+            )}
+
+            {frames?.textBacking && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={layout.useFrames?.textBacking ?? false}
+                  onCheckedChange={(checked) =>
+                    updateFrameUsage("textBacking", checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Type className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-medium">Text backing</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Place a decorative shape behind the label text.
+                  </p>
+                </div>
+              </label>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Preview */}
       <section className="pt-4 border-t">

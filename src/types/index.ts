@@ -70,12 +70,33 @@ export interface EmotionCardLayout {
   cardSize: "small" | "medium" | "large";
   showLabels: boolean;
   showDescriptions: boolean;
+  // Frame settings
+  useFrames?: {
+    border?: boolean;
+    divider?: boolean;
+    textBacking?: boolean;
+  };
 }
 
 export interface EmotionCardContent {
   cards: EmotionCard[];
   layout: EmotionCardLayout;
 }
+
+// Frame asset types
+export interface FrameAsset {
+  storageId: string;
+  prompt: string;
+  generatedAt: number;
+}
+
+export interface StyleFrames {
+  border?: FrameAsset;
+  divider?: FrameAsset;
+  textBacking?: FrameAsset;
+}
+
+export type FrameType = "border" | "divider" | "textBacking";
 
 // Resource types
 export type ResourceType =

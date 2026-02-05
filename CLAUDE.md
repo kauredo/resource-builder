@@ -300,7 +300,7 @@ motion-reduce:transition-none            # Accessibility
 
 For each major page or feature:
 
-1. **`/frontend-design`** — Get aesthetic direction before coding. Establishes visual tone, layout approach, and differentiation.
+1. **`/frontend-design`** — Get aesthetic direction before coding. Establishes visual tone, layout approach, and differentiation. **ALWAYS USE when creating frontend components. Extremely important!**
 2. **Build** — Implement with that direction in mind.
 3. **`/interface-guidelines`** — Verify interactions, keyboard support, form behavior.
 4. **`/critique`** — Holistic design critique. Does it actually work? Is it memorable?

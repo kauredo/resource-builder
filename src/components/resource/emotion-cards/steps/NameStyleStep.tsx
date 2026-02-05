@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -8,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StylePicker } from "../StylePicker";
 import { StylePreset } from "@/types";
-import { STYLE_PRESETS } from "@/lib/style-presets";
 import { HelpTip } from "@/components/onboarding/HelpTip";
 import { Lock } from "lucide-react";
 import type { WizardState } from "../EmotionCardsWizard";
@@ -18,7 +16,6 @@ interface NameStyleStepProps {
   styleId: Id<"styles"> | null;
   stylePreset: StylePreset | null;
   onUpdate: (updates: Partial<WizardState>) => void;
-  initialStyleName?: string | null;
   isFirstTimeUser?: boolean;
   isEditMode?: boolean;
 }
@@ -28,28 +25,10 @@ export function NameStyleStep({
   styleId,
   stylePreset,
   onUpdate,
-  initialStyleName,
   isFirstTimeUser = true,
   isEditMode = false,
 }: NameStyleStepProps) {
   const user = useQuery(api.users.currentUser);
-  const hasAppliedInitialStyle = useRef(false);
-
-  // Auto-select initial style from URL param (only once)
-  useEffect(() => {
-    if (
-      initialStyleName &&
-      !hasAppliedInitialStyle.current &&
-      !stylePreset
-    ) {
-      const preset = STYLE_PRESETS.find((p) => p.name === initialStyleName);
-      if (preset) {
-        hasAppliedInitialStyle.current = true;
-        // Just set the preset data - no DB record needed
-        onUpdate({ styleId: null, stylePreset: preset });
-      }
-    }
-  }, [initialStyleName, stylePreset, onUpdate]);
 
   const handleStyleSelect = (
     selectedStyleId: Id<"styles"> | null,

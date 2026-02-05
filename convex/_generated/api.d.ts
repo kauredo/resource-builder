@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as characters from "../characters.js";
+import type * as frames from "../frames.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as resources from "../resources.js";
@@ -25,6 +26,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   characters: typeof characters;
+  frames: typeof frames;
   http: typeof http;
   images: typeof images;
   resources: typeof resources;

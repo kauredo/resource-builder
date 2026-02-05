@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { STYLE_PRESETS } from "@/lib/style-presets";
 import { ArrowRight } from "lucide-react";
 
 const WELCOME_SEEN_KEY = "resource-builder-welcome-seen";
@@ -18,6 +20,7 @@ const WELCOME_SEEN_KEY = "resource-builder-welcome-seen";
 interface WelcomeModalProps {
   userName?: string;
   hasResources: boolean;
+  userId?: Id<"users">;
 }
 
 function StylePresetChip({
@@ -63,10 +66,17 @@ function StylePresetChip({
   );
 }
 
-export function WelcomeModal({ userName, hasResources }: WelcomeModalProps) {
+export function WelcomeModal({ userName, hasResources, userId }: WelcomeModalProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [selectedStyleId, setSelectedStyleId] = useState<Id<"styles"> | null>(null);
+
+  // Query user's styles (including presets) - same source as /dashboard/styles
+  const userStyles = useQuery(
+    api.styles.getUserStyles,
+    userId ? { userId } : "skip"
+  );
+  const presetStyles = userStyles?.filter(s => s.isPreset) ?? [];
 
   // Check if we should show the modal
   useEffect(() => {
@@ -90,9 +100,9 @@ export function WelcomeModal({ userName, hasResources }: WelcomeModalProps) {
   const handleStartCreating = () => {
     localStorage.setItem(WELCOME_SEEN_KEY, "true");
     setIsOpen(false);
-    // Pass selected preset to wizard if one was chosen
-    const url = selectedPreset
-      ? `/dashboard/resources/new/emotion-cards?style=${encodeURIComponent(selectedPreset)}`
+    // Pass selected style ID to wizard if one was chosen
+    const url = selectedStyleId
+      ? `/dashboard/resources/new/emotion-cards?styleId=${selectedStyleId}`
       : "/dashboard/resources/new/emotion-cards";
     router.push(url);
   };
@@ -121,13 +131,13 @@ export function WelcomeModal({ userName, hasResources }: WelcomeModalProps) {
             Pick a visual style that feels right:
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {STYLE_PRESETS.map((preset) => (
+            {presetStyles.map((style) => (
               <StylePresetChip
-                key={preset.name}
-                name={preset.name}
-                colors={preset.colors}
-                isSelected={selectedPreset === preset.name}
-                onClick={() => setSelectedPreset(preset.name)}
+                key={style._id}
+                name={style.name}
+                colors={style.colors}
+                isSelected={selectedStyleId === style._id}
+                onClick={() => setSelectedStyleId(style._id)}
               />
             ))}
           </div>

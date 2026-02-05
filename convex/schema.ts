@@ -36,7 +36,26 @@ export default defineSchema({
       bodyFont: v.string(),
     }),
     illustrationStyle: v.string(),
+    // Frame assets for card decoration
+    frames: v.optional(v.object({
+      border: v.optional(v.object({
+        storageId: v.id("_storage"),
+        prompt: v.string(),
+        generatedAt: v.number(),
+      })),
+      divider: v.optional(v.object({
+        storageId: v.id("_storage"),
+        prompt: v.string(),
+        generatedAt: v.number(),
+      })),
+      textBacking: v.optional(v.object({
+        storageId: v.id("_storage"),
+        prompt: v.string(),
+        generatedAt: v.number(),
+      })),
+    })),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   characters: defineTable({
