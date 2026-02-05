@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames } from "@/types";
+import { useGoogleFonts } from "@/lib/fonts";
 
 interface StyleCardProps {
   id: Id<"styles">;
@@ -49,8 +50,16 @@ export function StyleCard({
   frames,
   updatedAt,
 }: StyleCardProps) {
-  const hasFrames = frames && (frames.border || frames.divider || frames.textBacking);
-  const frameCount = [frames?.border, frames?.divider, frames?.textBacking].filter(Boolean).length;
+  // Load Google Fonts for typography preview
+  useGoogleFonts([typography.headingFont, typography.bodyFont]);
+
+  const hasFrames =
+    frames && (frames.border || frames.textBacking || frames.fullCard);
+  const frameCount = [
+    frames?.border,
+    frames?.textBacking,
+    frames?.fullCard,
+  ].filter(Boolean).length;
 
   return (
     <Link
@@ -61,10 +70,16 @@ export function StyleCard({
         {/* Color bar - the palette at a glance */}
         <div className="flex h-3 rounded-t-lg overflow-hidden">
           <div className="flex-1" style={{ backgroundColor: colors.primary }} />
-          <div className="flex-1" style={{ backgroundColor: colors.secondary }} />
+          <div
+            className="flex-1"
+            style={{ backgroundColor: colors.secondary }}
+          />
           <div className="flex-1" style={{ backgroundColor: colors.accent }} />
           <div className="flex-1" style={{ backgroundColor: colors.text }} />
-          <div className="flex-1" style={{ backgroundColor: colors.background }} />
+          <div
+            className="flex-1"
+            style={{ backgroundColor: colors.background }}
+          />
         </div>
 
         {/* Card body */}
@@ -80,7 +95,7 @@ export function StyleCard({
               color: colors.text,
             }}
           >
-            Feelings can be
+            {name}
           </p>
           <p
             className="text-sm mt-0.5"
@@ -90,11 +105,11 @@ export function StyleCard({
               opacity: 0.7,
             }}
           >
-            expressed in many ways
+            Feelings can be expressed in many ways
           </p>
 
           {/* Badges row */}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mt-8">
             {isPreset && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
@@ -118,22 +133,15 @@ export function StyleCard({
                 {frameCount} frame{frameCount !== 1 ? "s" : ""}
               </span>
             )}
+            {updatedAt && (
+              <time
+                dateTime={new Date(updatedAt).toISOString()}
+                className="text-xs text-muted-foreground tabular-nums"
+              >
+                {formatRelativeDate(updatedAt)}
+              </time>
+            )}
           </div>
-        </div>
-
-        {/* Metadata below */}
-        <div className="flex items-center justify-between mt-2 px-0.5">
-          <span className="text-sm font-medium text-foreground group-hover:text-coral transition-colors duration-150 motion-reduce:transition-none">
-            {name}
-          </span>
-          {updatedAt && (
-            <time
-              dateTime={new Date(updatedAt).toISOString()}
-              className="text-xs text-muted-foreground tabular-nums"
-            >
-              {formatRelativeDate(updatedAt)}
-            </time>
-          )}
         </div>
       </article>
     </Link>

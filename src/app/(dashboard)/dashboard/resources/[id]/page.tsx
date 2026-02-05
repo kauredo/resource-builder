@@ -4,8 +4,8 @@ import { useState, useCallback, use } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { api } from "../../../../../../convex/_generated/api";
+import { CardPreview } from "@/components/resource/emotion-cards/CardPreview";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,14 +24,24 @@ import {
   Download,
   Pencil,
   Trash2,
-  FileText,
   Loader2,
   Check,
   Calendar,
   Layers,
+  Lock,
+  Frame,
+  Type,
+  ChevronRight,
+  FileText,
 } from "lucide-react";
-import { generateEmotionCardsPDF, PDFLayoutOptions } from "@/lib/pdf";
-import type { EmotionCardContent } from "@/types";
+import {
+  generateEmotionCardsPDF,
+  PDFLayoutOptions,
+  PDFStyleOptions,
+  PDFFrameOptions,
+} from "@/lib/pdf";
+import { getEmotionDescription } from "@/lib/emotions";
+import type { EmotionCardContent, StyleFrames } from "@/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -45,10 +55,12 @@ export default function ResourceDetailPage({ params }: PageProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const resourceId = resolvedParams.id as Id<"resources">;
-  const resource = useQuery(api.resources.getResourceWithImages, { resourceId });
+  const resource = useQuery(api.resources.getResourceWithImages, {
+    resourceId,
+  });
   const style = useQuery(
-    api.styles.getStyle,
-    resource?.styleId ? { styleId: resource.styleId } : "skip"
+    api.styles.getStyleWithFrameUrls,
+    resource?.styleId ? { styleId: resource.styleId } : "skip",
   );
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
@@ -61,8 +73,10 @@ export default function ResourceDetailPage({ params }: PageProps) {
 
     try {
       const content = resource.content as EmotionCardContent;
-      const cards = content.cards.map((card) => {
-        const image = resource.images.find((img) => img.description === card.emotion);
+      const cards = content.cards.map(card => {
+        const image = resource.images.find(
+          img => img.description === card.emotion,
+        );
         return {
           emotion: card.emotion,
           description: card.description || getEmotionDescription(card.emotion),
@@ -76,9 +90,33 @@ export default function ResourceDetailPage({ params }: PageProps) {
         showLabels: content.layout.showLabels,
         showDescriptions: content.layout.showDescriptions,
         showCutLines: true,
+        useFrames: content.layout.useFrames,
       };
 
-      const blob = await generateEmotionCardsPDF(cards, options);
+      // Build style options from queried style
+      const styleOptions: PDFStyleOptions | undefined = style
+        ? {
+            colors: style.colors,
+            typography: style.typography,
+          }
+        : undefined;
+
+      // Build frame options from resolved URLs
+      const frameOptions: PDFFrameOptions | undefined =
+        style?.frameUrls && content.layout.useFrames
+          ? {
+              borderUrl: style.frameUrls.border ?? undefined,
+              textBackingUrl: style.frameUrls.textBacking ?? undefined,
+              fullCardUrl: style.frameUrls.fullCard ?? undefined,
+            }
+          : undefined;
+
+      const blob = await generateEmotionCardsPDF(
+        cards,
+        options,
+        styleOptions,
+        frameOptions,
+      );
       const url = URL.createObjectURL(blob);
 
       // Trigger download
@@ -105,7 +143,7 @@ export default function ResourceDetailPage({ params }: PageProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, updateResource]);
+  }, [resource, style, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -121,7 +159,11 @@ export default function ResourceDetailPage({ params }: PageProps) {
 
   if (resource === undefined) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="status" aria-label="Loading resource">
+      <div
+        className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        role="status"
+        aria-label="Loading resource"
+      >
         {/* Skeleton header */}
         <div className="mb-8" aria-hidden="true">
           <div className="h-4 w-20 bg-muted rounded animate-pulse motion-reduce:animate-none mb-4" />
@@ -138,8 +180,14 @@ export default function ResourceDetailPage({ params }: PageProps) {
           </div>
         </div>
         {/* Skeleton grid */}
-        <div className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-4" aria-hidden="true" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5" aria-hidden="true">
+        <div
+          className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-4"
+          aria-hidden="true"
+        />
+        <div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+          aria-hidden="true"
+        >
           {[...Array(6)].map((_, i) => (
             <div key={i} className="rounded-xl border bg-card overflow-hidden">
               <div className="aspect-square bg-muted animate-pulse motion-reduce:animate-none" />
@@ -157,7 +205,9 @@ export default function ResourceDetailPage({ params }: PageProps) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center py-16">
-          <h1 className="font-serif text-2xl font-medium mb-2">Resource not found</h1>
+          <h1 className="font-serif text-2xl font-medium mb-2">
+            Resource not found
+          </h1>
           <p className="text-muted-foreground mb-6">
             This resource may have been deleted or doesn&apos;t exist.
           </p>
@@ -214,7 +264,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Layers className="size-4" aria-hidden="true" />
-                <span className="tabular-nums">{cardCount}</span> card{cardCount !== 1 ? "s" : ""}
+                <span className="tabular-nums">{cardCount}</span> card
+                {cardCount !== 1 ? "s" : ""}
               </span>
               <time
                 className="flex items-center gap-1.5"
@@ -240,7 +291,10 @@ export default function ResourceDetailPage({ params }: PageProps) {
             >
               {isGeneratingPDF ? (
                 <>
-                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                  <Loader2
+                    className="size-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
                   Download PDF
                 </>
               ) : pdfReady ? (
@@ -265,7 +319,11 @@ export default function ResourceDetailPage({ params }: PageProps) {
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="icon" className="text-muted-foreground hover:text-destructive hover:border-destructive/40">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                >
                   <Trash2 className="size-4" aria-hidden="true" />
                   <span className="sr-only">Delete resource</span>
                 </Button>
@@ -274,8 +332,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete this deck?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete &ldquo;{resource.name}&rdquo; and all its generated images.
-                    This action cannot be undone.
+                    This will permanently delete &ldquo;{resource.name}&rdquo;
+                    and all its generated images. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -286,7 +344,10 @@ export default function ResourceDetailPage({ params }: PageProps) {
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
                   >
                     {isDeleting && (
-                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                      <Loader2
+                        className="size-4 animate-spin motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
                     )}
                     Delete
                   </AlertDialogAction>
@@ -307,11 +368,21 @@ export default function ResourceDetailPage({ params }: PageProps) {
             <div>
               <p className="font-medium text-foreground">Your deck is ready</p>
               <p className="text-sm text-muted-foreground">
-                {cardCount} cards · {content.layout.cardsPerPage} per page · {content.layout.showLabels ? "Labels shown" : "No labels"}
+                {cardCount} cards · {content.layout.cardsPerPage} per page ·{" "}
+                {content.layout.showLabels ? "Labels shown" : "No labels"}
               </p>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Style Specification */}
+      {style && (
+        <StyleSpecification
+          style={style}
+          layout={content.layout}
+          resourceStyleId={resource.styleId}
+        />
       )}
 
       {/* Card grid */}
@@ -320,34 +391,15 @@ export default function ResourceDetailPage({ params }: PageProps) {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Emotion Cards
           </h2>
-          {/* Style info inline */}
-          {style && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="flex gap-1" role="img" aria-label={`${style.name} style`}>
-                <div
-                  className="size-4 rounded"
-                  style={{ backgroundColor: style.colors.primary }}
-                />
-                <div
-                  className="size-4 rounded"
-                  style={{ backgroundColor: style.colors.secondary }}
-                />
-                <div
-                  className="size-4 rounded"
-                  style={{ backgroundColor: style.colors.accent }}
-                />
-              </div>
-              <span>{style.name}</span>
-            </div>
-          )}
         </div>
 
         {generatedCount === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-border/60 bg-muted/30 py-12 text-center">
-            <FileText className="size-8 text-muted-foreground/50 mx-auto mb-3" aria-hidden="true" />
-            <p className="text-muted-foreground mb-4">
-              No cards generated yet
-            </p>
+            <FileText
+              className="size-8 text-muted-foreground/50 mx-auto mb-3"
+              aria-hidden="true"
+            />
+            <p className="text-muted-foreground mb-4">No cards generated yet</p>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 Generate Cards
@@ -355,66 +407,327 @@ export default function ResourceDetailPage({ params }: PageProps) {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {content.cards.map((card) => {
-              const image = resource.images.find((img) => img.description === card.emotion);
-              return (
-                <div
-                  key={card.emotion}
-                  className="group rounded-2xl border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 motion-reduce:transition-none"
-                >
-                  <div className="aspect-square relative bg-muted/50">
-                    {image?.url ? (
-                      <Image
-                        src={image.url}
-                        alt={`${card.emotion} emotion card`}
-                        fill
-                        className="object-cover group-hover:scale-[1.02] transition-transform duration-200 motion-reduce:group-hover:scale-100 motion-reduce:transition-none"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/50">
-                        <FileText className="size-10" aria-hidden="true" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="px-3 py-2.5 text-center border-t border-border/50">
-                    <p className="font-medium text-sm">{card.emotion}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <StyledCardGrid
+            cards={content.cards}
+            images={resource.images}
+            layout={content.layout}
+            style={style}
+          />
         )}
       </div>
     </div>
   );
 }
 
-// Helper function to get emotion descriptions
-function getEmotionDescription(emotion: string): string {
-  const descriptions: Record<string, string> = {
-    Happy: "Feeling joyful and content",
-    Sad: "Feeling down or unhappy",
-    Angry: "Feeling frustrated or mad",
-    Scared: "Feeling afraid or worried",
-    Surprised: "Feeling amazed or startled",
-    Disgusted: "Feeling repulsed or dislike",
-    Excited: "Feeling enthusiastic and eager",
-    Calm: "Feeling peaceful and relaxed",
-    Worried: "Feeling anxious about something",
-    Frustrated: "Feeling stuck or annoyed",
-    Proud: "Feeling good about an achievement",
-    Embarrassed: "Feeling self-conscious",
-    Disappointed: "Feeling let down",
-    Overwhelmed: "Feeling too much at once",
-    Lonely: "Feeling alone or isolated",
-    Confused: "Feeling uncertain or puzzled",
-    Jealous: "Wanting what others have",
-    Hopeful: "Feeling optimistic about the future",
-    Grateful: "Feeling thankful and appreciative",
-    Nervous: "Feeling uneasy or anxious",
+// Style Specification Component
+interface StyleSpecificationProps {
+  style: {
+    _id: Id<"styles">;
+    name: string;
+    isPreset: boolean;
+    colors: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      background: string;
+      text: string;
+    };
+    typography: {
+      headingFont: string;
+      bodyFont: string;
+    };
+    illustrationStyle: string;
+    frames?: StyleFrames;
+    frameUrls?: {
+      border?: string | null;
+      textBacking?: string | null;
+      fullCard?: string | null;
+    };
   };
+  layout: EmotionCardContent["layout"];
+  resourceStyleId: Id<"styles">;
+}
 
-  return descriptions[emotion] || `Experiencing ${emotion.toLowerCase()}`;
+function StyleSpecification({
+  style,
+  layout,
+  resourceStyleId,
+}: StyleSpecificationProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Count active frames
+  const frameCount = [
+    style.frames?.border,
+    style.frames?.textBacking,
+    style.frames?.fullCard,
+  ].filter(Boolean).length;
+
+  // Count frames enabled on this resource
+  const enabledFrameCount = layout.useFrames
+    ? [
+        layout.useFrames.border && style.frames?.border,
+        layout.useFrames.textBacking && style.frames?.textBacking,
+        layout.useFrames.fullCard && style.frames?.fullCard,
+      ].filter(Boolean).length
+    : 0;
+
+  const colorEntries = [
+    { label: "Primary", value: style.colors.primary },
+    { label: "Secondary", value: style.colors.secondary },
+    { label: "Accent", value: style.colors.accent },
+    { label: "Background", value: style.colors.background },
+    { label: "Text", value: style.colors.text },
+  ];
+
+  return (
+    <div className="mb-8">
+      {/* Compact clickable header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded-lg"
+        aria-expanded={isExpanded}
+        aria-controls="style-details"
+      >
+        <div className="flex items-center gap-4 py-3">
+          {/* Color strip */}
+          <div
+            className="flex h-8 w-28 rounded-md overflow-hidden shrink-0 ring-1 ring-border/50"
+            role="img"
+            aria-label={`${style.name} color palette`}
+          >
+            {colorEntries.map(({ label, value }) => (
+              <div
+                key={label}
+                className="flex-1"
+                style={{ backgroundColor: value }}
+                title={`${label}: ${value}`}
+              />
+            ))}
+          </div>
+
+          {/* Style info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-foreground truncate">
+                {style.name}
+              </span>
+              {style.isPreset && (
+                <Lock
+                  className="size-3 text-muted-foreground shrink-0"
+                  aria-label="Preset style"
+                />
+              )}
+              {enabledFrameCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                  <Frame className="size-3" aria-hidden="true" />
+                  {enabledFrameCount}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground truncate">
+              {style.typography.headingFont} / {style.typography.bodyFont}
+            </p>
+          </div>
+
+          {/* Expand indicator */}
+          <ChevronRight
+            className={`size-4 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none ${
+              isExpanded ? "rotate-90" : ""
+            }`}
+            aria-hidden="true"
+          />
+        </div>
+      </button>
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <div
+          id="style-details"
+          className="border rounded-lg p-4 mt-2 space-y-4 animate-in slide-in-from-top-2 duration-150 motion-reduce:animate-none"
+          style={{
+            backgroundColor: `color-mix(in oklch, ${style.colors.background} 30%, transparent)`,
+          }}
+        >
+          {/* Colors with labels */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Color Palette
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {colorEntries.map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <div
+                    className="size-6 rounded ring-1 ring-border/50"
+                    style={{ backgroundColor: value }}
+                  />
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="ml-1.5 font-mono text-xs text-foreground/70">
+                      {value}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Typography
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Type
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="text-sm">
+                  <span className="font-medium">
+                    {style.typography.headingFont}
+                  </span>
+                  <span className="text-muted-foreground"> headings</span>
+                </span>
+              </div>
+              <span className="text-muted-foreground/50">·</span>
+              <span className="text-sm">
+                <span className="font-medium">{style.typography.bodyFont}</span>
+                <span className="text-muted-foreground"> body</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Frames */}
+          {frameCount > 0 && (
+            <div>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Frame Assets
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {style.frames?.border && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
+                      layout.useFrames?.border
+                        ? "bg-teal/10 text-teal"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {layout.useFrames?.border && (
+                      <Check className="size-3" aria-hidden="true" />
+                    )}
+                    Border
+                  </span>
+                )}
+                {style.frames?.textBacking && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
+                      layout.useFrames?.textBacking
+                        ? "bg-teal/10 text-teal"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {layout.useFrames?.textBacking && (
+                      <Check className="size-3" aria-hidden="true" />
+                    )}
+                    Text Backing
+                  </span>
+                )}
+                {style.frames?.fullCard && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
+                      layout.useFrames?.fullCard
+                        ? "bg-teal/10 text-teal"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {layout.useFrames?.fullCard && (
+                      <Check className="size-3" aria-hidden="true" />
+                    )}
+                    Full Card
+                  </span>
+                )}
+              </div>
+              {enabledFrameCount === 0 && frameCount > 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Frames available but not enabled for this deck
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Illustration style */}
+          <div>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              Illustration Style
+            </h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {style.illustrationStyle}
+            </p>
+          </div>
+
+          {/* Link to style */}
+          <div className="pt-2 border-t border-border/50">
+            <Link
+              href={`/dashboard/styles/${resourceStyleId}`}
+              className="inline-flex items-center gap-1 text-sm text-coral hover:text-coral/80 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+            >
+              View full style
+              <ChevronRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Styled Card Grid Component - uses CardPreview for consistent rendering
+interface StyledCardGridProps {
+  cards: Array<{ emotion: string; description: string }>;
+  images: Array<{ description: string; url?: string | null }>;
+  layout: EmotionCardContent["layout"];
+  style?: {
+    colors: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      background: string;
+      text: string;
+    };
+    typography: {
+      headingFont: string;
+      bodyFont: string;
+    };
+    frameUrls?: {
+      border?: string | null;
+      textBacking?: string | null;
+      fullCard?: string | null;
+    };
+  } | null;
+}
+
+function StyledCardGrid({ cards, images, layout, style }: StyledCardGridProps) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      {cards.map(card => {
+        const image = images.find(img => img.description === card.emotion);
+        return (
+          <CardPreview
+            key={card.emotion}
+            emotion={card.emotion}
+            imageUrl={image?.url ?? null}
+            isGenerating={false}
+            hasError={false}
+            showLabel={layout.showLabels}
+            showDescription={layout.showDescriptions}
+            description={card.description}
+            cardsPerPage={layout.cardsPerPage}
+            style={style ?? undefined}
+            frameUrls={style?.frameUrls}
+            useFrames={layout.useFrames}
+          />
+        );
+      })}
+    </div>
+  );
 }

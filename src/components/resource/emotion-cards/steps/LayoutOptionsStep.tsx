@@ -5,9 +5,10 @@ import { api } from "../../../../../convex/_generated/api";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText, ImageIcon, Frame, SeparatorHorizontal } from "lucide-react";
+import { Grid2x2, Grid3x3, LayoutGrid, Type, FileText, ImageIcon, Frame, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTip } from "@/components/onboarding/HelpTip";
+import { useGoogleFonts } from "@/lib/fonts";
 import type { EmotionCardLayout, StyleFrames } from "@/types";
 import type { WizardState } from "../EmotionCardsWizard";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -55,7 +56,24 @@ export function LayoutOptionsStep({
   );
 
   const frames = style?.frames as StyleFrames | undefined;
-  const hasAnyFrames = frames && (frames.border || frames.divider || frames.textBacking);
+  const hasAnyFrames = frames && (frames.border || frames.textBacking || frames.fullCard);
+
+  // Load fonts for preview
+  const fontsToLoad = style
+    ? [style.typography.headingFont, style.typography.bodyFont]
+    : [];
+  useGoogleFonts(fontsToLoad);
+
+  // Style values for preview (with defaults)
+  const previewColors = {
+    primary: style?.colors.primary ?? "#FF6B6B",
+    secondary: style?.colors.secondary ?? "#4ECDC4",
+    background: style?.colors.background ?? "#FAFAFA",
+    text: style?.colors.text ?? "#1A1A1A",
+  };
+  const previewTypography = {
+    headingFont: style?.typography.headingFont ?? "system-ui",
+  };
 
   const updateLayout = (updates: Partial<EmotionCardLayout>) => {
     onUpdate({
@@ -234,27 +252,6 @@ export function LayoutOptionsStep({
               </label>
             )}
 
-            {frames?.divider && (
-              <label className="flex items-start gap-3 cursor-pointer">
-                <Checkbox
-                  checked={layout.useFrames?.divider ?? false}
-                  onCheckedChange={(checked) =>
-                    updateFrameUsage("divider", checked === true)
-                  }
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <SeparatorHorizontal className="size-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="font-medium">Divider</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Add a decorative line between image and text.
-                  </p>
-                </div>
-              </label>
-            )}
-
             {frames?.textBacking && (
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox
@@ -271,6 +268,27 @@ export function LayoutOptionsStep({
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Place a decorative shape behind the label text.
+                  </p>
+                </div>
+              </label>
+            )}
+
+            {frames?.fullCard && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={layout.useFrames?.fullCard ?? false}
+                  onCheckedChange={(checked) =>
+                    updateFrameUsage("fullCard", checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Layers className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-medium">Full card template</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Use a complete trading card frame with built-in text area.
                   </p>
                 </div>
               </label>
@@ -295,20 +313,83 @@ export function LayoutOptionsStep({
               padding: "12px",
             }}
           >
-            {Array.from({ length: layout.cardsPerPage }).map((_, i) => (
+            {Array.from({ length: layout.cardsPerPage }).map((_, i) => {
+              const hasContent = layout.showLabels || layout.showDescriptions;
+              return (
               <div
                 key={i}
-                className="rounded-md border border-dashed border-border/60 bg-muted/30 flex flex-col items-center justify-center p-1.5"
+                className="rounded-md overflow-hidden flex flex-col relative"
+                style={{
+                  backgroundColor: previewColors.background,
+                  border: `1px solid ${previewColors.text}20`,
+                }}
               >
-                <div className="w-full aspect-square bg-coral/15 rounded mb-1.5" />
-                {layout.showLabels && (
-                  <div className="w-3/4 h-2 bg-muted rounded" />
+                {/* Image placeholder - 75% height when content shown, 100% otherwise */}
+                <div
+                  className="w-full relative"
+                  style={{
+                    backgroundColor: previewColors.primary + "25",
+                    height: hasContent ? "75%" : "100%",
+                  }}
+                />
+                {/* Content area - 25% height */}
+                {hasContent && (
+                  <div
+                    className="flex flex-col items-center justify-center p-1 relative"
+                    style={{
+                      borderTop: `1px solid ${previewColors.text}10`,
+                      height: "25%",
+                    }}
+                  >
+                    {/* Text backing indicator */}
+                    {layout.useFrames?.textBacking && frames?.textBacking && (
+                      <div
+                        className="absolute inset-x-1 top-1/2 -translate-y-1/2 h-[60%] rounded-sm"
+                        style={{ backgroundColor: previewColors.secondary + "40" }}
+                      />
+                    )}
+                    {layout.showLabels && (
+                      <div
+                        className="text-[6px] sm:text-[7px] font-medium text-center truncate w-full px-0.5 relative z-10"
+                        style={{
+                          color: previewColors.text,
+                          fontFamily: `"${previewTypography.headingFont}", system-ui`,
+                        }}
+                      >
+                        Emotion
+                      </div>
+                    )}
+                    {layout.showDescriptions && (
+                      <div
+                        className="w-2/3 h-1 rounded mt-0.5 relative z-10"
+                        style={{ backgroundColor: previewColors.text + "30" }}
+                      />
+                    )}
+                  </div>
                 )}
-                {layout.showDescriptions && (
-                  <div className="w-2/3 h-1.5 bg-muted/70 rounded mt-1" />
+                {/* Border frame indicator */}
+                {layout.useFrames?.border && frames?.border && !layout.useFrames?.fullCard && (
+                  <div
+                    className="absolute inset-0 rounded-md pointer-events-none"
+                    style={{
+                      border: `2px solid ${previewColors.primary}`,
+                      boxShadow: `inset 0 0 0 1px ${previewColors.background}`,
+                    }}
+                  />
+                )}
+                {/* Full card frame indicator (takes precedence) */}
+                {layout.useFrames?.fullCard && frames?.fullCard && (
+                  <div
+                    className="absolute inset-0 rounded-md pointer-events-none"
+                    style={{
+                      border: `3px solid ${previewColors.primary}`,
+                      background: `linear-gradient(to bottom, transparent 75%, ${previewColors.secondary}40 75%)`,
+                    }}
+                  />
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
         <p className="text-xs text-center text-muted-foreground mt-3">

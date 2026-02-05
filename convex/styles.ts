@@ -158,14 +158,14 @@ export const updateStyle = mutation({
             generatedAt: v.number(),
           })
         ),
-        divider: v.optional(
+        textBacking: v.optional(
           v.object({
             storageId: v.id("_storage"),
             prompt: v.string(),
             generatedAt: v.number(),
           })
         ),
-        textBacking: v.optional(
+        fullCard: v.optional(
           v.object({
             storageId: v.id("_storage"),
             prompt: v.string(),
@@ -206,19 +206,19 @@ export const getStyleWithFrameUrls = query({
     // Resolve frame URLs if frames exist
     let frameUrls: {
       border?: string | null;
-      divider?: string | null;
       textBacking?: string | null;
+      fullCard?: string | null;
     } = {};
 
     if (style.frames) {
       if (style.frames.border?.storageId) {
         frameUrls.border = await ctx.storage.getUrl(style.frames.border.storageId);
       }
-      if (style.frames.divider?.storageId) {
-        frameUrls.divider = await ctx.storage.getUrl(style.frames.divider.storageId);
-      }
       if (style.frames.textBacking?.storageId) {
         frameUrls.textBacking = await ctx.storage.getUrl(style.frames.textBacking.storageId);
+      }
+      if (style.frames.fullCard?.storageId) {
+        frameUrls.fullCard = await ctx.storage.getUrl(style.frames.fullCard.storageId);
       }
     }
 

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ColorPaletteEditor } from "./ColorPaletteEditor";
+import { useGoogleFonts } from "@/lib/fonts";
 
 // Font options - common web-safe and Google Fonts
 const HEADING_FONTS = [
@@ -82,6 +83,10 @@ export function StyleEditor({
   // Local state for debounced updates
   const [localName, setLocalName] = useState(name);
   const [localIllustrationStyle, setLocalIllustrationStyle] = useState(illustrationStyle);
+
+  // Load Google Fonts for previews
+  const allFonts = [...HEADING_FONTS, ...BODY_FONTS];
+  useGoogleFonts(allFonts);
 
   // Sync with external values
   useEffect(() => {

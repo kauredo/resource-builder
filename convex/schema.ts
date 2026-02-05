@@ -43,12 +43,18 @@ export default defineSchema({
         prompt: v.string(),
         generatedAt: v.number(),
       })),
+      // divider is deprecated but kept for backwards compatibility with existing data
       divider: v.optional(v.object({
         storageId: v.id("_storage"),
         prompt: v.string(),
         generatedAt: v.number(),
       })),
       textBacking: v.optional(v.object({
+        storageId: v.id("_storage"),
+        prompt: v.string(),
+        generatedAt: v.number(),
+      })),
+      fullCard: v.optional(v.object({
         storageId: v.id("_storage"),
         prompt: v.string(),
         generatedAt: v.number(),

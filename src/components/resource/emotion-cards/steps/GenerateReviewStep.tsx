@@ -7,9 +7,12 @@ import { Id } from "../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { CardPreview } from "../CardPreview";
 import { GenerationProgress } from "../GenerationProgress";
+import { StyleContextBar } from "../StyleContextBar";
 import { Wand2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getEmotionDescription } from "@/lib/emotions";
 import type { WizardState } from "../EmotionCardsWizard";
+import type { StyleFrames } from "@/types";
 
 interface GenerateReviewStepProps {
   state: WizardState;
@@ -37,6 +40,16 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
     api.resources.getResourceWithImages,
     state.resourceId ? { resourceId: state.resourceId } : "skip"
   );
+
+  // Query style with frame URLs for styled previews
+  const style = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    state.styleId ? { styleId: state.styleId } : "skip"
+  );
+
+  // Extract frame data
+  const frames = style?.frames as StyleFrames | undefined;
+  const frameCount = [frames?.border, frames?.textBacking, frames?.fullCard].filter(Boolean).length;
 
   // Get image URLs for completed cards (for newly generated ones)
   const completedStorageIds = Array.from(results.values())
@@ -67,7 +80,15 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
 
   // Initialize results when step loads - restore from resource if available
   useEffect(() => {
-    if (hasInitialized || state.selectedEmotions.length === 0) return;
+    // Don't initialize until we have the emotions list
+    if (state.selectedEmotions.length === 0) return;
+
+    // Wait for resource query to complete (not undefined = still loading)
+    // resource will be null if not found, or an object if found
+    if (resource === undefined) return;
+
+    // Already initialized for this resource
+    if (hasInitialized) return;
 
     const initial = new Map<string, GenerationResult>();
 
@@ -421,27 +442,9 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
           </div>
         </div>
 
-        {/* Style reminder */}
+        {/* Style context */}
         {state.stylePreset && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border">
-            <div className="flex gap-1.5">
-              <div
-                className="w-5 h-5 rounded-md shadow-sm"
-                style={{ backgroundColor: state.stylePreset.colors.primary }}
-              />
-              <div
-                className="w-5 h-5 rounded-md shadow-sm"
-                style={{ backgroundColor: state.stylePreset.colors.secondary }}
-              />
-              <div
-                className="w-5 h-5 rounded-md shadow-sm"
-                style={{ backgroundColor: state.stylePreset.colors.accent }}
-              />
-            </div>
-            <span className="text-sm text-muted-foreground">
-              Using <span className="font-medium text-foreground">{state.stylePreset.name}</span> style
-            </span>
-          </div>
+          <StyleContextBar style={state.stylePreset} frameCount={frameCount} />
         )}
       </div>
     );
@@ -484,6 +487,11 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         </div>
       )}
 
+      {/* Style context bar */}
+      {state.stylePreset && (
+        <StyleContextBar style={state.stylePreset} frameCount={frameCount} />
+      )}
+
       {/* Card grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {state.selectedEmotions.map((emotion) => {
@@ -497,7 +505,20 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               imageUrl={url || null}
               isGenerating={result?.status === "generating"}
               hasError={result?.status === "error"}
-              showLabel={true}
+              showLabel={state.layout.showLabels}
+              showDescription={state.layout.showDescriptions}
+              description={getEmotionDescription(emotion)}
+              cardsPerPage={state.layout.cardsPerPage}
+              style={
+                state.stylePreset
+                  ? {
+                      colors: state.stylePreset.colors,
+                      typography: state.stylePreset.typography,
+                    }
+                  : undefined
+              }
+              frameUrls={style?.frameUrls}
+              useFrames={state.layout.useFrames}
               onRegenerate={
                 !isGenerating && result?.status !== "generating"
                   ? () => generateSingleCard(emotion)

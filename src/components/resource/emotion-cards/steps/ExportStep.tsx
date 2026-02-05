@@ -13,10 +13,21 @@ import {
   Loader2,
   Scissors,
   ExternalLink,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import { generateEmotionCardsPDF, PDFLayoutOptions } from "@/lib/pdf";
+import Image from "next/image";
+import {
+  generateEmotionCardsPDF,
+  PDFLayoutOptions,
+  PDFStyleOptions,
+  PDFFrameOptions,
+} from "@/lib/pdf";
+import { getEmotionDescription } from "@/lib/emotions";
+import { StyleContextBar } from "../StyleContextBar";
 import type { WizardState } from "../EmotionCardsWizard";
+import type { StyleFrames } from "@/types";
 
 interface ExportStepProps {
   state: WizardState;
@@ -26,6 +37,7 @@ interface ExportStepProps {
 export function ExportStep({ state, onUpdate }: ExportStepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [showCutLines, setShowCutLines] = useState(true);
   const [isExported, setIsExported] = useState(false);
 
@@ -36,6 +48,16 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
     api.resources.getResource,
     state.resourceId ? { resourceId: state.resourceId } : "skip"
   );
+
+  // Query style with frame URLs
+  const style = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    state.styleId ? { styleId: state.styleId } : "skip"
+  );
+
+  // Extract frame data
+  const frames = style?.frames as StyleFrames | undefined;
+  const frameCount = [frames?.border, frames?.textBacking, frames?.fullCard].filter(Boolean).length;
 
   // Get image URLs
   const storageIds = resource?.images.map((img) => img.storageId) || [];
@@ -61,6 +83,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
 
   const handleGeneratePDF = async () => {
     setIsGenerating(true);
+    setPdfError(null);
     try {
       const cards = buildCardData();
       const options: PDFLayoutOptions = {
@@ -69,13 +92,42 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
         showLabels: state.layout.showLabels,
         showDescriptions: state.layout.showDescriptions,
         showCutLines,
+        useFrames: state.layout.useFrames,
       };
 
-      const blob = await generateEmotionCardsPDF(cards, options);
+      // Build style options from queried style or preset
+      const styleOptions: PDFStyleOptions | undefined = style
+        ? {
+            colors: style.colors,
+            typography: style.typography,
+          }
+        : state.stylePreset
+          ? {
+              colors: state.stylePreset.colors,
+              typography: state.stylePreset.typography,
+            }
+          : undefined;
+
+      // Build frame options from resolved URLs
+      const frameOptions: PDFFrameOptions | undefined =
+        style?.frameUrls && state.layout.useFrames
+          ? {
+              borderUrl: style.frameUrls.border ?? undefined,
+              textBackingUrl: style.frameUrls.textBacking ?? undefined,
+              fullCardUrl: style.frameUrls.fullCard ?? undefined,
+            }
+          : undefined;
+
+      const blob = await generateEmotionCardsPDF(cards, options, styleOptions, frameOptions);
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
     } catch (error) {
       console.error("Failed to generate PDF:", error);
+      setPdfError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while generating your PDF. Please try again."
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -111,6 +163,14 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
       }
     };
   }, [pdfUrl]);
+
+  // Style values for card thumbnails
+  const cardStyle = state.stylePreset
+    ? {
+        colors: state.stylePreset.colors,
+        typography: state.stylePreset.typography,
+      }
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -151,6 +211,11 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
         </div>
       ) : (
         <>
+          {/* Style context */}
+          {state.stylePreset && (
+            <StyleContextBar style={state.stylePreset} frameCount={frameCount} />
+          )}
+
           {/* Summary */}
           <div className="rounded-xl border bg-card p-6">
             <h3 className="font-medium mb-4">Deck Summary</h3>
@@ -186,6 +251,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                 onCheckedChange={(checked) => {
                   setShowCutLines(checked === true);
                   setPdfUrl(null); // Reset PDF when options change
+                  setPdfError(null);
                 }}
                 className="mt-0.5"
               />
@@ -200,6 +266,28 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
               </div>
             </label>
           </div>
+
+          {/* Error state */}
+          {pdfError && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="size-5 text-destructive shrink-0 mt-0.5" aria-hidden="true" />
+                <div className="flex-1">
+                  <p className="font-medium text-destructive">Failed to generate PDF</p>
+                  <p className="text-sm text-muted-foreground mt-1">{pdfError}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGeneratePDF}
+                  className="shrink-0 gap-1.5"
+                >
+                  <RefreshCw className="size-3.5" aria-hidden="true" />
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Generate / Download */}
           <div className="flex flex-col items-center gap-4 py-6">
@@ -250,6 +338,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                 <button
                   onClick={() => {
                     setPdfUrl(null);
+                    setPdfError(null);
                   }}
                   className="text-sm text-foreground/70 cursor-pointer hover:text-coral underline underline-offset-2 transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
@@ -259,52 +348,70 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
             )}
           </div>
 
-          {/* Preview grid */}
+          {/* Card thumbnails grid */}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Cards in this deck
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {state.selectedEmotions.map((emotion) => (
-                <span
-                  key={emotion}
-                  className="px-3 py-1.5 rounded-full bg-muted text-sm font-medium"
-                >
-                  {emotion}
-                </span>
-              ))}
+            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
+              {state.selectedEmotions.map((emotion) => {
+                const image = resource?.images.find((img) => img.description === emotion);
+                const imageUrl = image?.storageId && imageUrls?.[image.storageId];
+
+                return (
+                  <div
+                    key={emotion}
+                    className="rounded-lg overflow-hidden border"
+                    style={{
+                      backgroundColor: cardStyle?.colors.background ?? "#FAFAFA",
+                      borderColor: (cardStyle?.colors.text ?? "#1A1A1A") + "20",
+                    }}
+                  >
+                    {/* Mini image */}
+                    <div
+                      className="aspect-square relative"
+                      style={{
+                        backgroundColor: (cardStyle?.colors.secondary ?? "#E8E8E8") + "30",
+                      }}
+                    >
+                      {imageUrl && (
+                        <Image
+                          src={imageUrl}
+                          alt={emotion}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      )}
+                    </div>
+                    {/* Mini label */}
+                    {state.layout.showLabels && (
+                      <div
+                        className="px-1 py-0.5 text-center truncate"
+                        style={{
+                          borderTop: `1px solid ${(cardStyle?.colors.text ?? "#1A1A1A")}10`,
+                        }}
+                      >
+                        <span
+                          className="text-[8px] sm:text-[9px] font-medium leading-tight"
+                          style={{
+                            color: cardStyle?.colors.text ?? "#1A1A1A",
+                            fontFamily: cardStyle
+                              ? `"${cardStyle.typography.headingFont}", system-ui, sans-serif`
+                              : "system-ui",
+                          }}
+                        >
+                          {emotion}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </>
       )}
     </div>
   );
-}
-
-// Helper function to get emotion descriptions
-function getEmotionDescription(emotion: string): string {
-  const descriptions: Record<string, string> = {
-    Happy: "Feeling joyful and content",
-    Sad: "Feeling down or unhappy",
-    Angry: "Feeling frustrated or mad",
-    Scared: "Feeling afraid or worried",
-    Surprised: "Feeling amazed or startled",
-    Disgusted: "Feeling repulsed or dislike",
-    Excited: "Feeling enthusiastic and eager",
-    Calm: "Feeling peaceful and relaxed",
-    Worried: "Feeling anxious about something",
-    Frustrated: "Feeling stuck or annoyed",
-    Proud: "Feeling good about an achievement",
-    Embarrassed: "Feeling self-conscious",
-    Disappointed: "Feeling let down",
-    Overwhelmed: "Feeling too much at once",
-    Lonely: "Feeling alone or isolated",
-    Confused: "Feeling uncertain or puzzled",
-    Jealous: "Wanting what others have",
-    Hopeful: "Feeling optimistic about the future",
-    Grateful: "Feeling thankful and appreciative",
-    Nervous: "Feeling uneasy or anxious",
-  };
-
-  return descriptions[emotion] || `Experiencing ${emotion.toLowerCase()}`;
 }

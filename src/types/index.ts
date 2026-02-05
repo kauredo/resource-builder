@@ -73,8 +73,8 @@ export interface EmotionCardLayout {
   // Frame settings
   useFrames?: {
     border?: boolean;
-    divider?: boolean;
     textBacking?: boolean;
+    fullCard?: boolean;
   };
 }
 
@@ -92,11 +92,11 @@ export interface FrameAsset {
 
 export interface StyleFrames {
   border?: FrameAsset;
-  divider?: FrameAsset;
   textBacking?: FrameAsset;
+  fullCard?: FrameAsset;
 }
 
-export type FrameType = "border" | "divider" | "textBacking";
+export type FrameType = "border" | "textBacking" | "fullCard";
 
 // Resource types
 export type ResourceType =

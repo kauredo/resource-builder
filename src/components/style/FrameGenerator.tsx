@@ -21,8 +21,8 @@ import {
   RefreshCw,
   Trash2,
   Frame,
-  SeparatorHorizontal,
   Type,
+  Layers,
 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames, FrameType } from "@/types";
@@ -42,8 +42,8 @@ interface FrameGeneratorProps {
   frames?: StyleFrames;
   frameUrls?: {
     border?: string | null;
-    divider?: string | null;
     textBacking?: string | null;
+    fullCard?: string | null;
   };
 }
 
@@ -51,6 +51,7 @@ interface FrameTypeConfig {
   type: FrameType;
   label: string;
   description: string;
+  dimensions: string;
   icon: React.ReactNode;
   aspectRatio: string;
 }
@@ -60,22 +61,25 @@ const FRAME_TYPES: FrameTypeConfig[] = [
     type: "border",
     label: "Border Frame",
     description: "Decorative border that wraps around the entire card",
+    dimensions: "768×1024px, transparent center",
     icon: <Frame className="size-5" aria-hidden="true" />,
     aspectRatio: "aspect-[3/4]",
-  },
-  {
-    type: "divider",
-    label: "Divider",
-    description: "Horizontal element separating image and text areas",
-    icon: <SeparatorHorizontal className="size-5" aria-hidden="true" />,
-    aspectRatio: "aspect-[8/1]",
   },
   {
     type: "textBacking",
     label: "Text Backing",
     description: "Semi-transparent shape behind card labels",
+    dimensions: "1024×256px, 40-60% opacity",
     icon: <Type className="size-5" aria-hidden="true" />,
-    aspectRatio: "aspect-[4/1]",
+    aspectRatio: "aspect-[2/1]",
+  },
+  {
+    type: "fullCard",
+    label: "Full Card Template",
+    description: "Complete trading card frame with image and text areas",
+    dimensions: "768×1024px, transparent image area",
+    icon: <Layers className="size-5" aria-hidden="true" />,
+    aspectRatio: "aspect-[3/4]",
   },
 ];
 
@@ -85,14 +89,14 @@ export function FrameGenerator({
   frames,
   frameUrls,
 }: FrameGeneratorProps) {
-  const [generatingType, setGeneratingType] = useState<FrameType | null>(null);
+  const [generatingTypes, setGeneratingTypes] = useState<Set<FrameType>>(new Set());
   const [deletingType, setDeletingType] = useState<FrameType | null>(null);
 
-  const generateFrame = useAction(api.frames.generateFrame);
-  const deleteFrame = useMutation(api.frames.deleteFrame);
+  const generateFrame = useAction(api.frameActions.generateFrame);
+  const deleteFrameMutation = useMutation(api.frames.deleteFrame);
 
   const handleGenerate = async (frameType: FrameType) => {
-    setGeneratingType(frameType);
+    setGeneratingTypes(prev => new Set([...prev, frameType]));
     try {
       await generateFrame({
         styleId,
@@ -103,14 +107,38 @@ export function FrameGenerator({
     } catch (error) {
       console.error(`Failed to generate ${frameType}:`, error);
     } finally {
-      setGeneratingType(null);
+      setGeneratingTypes(prev => {
+        const next = new Set(prev);
+        next.delete(frameType);
+        return next;
+      });
     }
+  };
+
+  const handleGenerateAll = async () => {
+    const allTypes = FRAME_TYPES.map(c => c.type);
+    setGeneratingTypes(new Set(allTypes));
+
+    await Promise.allSettled(
+      allTypes.map(frameType =>
+        generateFrame({
+          styleId,
+          frameType,
+          colors: style.colors,
+          illustrationStyle: style.illustrationStyle,
+        }).catch(error => {
+          console.error(`Failed to generate ${frameType}:`, error);
+        })
+      )
+    );
+
+    setGeneratingTypes(new Set());
   };
 
   const handleDelete = async (frameType: FrameType) => {
     setDeletingType(frameType);
     try {
-      await deleteFrame({
+      await deleteFrameMutation({
         styleId,
         frameType,
       });
@@ -121,21 +149,48 @@ export function FrameGenerator({
     }
   };
 
+  // Check if any frames exist
+  const hasAnyFrames = frames && Object.keys(frames).length > 0;
+  const isGeneratingAny = generatingTypes.size > 0;
+  const isAnyOperationInProgress = isGeneratingAny || deletingType !== null;
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {FRAME_TYPES.map((config) => {
+      {/* Generate All button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleGenerateAll}
+          disabled={isAnyOperationInProgress}
+          variant="outline"
+          className="gap-2"
+        >
+          {isGeneratingAny ? (
+            <>
+              <Loader2
+                className="size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              Generating {generatingTypes.size} frames...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="size-4" aria-hidden="true" />
+              {hasAnyFrames ? "Regenerate All" : "Generate All"}
+            </>
+          )}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {FRAME_TYPES.map(config => {
           const hasFrame = frames?.[config.type];
           const frameUrl = frameUrls?.[config.type];
-          const isGenerating = generatingType === config.type;
+          const isGenerating = generatingTypes.has(config.type);
           const isDeleting = deletingType === config.type;
-          const isDisabled = generatingType !== null || deletingType !== null;
+          const isDisabled = isAnyOperationInProgress;
 
           return (
-            <div
-              key={config.type}
-              className="group relative flex flex-col"
-            >
+            <div key={config.type} className="group relative flex flex-col">
               {/* Preview area - prominent */}
               <div className="relative mb-3">
                 <FramePreview
@@ -156,11 +211,16 @@ export function FrameGenerator({
                       className="h-7 px-2 gap-1 bg-white/90 hover:bg-white text-foreground shadow-sm transition-colors duration-150"
                     >
                       {isGenerating ? (
-                        <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                        <Loader2
+                          className="size-3 animate-spin motion-reduce:animate-none"
+                          aria-hidden="true"
+                        />
                       ) : (
                         <RefreshCw className="size-3" aria-hidden="true" />
                       )}
-                      <span className="text-xs">{isGenerating ? "..." : "Redo"}</span>
+                      <span className="text-xs">
+                        {isGenerating ? "..." : "Redo"}
+                      </span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -171,7 +231,10 @@ export function FrameGenerator({
                           className="h-7 w-7 bg-white/90 hover:bg-white text-muted-foreground hover:text-destructive shadow-sm transition-colors duration-150"
                         >
                           {isDeleting ? (
-                            <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                            <Loader2
+                              className="size-3 animate-spin motion-reduce:animate-none"
+                              aria-hidden="true"
+                            />
                           ) : (
                             <Trash2 className="size-3" aria-hidden="true" />
                           )}
@@ -180,9 +243,12 @@ export function FrameGenerator({
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete {config.label}?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Delete {config.label}?
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete this frame asset. You can generate a new one at any time.
+                            This will permanently delete this frame asset. You
+                            can generate a new one at any time.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -204,9 +270,14 @@ export function FrameGenerator({
               <div className="flex items-start gap-2 mb-2">
                 <span className="text-muted-foreground">{config.icon}</span>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-medium text-foreground leading-tight">{config.label}</h3>
+                  <h3 className="text-sm font-medium text-foreground leading-tight">
+                    {config.label}
+                  </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {config.description}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">
+                    {config.dimensions}
                   </p>
                 </div>
               </div>
@@ -214,10 +285,15 @@ export function FrameGenerator({
               {/* Generate button or timestamp */}
               {hasFrame ? (
                 <time
-                  dateTime={new Date(frames[config.type]!.generatedAt).toISOString()}
+                  dateTime={new Date(
+                    frames[config.type]!.generatedAt,
+                  ).toISOString()}
                   className="text-[11px] text-muted-foreground/70 mt-auto tabular-nums"
                 >
-                  Generated {new Date(frames[config.type]!.generatedAt).toLocaleDateString("en-US", {
+                  Generated{" "}
+                  {new Date(
+                    frames[config.type]!.generatedAt,
+                  ).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     hour: "numeric",
@@ -233,7 +309,10 @@ export function FrameGenerator({
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none mr-1.5" aria-hidden="true" />
+                      <Loader2
+                        className="size-3.5 animate-spin motion-reduce:animate-none mr-1.5"
+                        aria-hidden="true"
+                      />
                       Generating...
                     </>
                   ) : (
@@ -247,7 +326,8 @@ export function FrameGenerator({
       </div>
 
       <p className="text-xs text-muted-foreground pt-2">
-        These frames appear in layout options when creating cards with this style.
+        These frames appear in layout options when creating cards with this
+        style.
       </p>
     </div>
   );
