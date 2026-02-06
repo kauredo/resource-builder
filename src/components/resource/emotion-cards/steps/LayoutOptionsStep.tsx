@@ -64,8 +64,7 @@ export function LayoutOptionsStep({
   );
 
   const frames = style?.frames as StyleFrames | undefined;
-  const hasAnyFrames =
-    frames && (frames.border || frames.textBacking || frames.fullCard);
+  const hasAnyFrames = frames && (frames.border || frames.fullCard);
 
   const updateLayout = (updates: Partial<EmotionCardLayout>) => {
     onUpdate({
@@ -227,24 +226,6 @@ export function LayoutOptionsStep({
                     aria-hidden="true"
                   />
                   <span className="text-sm">Border frame</span>
-                </div>
-              </label>
-            )}
-
-            {frames?.textBacking && (
-              <label className="flex items-center gap-3 cursor-pointer">
-                <Checkbox
-                  checked={layout.useFrames?.textBacking ?? false}
-                  onCheckedChange={(checked) =>
-                    updateFrameUsage("textBacking", checked === true)
-                  }
-                />
-                <div className="flex items-center gap-2">
-                  <Type
-                    className="size-4 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm">Text backing</span>
                 </div>
               </label>
             )}

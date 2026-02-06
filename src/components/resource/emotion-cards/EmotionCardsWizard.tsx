@@ -115,14 +115,6 @@ export function EmotionCardsWizard({
     initialStyleId ? { styleId: initialStyleId } : "skip"
   );
 
-  // Query style with frame URLs for preview
-  const selectedStyleId =
-    initialStyleId || existingResource?.styleId || undefined;
-  const styleWithFrames = useQuery(
-    api.styles.getStyleWithFrameUrls,
-    selectedStyleId ? { styleId: selectedStyleId } : "skip"
-  );
-
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
   const removeImagesFromResource = useMutation(
@@ -136,6 +128,17 @@ export function EmotionCardsWizard({
   const [isNavigating, setIsNavigating] = useState(false);
   const hasInitializedEditMode = useRef(false);
   const hasInitializedFromUrl = useRef(false);
+  // Track which styleId we've inherited defaultUseFrames from
+  const lastInheritedStyleId = useRef<Id<"styles"> | null>(null);
+
+  // Query style with frame URLs for preview
+  // Prefer state.styleId (user selection), then URL param, then edit mode
+  const selectedStyleId =
+    state.styleId || initialStyleId || existingResource?.styleId || undefined;
+  const styleWithFrames = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    selectedStyleId ? { styleId: selectedStyleId } : "skip"
+  );
 
   // Initialize state from URL styleId param (e.g., from "Use Style" button)
   useEffect(() => {
@@ -198,6 +201,30 @@ export function EmotionCardsWizard({
       });
     }
   }, [editResourceId, existingResource, existingStyle]);
+
+  // Inherit defaultUseFrames from selected style (not in edit mode)
+  // This makes StylePreview toggles carry over to new resources
+  useEffect(() => {
+    if (
+      styleWithFrames &&
+      state.styleId &&
+      !state.isEditMode &&
+      lastInheritedStyleId.current !== state.styleId
+    ) {
+      lastInheritedStyleId.current = state.styleId;
+
+      // Inherit defaultUseFrames if the style has them
+      if (styleWithFrames.defaultUseFrames) {
+        setState((prev) => ({
+          ...prev,
+          layout: {
+            ...prev.layout,
+            useFrames: styleWithFrames.defaultUseFrames,
+          },
+        }));
+      }
+    }
+  }, [styleWithFrames, state.styleId, state.isEditMode]);
 
   // Check if character step should be shown (only if user has characters)
   const hasCharacters = userCharacters && userCharacters.length > 0;
@@ -377,6 +404,7 @@ export function EmotionCardsWizard({
   const previewColors = previewStyle?.colors;
   const previewTypography = previewStyle?.typography;
   const previewFrameUrls = styleWithFrames?.frameUrls;
+  const previewCardLayout = styleWithFrames?.cardLayout;
 
   // Render current step
   const renderStep = () => {
@@ -504,6 +532,7 @@ export function EmotionCardsWizard({
                 typography={previewTypography}
                 frameUrls={previewFrameUrls}
                 layout={state.layout}
+                cardLayout={previewCardLayout}
                 generatedImageUrl={firstGeneratedImageUrl}
                 emotion={previewEmotion}
               />

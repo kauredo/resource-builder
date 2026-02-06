@@ -109,11 +109,25 @@ export const PDF_FONT_CONFIG: Record<
       },
     ],
   },
-  "Fredoka One": {
-    family: "Fredoka One",
+  Fredoka: {
+    family: "Fredoka",
     fonts: [
       {
-        src: "https://fonts.gstatic.com/s/fredokaone/v14/k3kUo8kEI-tA1RRcTZGmTlHGCaen8wf-.ttf",
+        src: "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFg.ttf",
+        fontWeight: 400,
+      },
+      {
+        src: "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3OFiXMFg.ttf",
+        fontWeight: 700,
+      },
+    ],
+  },
+  // Legacy alias for "Fredoka One" - now just uses Fredoka
+  "Fredoka One": {
+    family: "Fredoka",
+    fonts: [
+      {
+        src: "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3OFiXMFg.ttf",
         fontWeight: 400,
       },
     ],
@@ -311,7 +325,8 @@ export function registerFont(fontName: string): boolean {
 
   const config = PDF_FONT_CONFIG[fontName];
   if (!config) {
-    console.warn(`Unknown PDF font: ${fontName}`);
+    console.warn(`Unknown PDF font: "${fontName}" - falling back to Helvetica. ` +
+      `Available fonts: ${Object.keys(PDF_FONT_CONFIG).join(', ')}`);
     return false;
   }
 
@@ -320,16 +335,35 @@ export function registerFont(fontName: string): boolean {
     registeredFonts.add(fontName);
     return true;
   } catch (error) {
-    console.error(`Failed to register font ${fontName}:`, error);
+    // "Unknown font format" usually means the URL returned HTML (error page) instead of TTF
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Failed to register font "${fontName}": ${errorMessage}. ` +
+      `This may be due to a network issue or outdated font URL. Using Helvetica fallback.`
+    );
     return false;
   }
 }
 
 /**
  * Register multiple fonts with @react-pdf/renderer
+ *
+ * @param fontNames - Array of font names to register
+ * @returns Object with registered and failed font names
  */
-export function registerFonts(fontNames: string[]): void {
-  fontNames.forEach((name) => registerFont(name));
+export function registerFonts(fontNames: string[]): { registered: string[]; failed: string[] } {
+  const registered: string[] = [];
+  const failed: string[] = [];
+
+  fontNames.forEach((name) => {
+    if (registerFont(name)) {
+      registered.push(name);
+    } else {
+      failed.push(name);
+    }
+  });
+
+  return { registered, failed };
 }
 
 /**

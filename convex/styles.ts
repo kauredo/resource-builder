@@ -149,16 +149,31 @@ export const updateStyle = mutation({
       })
     ),
     illustrationStyle: v.optional(v.string()),
+    cardLayout: v.optional(
+      v.object({
+        textPosition: v.optional(
+          v.union(
+            v.literal("bottom"),
+            v.literal("overlay"),
+            v.literal("integrated")
+          )
+        ),
+        contentHeight: v.optional(v.number()),
+        imageOverlap: v.optional(v.number()),
+        borderWidth: v.optional(v.number()),
+        borderColor: v.optional(v.string()),
+      })
+    ),
+    framePromptSuffix: v.optional(v.string()),
+    defaultUseFrames: v.optional(
+      v.object({
+        border: v.optional(v.boolean()),
+        fullCard: v.optional(v.boolean()),
+      })
+    ),
     frames: v.optional(
       v.object({
         border: v.optional(
-          v.object({
-            storageId: v.id("_storage"),
-            prompt: v.string(),
-            generatedAt: v.number(),
-          })
-        ),
-        textBacking: v.optional(
           v.object({
             storageId: v.id("_storage"),
             prompt: v.string(),
@@ -206,16 +221,12 @@ export const getStyleWithFrameUrls = query({
     // Resolve frame URLs if frames exist
     let frameUrls: {
       border?: string | null;
-      textBacking?: string | null;
       fullCard?: string | null;
     } = {};
 
     if (style.frames) {
       if (style.frames.border?.storageId) {
         frameUrls.border = await ctx.storage.getUrl(style.frames.border.storageId);
-      }
-      if (style.frames.textBacking?.storageId) {
-        frameUrls.textBacking = await ctx.storage.getUrl(style.frames.textBacking.storageId);
       }
       if (style.frames.fullCard?.storageId) {
         frameUrls.fullCard = await ctx.storage.getUrl(style.frames.fullCard.storageId);

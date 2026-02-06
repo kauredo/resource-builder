@@ -50,11 +50,25 @@ export interface StyleTypography {
   bodyFont: string;
 }
 
+// Card layout settings stored on the style
+export interface CardLayoutSettings {
+  // Where text sits: bottom (separate area), overlay (over image), integrated (no separate area)
+  textPosition?: "bottom" | "overlay" | "integrated";
+  // Height of content area as percentage (10-40), default 25
+  contentHeight?: number;
+  // How much content overlaps image as percentage (0-20), default 11
+  imageOverlap?: number;
+  // Simple CSS border (alternative to generated frame assets)
+  borderWidth?: number; // 0-8 pixels, default 0 (none)
+  borderColor?: string; // CSS color, defaults to style's text color
+}
+
 export interface StylePreset {
   name: string;
   colors: StyleColors;
   typography: StyleTypography;
   illustrationStyle: string;
+  cardLayout?: CardLayoutSettings;
 }
 
 // Emotion card content
@@ -73,7 +87,6 @@ export interface EmotionCardLayout {
   // Frame settings
   useFrames?: {
     border?: boolean;
-    textBacking?: boolean;
     fullCard?: boolean;
   };
 }
@@ -92,11 +105,15 @@ export interface FrameAsset {
 
 export interface StyleFrames {
   border?: FrameAsset;
-  textBacking?: FrameAsset;
   fullCard?: FrameAsset;
 }
 
-export type FrameType = "border" | "textBacking" | "fullCard";
+export interface DefaultUseFrames {
+  border?: boolean;
+  fullCard?: boolean;
+}
+
+export type FrameType = "border" | "fullCard";
 
 // Resource types
 export type ResourceType =

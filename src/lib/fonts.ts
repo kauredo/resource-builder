@@ -17,7 +17,9 @@ export const GOOGLE_FONT_FAMILIES: Record<string, string> = {
   Poppins: "Poppins:wght@400;500;600;700",
   Merriweather: "Merriweather:wght@400;700",
   "Baloo 2": "Baloo+2:wght@400;500;600;700",
-  "Fredoka One": "Fredoka+One",
+  Fredoka: "Fredoka:wght@400;500;600;700",
+  // Legacy alias for old styles that have "Fredoka One" saved
+  "Fredoka One": "Fredoka:wght@400;500;600;700",
   Comfortaa: "Comfortaa:wght@400;500;600;700",
   Pacifico: "Pacifico",
 

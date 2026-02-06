@@ -35,9 +35,10 @@ interface FrameGeneratorProps {
   frames?: StyleFrames;
   frameUrls?: {
     border?: string | null;
-    textBacking?: string | null;
     fullCard?: string | null;
   };
+  /** Optional custom prompt to append to frame generation */
+  framePromptSuffix?: string;
 }
 
 interface FrameTypeConfig {
@@ -55,12 +56,6 @@ const FRAME_TYPES: FrameTypeConfig[] = [
     aspectRatio: "aspect-[3/4]",
   },
   {
-    type: "textBacking",
-    label: "Text Backing",
-    shortDesc: "Behind card labels",
-    aspectRatio: "aspect-[2/1]",
-  },
-  {
     type: "fullCard",
     label: "Full Card",
     shortDesc: "Complete card template",
@@ -73,6 +68,7 @@ export function FrameGenerator({
   style,
   frames,
   frameUrls,
+  framePromptSuffix,
 }: FrameGeneratorProps) {
   const [generatingTypes, setGeneratingTypes] = useState<Set<FrameType>>(
     new Set(),
@@ -90,6 +86,7 @@ export function FrameGenerator({
         frameType,
         colors: style.colors,
         illustrationStyle: style.illustrationStyle,
+        promptSuffix: framePromptSuffix,
       });
     } catch (error) {
       console.error(`Failed to generate ${frameType}:`, error);
@@ -113,6 +110,7 @@ export function FrameGenerator({
           frameType,
           colors: style.colors,
           illustrationStyle: style.illustrationStyle,
+          promptSuffix: framePromptSuffix,
         }).catch(error => {
           console.error(`Failed to generate ${frameType}:`, error);
         }),

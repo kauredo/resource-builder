@@ -53,13 +53,8 @@ export function StyleCard({
   // Load Google Fonts for typography preview
   useGoogleFonts([typography.headingFont, typography.bodyFont]);
 
-  const hasFrames =
-    frames && (frames.border || frames.textBacking || frames.fullCard);
-  const frameCount = [
-    frames?.border,
-    frames?.textBacking,
-    frames?.fullCard,
-  ].filter(Boolean).length;
+  const hasFrames = frames && (frames.border || frames.fullCard);
+  const frameCount = [frames?.border, frames?.fullCard].filter(Boolean).length;
 
   return (
     <Link

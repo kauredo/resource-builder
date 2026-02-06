@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { ColorPaletteEditor } from "./ColorPaletteEditor";
 import { useGoogleFonts } from "@/lib/fonts";
+import type { CardLayoutSettings } from "@/types";
 
 // Font options - common web-safe and Google Fonts
 const HEADING_FONTS = [
@@ -21,7 +23,7 @@ const HEADING_FONTS = [
   "Poppins",
   "Merriweather",
   "Baloo 2",
-  "Fredoka One",
+  "Fredoka",
   "Comfortaa",
   "Pacifico",
 ];
@@ -51,6 +53,7 @@ interface StyleEditorProps {
     bodyFont: string;
   };
   illustrationStyle: string;
+  cardLayout?: CardLayoutSettings;
   onChange: (updates: {
     name?: string;
     colors?: {
@@ -65,6 +68,7 @@ interface StyleEditorProps {
       bodyFont: string;
     };
     illustrationStyle?: string;
+    cardLayout?: CardLayoutSettings;
   }) => void;
   disabled?: boolean;
   /** Auto-save delay in ms (0 to disable) */
@@ -76,6 +80,7 @@ export function StyleEditor({
   colors,
   typography,
   illustrationStyle,
+  cardLayout,
   onChange,
   disabled,
   autoSaveDelay = 500,
@@ -83,6 +88,11 @@ export function StyleEditor({
   // Local state for debounced updates
   const [localName, setLocalName] = useState(name);
   const [localIllustrationStyle, setLocalIllustrationStyle] = useState(illustrationStyle);
+  const [localCardLayout, setLocalCardLayout] = useState<CardLayoutSettings>({
+    textPosition: cardLayout?.textPosition ?? "bottom",
+    contentHeight: cardLayout?.contentHeight ?? 25,
+    imageOverlap: cardLayout?.imageOverlap ?? 11,
+  });
 
   // Load Google Fonts for previews
   const allFonts = [...HEADING_FONTS, ...BODY_FONTS];
@@ -96,6 +106,14 @@ export function StyleEditor({
   useEffect(() => {
     setLocalIllustrationStyle(illustrationStyle);
   }, [illustrationStyle]);
+
+  useEffect(() => {
+    setLocalCardLayout({
+      textPosition: cardLayout?.textPosition ?? "bottom",
+      contentHeight: cardLayout?.contentHeight ?? 25,
+      imageOverlap: cardLayout?.imageOverlap ?? 11,
+    });
+  }, [cardLayout]);
 
   // Debounced name update
   useEffect(() => {
@@ -118,6 +136,22 @@ export function StyleEditor({
 
     return () => clearTimeout(timeout);
   }, [localIllustrationStyle, illustrationStyle, onChange, autoSaveDelay]);
+
+  // Debounced card layout update
+  useEffect(() => {
+    const hasChanged =
+      localCardLayout.textPosition !== (cardLayout?.textPosition ?? "bottom") ||
+      localCardLayout.contentHeight !== (cardLayout?.contentHeight ?? 25) ||
+      localCardLayout.imageOverlap !== (cardLayout?.imageOverlap ?? 11);
+
+    if (!hasChanged || autoSaveDelay === 0) return;
+
+    const timeout = setTimeout(() => {
+      onChange({ cardLayout: localCardLayout });
+    }, autoSaveDelay);
+
+    return () => clearTimeout(timeout);
+  }, [localCardLayout, cardLayout, onChange, autoSaveDelay]);
 
   const handleColorsChange = useCallback(
     (newColors: typeof colors) => {
@@ -243,6 +277,106 @@ export function StyleEditor({
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Card Layout */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-foreground">Card Layout</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Control how text is positioned on your cards
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Text Position */}
+          <div className="space-y-2">
+            <Label className="text-sm">Text Position</Label>
+            <Select
+              value={localCardLayout.textPosition}
+              onValueChange={(value: "bottom" | "overlay" | "integrated") =>
+                setLocalCardLayout((prev) => ({ ...prev, textPosition: value }))
+              }
+              disabled={disabled}
+            >
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bottom">
+                  <span className="flex flex-col items-start">
+                    <span>Bottom area</span>
+                    <span className="text-xs text-muted-foreground">Text in dedicated space below image</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="overlay">
+                  <span className="flex flex-col items-start">
+                    <span>Overlay</span>
+                    <span className="text-xs text-muted-foreground">Text overlaps the image</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="integrated">
+                  <span className="flex flex-col items-start">
+                    <span>Integrated</span>
+                    <span className="text-xs text-muted-foreground">Text included in generated image</span>
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Content Height - only show if not integrated */}
+          {localCardLayout.textPosition !== "integrated" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Text Area Height</Label>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {localCardLayout.contentHeight}%
+                </span>
+              </div>
+              <Slider
+                value={[localCardLayout.contentHeight ?? 25]}
+                onValueChange={([value]) =>
+                  setLocalCardLayout((prev) => ({ ...prev, contentHeight: value }))
+                }
+                min={10}
+                max={40}
+                step={1}
+                disabled={disabled}
+                className="w-full max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                Percentage of card height for the text area
+              </p>
+            </div>
+          )}
+
+          {/* Image Overlap - only show if not integrated */}
+          {localCardLayout.textPosition !== "integrated" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Image Overlap</Label>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {localCardLayout.imageOverlap}%
+                </span>
+              </div>
+              <Slider
+                value={[localCardLayout.imageOverlap ?? 11]}
+                onValueChange={([value]) =>
+                  setLocalCardLayout((prev) => ({ ...prev, imageOverlap: value }))
+                }
+                min={0}
+                max={20}
+                step={1}
+                disabled={disabled}
+                className="w-full max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                How much the text area overlaps the image
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

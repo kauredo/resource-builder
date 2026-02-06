@@ -1,8 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import Image from "next/image";
 import { useGoogleFonts } from "@/lib/fonts";
-import type { EmotionCardLayout } from "@/types";
+import { getCardAspectRatio } from "@/lib/pdf";
+import { calculateCardLayout } from "@/lib/card-layout";
+import type { EmotionCardLayout, CardLayoutSettings } from "@/types";
 
 interface WizardPreviewProps {
   colors?: {
@@ -18,19 +21,23 @@ interface WizardPreviewProps {
   };
   frameUrls?: {
     border?: string | null;
-    textBacking?: string | null;
     fullCard?: string | null;
   };
   layout?: EmotionCardLayout;
+  cardLayout?: CardLayoutSettings;
   generatedImageUrl?: string | null;
   emotion?: string;
 }
+
+// Fixed width, aspect ratio changes based on cards per page
+const CARD_WIDTH = 160;
 
 export function WizardPreview({
   colors,
   typography,
   frameUrls,
   layout,
+  cardLayout,
   generatedImageUrl,
   emotion = "Happy",
 }: WizardPreviewProps) {
@@ -53,18 +60,25 @@ export function WizardPreview({
     bodyFont: typography?.bodyFont ?? "system-ui",
   };
 
+  // Card aspect ratio based on cards per page (matches actual PDF output)
+  const cardsPerPage = layout?.cardsPerPage ?? 6;
+  const cardAspectRatio = useMemo(
+    () => getCardAspectRatio(cardsPerPage),
+    [cardsPerPage],
+  );
+
   const showLabels = layout?.showLabels ?? true;
   const showDescriptions = layout?.showDescriptions ?? false;
-  const hasContent = showLabels || showDescriptions;
+
+  // Use shared layout calculation for consistency
+  const cardDimensions = useMemo(
+    () => calculateCardLayout(cardLayout, showLabels, showDescriptions),
+    [cardLayout, showLabels, showDescriptions],
+  );
 
   const useFullCard = layout?.useFrames?.fullCard && frameUrls?.fullCard;
   const useBorder =
     layout?.useFrames?.border && frameUrls?.border && !useFullCard;
-  const useTextBacking =
-    layout?.useFrames?.textBacking &&
-    frameUrls?.textBacking &&
-    hasContent &&
-    !useFullCard;
 
   return (
     <div className="flex flex-col items-center">
@@ -83,14 +97,20 @@ export function WizardPreview({
 
         {/* The card itself */}
         <div
-          className="relative w-[180px] rounded-lg overflow-hidden transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+          className="relative rounded-lg overflow-hidden transition-all duration-300 ease-out group-hover:scale-[1.02]"
           style={{
+            width: CARD_WIDTH,
             backgroundColor: previewColors.background,
-            aspectRatio: "3 / 4",
+            aspectRatio: cardAspectRatio,
+            // CSS border from card layout settings
+            borderWidth: cardDimensions.borderWidth || 1,
+            borderStyle: "solid",
+            borderColor: cardDimensions.borderWidth
+              ? cardDimensions.borderColor || previewColors.text
+              : `color-mix(in oklch, ${previewColors.text} 8%, transparent)`,
             boxShadow: `
               0 1px 2px rgba(0,0,0,0.04),
-              0 4px 8px rgba(0,0,0,0.04),
-              0 0 0 1px color-mix(in oklch, ${previewColors.text} 8%, transparent)
+              0 4px 8px rgba(0,0,0,0.04)
             `,
           }}
         >
@@ -99,7 +119,7 @@ export function WizardPreview({
             className="absolute inset-x-0 top-0 overflow-hidden"
             style={{
               backgroundColor: `color-mix(in oklch, ${previewColors.secondary} 25%, ${previewColors.background})`,
-              height: hasContent ? "75%" : "100%",
+              height: `${cardDimensions.imageHeightPercent}%`,
             }}
           >
             {generatedImageUrl ? (
@@ -142,11 +162,7 @@ export function WizardPreview({
           {/* Border frame overlay */}
           {useBorder && (
             <div className="absolute inset-0 pointer-events-none z-10">
-              <img
-                src={frameUrls!.border!}
-                alt=""
-                className="w-full h-full object-cover"
-              />
+              <img src={frameUrls!.border!} alt="" className="w-full h-full" />
             </div>
           )}
 
@@ -156,35 +172,32 @@ export function WizardPreview({
               <img
                 src={frameUrls!.fullCard!}
                 alt=""
-                className="w-full h-full object-cover"
+                className="w-full h-full"
               />
             </div>
           )}
 
           {/* Content area */}
-          {hasContent && (
+          {cardDimensions.hasContent && (
             <div
               className="absolute inset-x-0 flex flex-col items-center justify-center z-20"
               style={{
-                height: "25%",
+                height: `${cardDimensions.contentHeightPercent}%`,
                 bottom: 0,
-                top: "64%",
+                top: `${cardDimensions.contentTopPercent}%`,
               }}
             >
-              {useTextBacking && (
+              {/* Overlay mode: semi-transparent backdrop */}
+              {cardDimensions.isOverlay && (
                 <div
-                  className="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ aspectRatio: "2 / 1" }}
-                >
-                  <img
-                    src={frameUrls!.textBacking!}
-                    alt=""
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(to top, ${previewColors.background} 60%, transparent)`,
+                  }}
+                />
               )}
 
-              <div className="relative text-center px-3">
+              <div className="relative z-10 text-center px-3">
                 {showLabels && (
                   <span
                     className="font-semibold text-sm block leading-tight"

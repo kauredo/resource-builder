@@ -15,6 +15,8 @@ import {
 } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
+import { calculateCardLayout, DEFAULT_CARD_LAYOUT } from "./card-layout";
+import type { CardLayoutSettings } from "@/types";
 
 export interface PDFLayoutOptions {
   cardsPerPage: 4 | 6 | 9;
@@ -24,9 +26,9 @@ export interface PDFLayoutOptions {
   showCutLines: boolean;
   useFrames?: {
     border?: boolean;
-    textBacking?: boolean;
     fullCard?: boolean;
   };
+  cardLayout?: CardLayoutSettings;
 }
 
 export interface PDFStyleOptions {
@@ -45,7 +47,6 @@ export interface PDFStyleOptions {
 
 export interface PDFFrameOptions {
   borderUrl?: string;
-  textBackingUrl?: string;
   fullCardUrl?: string;
 }
 
@@ -160,12 +161,25 @@ const createStyles = (
   const headingFontFamily = getPDFFontFamily(style.typography.headingFont);
   const bodyFontFamily = getPDFFontFamily(style.typography.bodyFont);
 
-  // Calculate content area height percentage based on what's shown
-  const hasContent = options.showLabels || options.showDescriptions;
-  const imageHeightPercent = hasContent ? "75%" : "100%";
-  const contentHeightPercent = hasContent ? "25%" : "0%";
-  // Content overlaps image by 10% of card height (matches web CardPreview's top: -10%)
-  const contentOverlap = hasContent ? dimensions.cardHeight * 0.1 : 0;
+  // Use shared layout calculation for consistency with web previews
+  const cardDimensions = calculateCardLayout(
+    options.cardLayout,
+    options.showLabels,
+    options.showDescriptions,
+  );
+
+  // Convert percentages to actual heights for PDF positioning
+  const imageHeightPercent = `${cardDimensions.imageHeightPercent}%`;
+  const contentHeightPercent = cardDimensions.hasContent
+    ? `${cardDimensions.contentHeightPercent}%`
+    : "0%";
+
+  // Calculate overlap from card layout settings
+  const imageOverlap =
+    options.cardLayout?.imageOverlap ?? DEFAULT_CARD_LAYOUT.imageOverlap;
+  const contentOverlap = cardDimensions.hasContent
+    ? dimensions.cardHeight * (imageOverlap / 100)
+    : 0;
 
   return StyleSheet.create({
     page: {
@@ -184,9 +198,12 @@ const createStyles = (
       backgroundColor: style.colors.background,
       borderRadius: 8,
       overflow: "hidden",
+      // CSS border from card layout settings, or default subtle border
       border: options.showCutLines
         ? "1px dashed #CCCCCC"
-        : `1px solid ${style.colors.text}20`,
+        : cardDimensions.borderWidth
+          ? `${cardDimensions.borderWidth}px solid ${cardDimensions.borderColor || style.colors.text}`
+          : `1px solid ${style.colors.text}20`,
       position: "relative",
     },
     cardImageContainer: {
@@ -211,6 +228,20 @@ const createStyles = (
       position: "relative",
       // Pull content up to overlap with image (matches web CardPreview)
       marginTop: -contentOverlap,
+    },
+    // Overlay mode: content positioned absolutely over image with semi-transparent backdrop
+    cardContentOverlay: {
+      padding: 8,
+      height: contentHeightPercent,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: style.colors.background + "E6", // 90% opacity
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
     },
     cardLabel: {
       fontSize:
@@ -271,16 +302,7 @@ const createStyles = (
       left: 0,
       width: "100%",
       height: "100%",
-      objectFit: "cover",
-    },
-    // Text backing: 2:1 aspect ratio, centered in content area
-    frameTextBacking: {
-      position: "absolute",
-      left: "10%",
-      width: "80%",
-      // Height calculated to maintain 2:1 ratio based on available width
-      height: (dimensions.cardWidth * 0.8) / 4,
-      objectFit: "contain",
+      // No objectFit - stretch to fill card (matches web previews)
     },
   });
 };
@@ -297,26 +319,17 @@ function EmotionCard({
   options: PDFLayoutOptions;
   frames?: PDFFrameOptions;
 }) {
+  // Use shared layout calculation for consistency
+  const cardDimensions = calculateCardLayout(
+    options.cardLayout,
+    options.showLabels,
+    options.showDescriptions,
+  );
+
   const showFullCard = options.useFrames?.fullCard && frames?.fullCardUrl;
   // Border is disabled when fullCard is active (fullCard takes precedence)
-  const showBorder = options.useFrames?.border && frames?.borderUrl && !showFullCard;
-  const showTextBacking =
-    options.useFrames?.textBacking && frames?.textBackingUrl && !showFullCard;
-  const hasContent = options.showLabels || options.showDescriptions;
-
-  // Calculate frame positions (matches web CardPreview positioning)
-  const dimensions = calculateCardDimensions(options);
-  const textBackingHeight = (dimensions.cardWidth * 0.8) / 4; // 2:1 aspect ratio
-  const contentHeight = dimensions.cardHeight * 0.25;
-
-  // Content starts at 75% but overlaps image by 10% of card height (top: -10% in web)
-  const contentOverlap = dimensions.cardHeight * 0.1;
-  const effectiveContentTop = hasContent
-    ? dimensions.cardHeight * 0.75 - contentOverlap
-    : dimensions.cardHeight;
-
-  // Position text backing centered in the overlapped content area
-  const textBackingTop = effectiveContentTop + (contentHeight - textBackingHeight) / 2;
+  const showBorder =
+    options.useFrames?.border && frames?.borderUrl && !showFullCard;
 
   return createElement(
     View,
@@ -334,10 +347,15 @@ function EmotionCard({
           ),
     ),
     // Content area (label/description)
-    hasContent &&
+    // Use overlay style when text position is "overlay" - positioned over image with backdrop
+    cardDimensions.hasContent &&
       createElement(
         View,
-        { style: styles.cardContent },
+        {
+          style: cardDimensions.isOverlay
+            ? styles.cardContentOverlay
+            : styles.cardContent,
+        },
         // Label text
         options.showLabels &&
           createElement(Text, { style: styles.cardLabel }, card.emotion),
@@ -350,15 +368,6 @@ function EmotionCard({
             card.description,
           ),
       ),
-    // Text backing (behind text, absolute positioned)
-    showTextBacking &&
-      createElement(Image, {
-        src: frames!.textBackingUrl,
-        style: {
-          ...styles.frameTextBacking,
-          top: textBackingTop,
-        },
-      }),
     // Border overlay (on top of everything)
     showBorder &&
       createElement(Image, {

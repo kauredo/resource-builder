@@ -12,11 +12,11 @@ const MODEL = "models/gemini-3-pro-image-preview";
 const CHROMA_TOLERANCE = 50;
 
 /**
- * Crop image to target dimensions from center.
- * No resizing/stretching - just extracts the center portion at target size.
- * If the source is smaller than target, pads with green.
+ * Scale image to fit target dimensions, preserving aspect ratio.
+ * This ensures frame borders and edges are not cropped off.
+ * If the scaled image doesn't exactly match target, pads with green.
  */
-async function cropToTargetDimensions(
+async function scaleToTargetDimensions(
   imageBuffer: Buffer,
   targetWidth: number,
   targetHeight: number,
@@ -25,34 +25,33 @@ async function cropToTargetDimensions(
   const srcWidth = metadata.width || targetWidth;
   const srcHeight = metadata.height || targetHeight;
 
-  // Calculate crop position (center of source image)
-  const cropLeft = Math.max(0, Math.round((srcWidth - targetWidth) / 2));
-  const cropTop = Math.max(0, Math.round((srcHeight - targetHeight) / 2));
+  // Calculate scale factor to fit within target (contain, not cover)
+  const scaleX = targetWidth / srcWidth;
+  const scaleY = targetHeight / srcHeight;
+  const scale = Math.min(scaleX, scaleY);
 
-  // Calculate actual extractable dimensions
-  const extractWidth = Math.min(targetWidth, srcWidth);
-  const extractHeight = Math.min(targetHeight, srcHeight);
+  // Calculate scaled dimensions
+  const scaledWidth = Math.round(srcWidth * scale);
+  const scaledHeight = Math.round(srcHeight * scale);
 
-  // Extract the center portion
+  // Resize image to fit within target dimensions
   let result = await sharp(imageBuffer)
-    .extract({
-      left: cropLeft,
-      top: cropTop,
-      width: extractWidth,
-      height: extractHeight,
+    .resize(scaledWidth, scaledHeight, {
+      fit: "inside",
+      withoutEnlargement: false,
     })
     .toBuffer();
 
-  // If extracted size is smaller than target, pad with green
-  if (extractWidth < targetWidth || extractHeight < targetHeight) {
-    const leftPad = Math.round((targetWidth - extractWidth) / 2);
-    const topPad = Math.round((targetHeight - extractHeight) / 2);
+  // If scaled size doesn't match target exactly, pad with green (centered)
+  if (scaledWidth < targetWidth || scaledHeight < targetHeight) {
+    const leftPad = Math.round((targetWidth - scaledWidth) / 2);
+    const topPad = Math.round((targetHeight - scaledHeight) / 2);
     result = await sharp(result)
       .extend({
         top: topPad,
-        bottom: targetHeight - extractHeight - topPad,
+        bottom: targetHeight - scaledHeight - topPad,
         left: leftPad,
-        right: targetWidth - extractWidth - leftPad,
+        right: targetWidth - scaledWidth - leftPad,
         background: { r: 0, g: 255, b: 0, alpha: 1 },
       })
       .toBuffer();
@@ -115,17 +114,17 @@ async function applyChromaKey(imageBuffer: Buffer): Promise<Buffer> {
 // Frame dimension specifications (in pixels)
 const FRAME_DIMENSIONS = {
   border: { width: 768, height: 1024 }, // 3:4 portrait ratio
-  textBacking: { width: 1024, height: 256 }, // 2:1 banner shape
   fullCard: { width: 768, height: 1024 }, // 3:4 portrait ratio (same as border)
 } as const;
 
-type FrameType = "border" | "textBacking" | "fullCard";
+type FrameType = "border" | "fullCard";
 
 // Helper function to build frame prompts with chroma key instructions
 function buildFramePrompt({
   frameType,
   colors,
   illustrationStyle,
+  promptSuffix,
 }: {
   frameType: FrameType;
   colors: {
@@ -136,13 +135,16 @@ function buildFramePrompt({
     text: string;
   };
   illustrationStyle: string;
+  promptSuffix?: string;
 }): string {
   const colorsList = `${colors.primary} (primary), ${colors.secondary} (secondary), ${colors.accent} (accent)`;
   const dims = FRAME_DIMENSIONS[frameType];
 
+  let basePrompt: string;
+
   switch (frameType) {
     case "border":
-      return `Create a decorative rectangular border frame element for a card.
+      basePrompt = `Create a decorative rectangular border frame element for a card.
 Style: ${illustrationStyle}
 Colors: ${colorsList}
 
@@ -156,41 +158,21 @@ CRITICAL REQUIREMENTS FOR CHROMA KEY:
 
 FRAME DESIGN:
 - Decorative elements ONLY around the outer edges (like a picture frame)
-- The border/frame should be 8-12% of the width on each side
+- The border/frame should be 5-8% of the width on each side, with nothing in the center
 - No text, letters, or words anywhere
 - Think trading card border (Pokemon, Yu-Gi-Oh) or ornate picture frame, not overly complex design-wise
 - The green center is a placeholder - it will be made transparent in post-processing`;
-
-    case "textBacking":
-      return `Create a decorative banner/ribbon shape for placing text on top.
-Style: ${illustrationStyle}
-Colors: Use ${colors.primary} and ${colors.secondary} for the banner shape
-
-IMAGE DIMENSIONS: ${dims.width}x${dims.height} pixels (wide banner, 2:1 ratio)
-
-CRITICAL REQUIREMENTS FOR CHROMA KEY:
-- The BACKGROUND (everything outside the banner shape) must be solid, flat, uniform #00FF00 (pure bright green, chroma key green)
-- NO gradients, shadows, textures, or variations in the green background
-- The banner shape itself should be opaque with the style colors (NOT green)
-- Clean, defined edges between the banner and the green background
-
-BANNER DESIGN:
-- MUST be a WIDE, SHORT horizontal banner or ribbon shape
-- Soft, organic edges - related to the illustration style but should not be too complex or detailed.
-- No text, letters, or words in the design
-- Should enhance text readability while adding visual interest
-- The shape should be edge-to-edge. Not too complex design-wise.
-- The green background is a placeholder - it will be made transparent in post-processing`;
+      break;
 
     case "fullCard":
-      return `Create a complete trading card template frame (like Pokemon or Yu-Gi-Oh cards).
+      basePrompt = `Create a complete trading card template frame (like Pokemon or Yu-Gi-Oh cards).
 Style: ${illustrationStyle}
 Colors: ${colorsList}
 
 IMAGE DIMENSIONS: ${dims.width}x${dims.height} pixels (portrait, 3:4 ratio)
 
 CRITICAL REQUIREMENTS FOR CHROMA KEY:
-- The UPPER 75-80% of the card MUST be solid, flat, uniform #00FF00 (pure bright green, chroma key green)
+- The UPPER 75-80% of the card MUST be solid, flat, uniform #00FF00 (pure bright green, chroma key green), with the border/frame elements only around the outer edges
 - This green area is where the card image will show through - it must be completely flat green
 - NO gradients, shadows, textures, or variations in the green area
 - Put a thin 1 pixel dark outline around the green area to create a clean edge
@@ -204,21 +186,25 @@ CARD TEMPLATE DESIGN:
 - No text, letters, or words anywhere in the design
 - Think Pokemon card, Yu-Gi-Oh card, or trading card game aesthetic
 - The green upper area is a placeholder - it will be made transparent in post-processing`;
+      break;
 
     default:
       throw new Error(`Unknown frame type: ${frameType}`);
   }
+
+  // Append custom prompt suffix if provided
+  if (promptSuffix && promptSuffix.trim()) {
+    basePrompt += `\n\nADDITIONAL INSTRUCTIONS, IMPORTANT:\n${promptSuffix.trim()}`;
+  }
+
+  return basePrompt;
 }
 
 // Generate a frame asset for a style (Node.js action with Sharp processing)
 export const generateFrame = action({
   args: {
     styleId: v.id("styles"),
-    frameType: v.union(
-      v.literal("border"),
-      v.literal("textBacking"),
-      v.literal("fullCard"),
-    ),
+    frameType: v.union(v.literal("border"), v.literal("fullCard")),
     colors: v.object({
       primary: v.string(),
       secondary: v.string(),
@@ -227,6 +213,7 @@ export const generateFrame = action({
       text: v.string(),
     }),
     illustrationStyle: v.string(),
+    promptSuffix: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Get API key from environment
@@ -240,6 +227,7 @@ export const generateFrame = action({
       frameType: args.frameType,
       colors: args.colors,
       illustrationStyle: args.illustrationStyle,
+      promptSuffix: args.promptSuffix,
     });
 
     // Generate image via Gemini API
@@ -301,15 +289,15 @@ export const generateFrame = action({
     // Get target dimensions for this frame type
     const targetDims = FRAME_DIMENSIONS[args.frameType];
 
-    // Crop to target dimensions from center (no stretching)
-    const croppedBuffer = await cropToTargetDimensions(
+    // Scale to fit target dimensions (preserves edges, no cropping)
+    const scaledBuffer = await scaleToTargetDimensions(
       rawBuffer,
       targetDims.width,
       targetDims.height,
     );
 
     // Apply chroma key processing to convert green to transparent
-    const processedBuffer = await applyChromaKey(croppedBuffer);
+    const processedBuffer = await applyChromaKey(scaledBuffer);
 
     // Create blob and upload to Convex storage
     // Convert Buffer to Uint8Array for Blob compatibility

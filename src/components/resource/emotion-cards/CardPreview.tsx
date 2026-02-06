@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleFonts } from "@/lib/fonts";
 import { getCardAspectRatio } from "@/lib/pdf";
+import { calculateCardLayout } from "@/lib/card-layout";
+import type { CardLayoutSettings } from "@/types";
 
 interface CardPreviewProps {
   emotion: string;
@@ -33,14 +35,14 @@ interface CardPreviewProps {
       bodyFont: string;
     };
   };
+  // Card layout settings from style
+  cardLayout?: CardLayoutSettings;
   frameUrls?: {
     border?: string | null;
-    textBacking?: string | null;
     fullCard?: string | null;
   };
   useFrames?: {
     border?: boolean;
-    textBacking?: boolean;
     fullCard?: boolean;
   };
 }
@@ -56,6 +58,7 @@ export function CardPreview({
   onRegenerate,
   cardsPerPage = 6,
   style,
+  cardLayout,
   frameUrls,
   useFrames,
 }: CardPreviewProps) {
@@ -67,15 +70,16 @@ export function CardPreview({
     : [];
   useGoogleFonts(fontsToLoad);
 
+  // Use shared layout calculation for consistency
+  const cardDimensions = useMemo(
+    () => calculateCardLayout(cardLayout, showLabel, showDescription),
+    [cardLayout, showLabel, showDescription],
+  );
+
   // Determine which frames to show
   const showFullCard = useFrames?.fullCard && frameUrls?.fullCard;
   // Border is disabled when fullCard is active (fullCard takes precedence)
   const showBorder = useFrames?.border && frameUrls?.border && !showFullCard;
-  const showTextBacking =
-    useFrames?.textBacking &&
-    frameUrls?.textBacking &&
-    (showLabel || showDescription) &&
-    !showFullCard;
 
   // Style values with defaults
   const bgColor = style?.colors.background ?? "#FAFAFA";
@@ -85,26 +89,30 @@ export function CardPreview({
   const accentColor = style?.colors.secondary ?? "#E8E8E8";
 
   // Calculate aspect ratio based on layout (matches PDF output)
-  const hasContent = showLabel || showDescription;
   const cardAspectRatio = useMemo(
     () => getCardAspectRatio(cardsPerPage),
     [cardsPerPage],
   );
-  // Image takes 75% of card height when content is shown, 100% otherwise
-  const imageHeightPercent = hasContent ? 75 : 100;
+
+  // CSS border from card layout settings
+  const cssBorderWidth = cardDimensions.borderWidth || 2;
+  const cssBorderColor = isGenerating
+    ? "rgba(255, 107, 107, 0.4)" // coral/40
+    : hasError
+      ? "rgba(239, 68, 68, 0.4)" // destructive/40
+      : cardDimensions.borderWidth
+        ? cardDimensions.borderColor || textColor
+        : "hsl(var(--border))";
 
   return (
     <div
-      className={cn(
-        "relative flex flex-col rounded-xl overflow-hidden transition-all duration-200",
-        "border-2",
-        isGenerating && "border-coral/40",
-        hasError && "border-destructive/40",
-        !isGenerating && !hasError && "border-border",
-      )}
+      className="relative flex flex-col rounded-xl overflow-hidden transition-all duration-200"
       style={{
         backgroundColor: bgColor,
         aspectRatio: cardAspectRatio,
+        borderWidth: cssBorderWidth,
+        borderStyle: "solid",
+        borderColor: cssBorderColor,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -114,7 +122,7 @@ export function CardPreview({
         className="relative"
         style={{
           backgroundColor: accentColor + "30",
-          height: `${imageHeightPercent}%`,
+          height: `${cardDimensions.imageHeightPercent}%`,
         }}
       >
         {isGenerating ? (
@@ -180,34 +188,28 @@ export function CardPreview({
         )}
       </div>
 
-      {/* Content area (label/description) */}
-      {hasContent && (
+      {/* Content area (label/description) - z-20 to be above frames */}
+      {cardDimensions.hasContent && (
         <div
-          className="relative flex flex-col justify-center items-center border-t"
+          className="absolute inset-x-0 flex flex-col justify-center items-center z-20"
           style={{
-            backgroundColor: bgColor,
-            borderColor: textColor + "15",
-            height: "25%",
-            top: "-10%",
+            height: `${cardDimensions.contentHeightPercent}%`,
+            bottom: 0,
+            top: `${cardDimensions.contentTopPercent}%`,
           }}
         >
-          {/* Text backing behind text - 2:1 aspect ratio */}
-          {showTextBacking && (
+          {/* Overlay mode: semi-transparent backdrop */}
+          {cardDimensions.isOverlay && (
             <div
-              className="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ aspectRatio: "2 / 1" }}
-            >
-              <Image
-                src={frameUrls!.textBacking!}
-                alt=""
-                fill
-                className="object-contain"
-              />
-            </div>
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `linear-gradient(to top, ${bgColor} 60%, transparent)`,
+              }}
+            />
           )}
 
           {/* Text content */}
-          <div className="relative text-center px-8">
+          <div className="relative z-10 text-center px-8">
             {showLabel && (
               <span
                 className="font-semibold text-sm block leading-tight"
@@ -235,27 +237,17 @@ export function CardPreview({
         </div>
       )}
 
-      {/* Border frame overlay (on top of everything) */}
+      {/* Border frame overlay - z-10, stretch to fill card */}
       {showBorder && (
-        <div className="absolute inset-0 pointer-events-none">
-          <Image
-            src={frameUrls!.border!}
-            alt=""
-            fill
-            className="object-cover"
-          />
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <img src={frameUrls!.border!} alt="" className="w-full h-full" />
         </div>
       )}
 
-      {/* Full card template overlay (takes precedence over border) */}
+      {/* Full card template overlay - z-10, stretch to fill card */}
       {showFullCard && (
-        <div className="absolute inset-0 pointer-events-none">
-          <Image
-            src={frameUrls!.fullCard!}
-            alt=""
-            fill
-            className="object-cover"
-          />
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <img src={frameUrls!.fullCard!} alt="" className="w-full h-full" />
         </div>
       )}
 

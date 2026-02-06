@@ -8,7 +8,6 @@ import { mutation } from "./_generated/server";
 // These are the target dimensions for each frame type
 export const FRAME_DIMENSIONS = {
   border: { width: 768, height: 1024 }, // 3:4 portrait ratio
-  textBacking: { width: 1024, height: 256 }, // 2:1 banner shape
   fullCard: { width: 768, height: 1024 }, // 3:4 portrait ratio (same as border)
 } as const;
 
@@ -16,11 +15,7 @@ export const FRAME_DIMENSIONS = {
 export const updateStyleFrame = mutation({
   args: {
     styleId: v.id("styles"),
-    frameType: v.union(
-      v.literal("border"),
-      v.literal("textBacking"),
-      v.literal("fullCard"),
-    ),
+    frameType: v.union(v.literal("border"), v.literal("fullCard")),
     storageId: v.id("_storage"),
     prompt: v.string(),
   },
@@ -52,11 +47,7 @@ export const updateStyleFrame = mutation({
 export const deleteFrame = mutation({
   args: {
     styleId: v.id("styles"),
-    frameType: v.union(
-      v.literal("border"),
-      v.literal("textBacking"),
-      v.literal("fullCard"),
-    ),
+    frameType: v.union(v.literal("border"), v.literal("fullCard")),
   },
   handler: async (ctx, args) => {
     const style = await ctx.db.get(args.styleId);

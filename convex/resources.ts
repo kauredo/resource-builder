@@ -196,3 +196,37 @@ export const getResourceWithImages = query({
     };
   },
 });
+
+// Get a sample card image URL for a style (preferring "Happy" emotion)
+export const getSampleImageForStyle = query({
+  args: { styleId: v.id("styles") },
+  handler: async (ctx, args) => {
+    // Find resources using this style that have images
+    const resources = await ctx.db
+      .query("resources")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+
+    // Look for a "Happy" image first, then fall back to any image
+    for (const resource of resources) {
+      // First pass: look for "Happy"
+      for (const image of resource.images) {
+        if (image.description?.toLowerCase() === "happy") {
+          const url = await ctx.storage.getUrl(image.storageId);
+          if (url) return { url, emotion: "Happy" };
+        }
+      }
+    }
+
+    // Second pass: return first available image
+    for (const resource of resources) {
+      if (resource.images.length > 0) {
+        const image = resource.images[0];
+        const url = await ctx.storage.getUrl(image.storageId);
+        if (url) return { url, emotion: image.description || "Card" };
+      }
+    }
+
+    return null;
+  },
+});

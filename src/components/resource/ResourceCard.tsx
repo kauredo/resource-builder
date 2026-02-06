@@ -37,7 +37,7 @@ function formatRelativeDate(timestamp: number): string {
 function formatResourceType(type: string): string {
   return type
     .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
 

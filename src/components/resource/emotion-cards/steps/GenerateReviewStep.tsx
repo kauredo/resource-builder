@@ -49,7 +49,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
 
   // Extract frame data
   const frames = style?.frames as StyleFrames | undefined;
-  const frameCount = [frames?.border, frames?.textBacking, frames?.fullCard].filter(Boolean).length;
+  const frameCount = [frames?.border, frames?.fullCard].filter(Boolean).length;
 
   // Get image URLs for completed cards (for newly generated ones)
   const completedStorageIds = Array.from(results.values())
@@ -517,6 +517,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
                     }
                   : undefined
               }
+              cardLayout={style?.cardLayout}
               frameUrls={style?.frameUrls}
               useFrames={state.layout.useFrames}
               onRegenerate={

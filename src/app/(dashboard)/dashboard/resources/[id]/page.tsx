@@ -91,6 +91,7 @@ export default function ResourceDetailPage({ params }: PageProps) {
         showDescriptions: content.layout.showDescriptions,
         showCutLines: true,
         useFrames: content.layout.useFrames,
+        cardLayout: style?.cardLayout ?? undefined,
       };
 
       // Build style options from queried style
@@ -106,7 +107,6 @@ export default function ResourceDetailPage({ params }: PageProps) {
         style?.frameUrls && content.layout.useFrames
           ? {
               borderUrl: style.frameUrls.border ?? undefined,
-              textBackingUrl: style.frameUrls.textBacking ?? undefined,
               fullCardUrl: style.frameUrls.fullCard ?? undefined,
             }
           : undefined;
@@ -440,7 +440,6 @@ interface StyleSpecificationProps {
     frames?: StyleFrames;
     frameUrls?: {
       border?: string | null;
-      textBacking?: string | null;
       fullCard?: string | null;
     };
   };
@@ -456,17 +455,14 @@ function StyleSpecification({
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Count active frames
-  const frameCount = [
-    style.frames?.border,
-    style.frames?.textBacking,
-    style.frames?.fullCard,
-  ].filter(Boolean).length;
+  const frameCount = [style.frames?.border, style.frames?.fullCard].filter(
+    Boolean,
+  ).length;
 
   // Count frames enabled on this resource
   const enabledFrameCount = layout.useFrames
     ? [
         layout.useFrames.border && style.frames?.border,
-        layout.useFrames.textBacking && style.frames?.textBacking,
         layout.useFrames.fullCard && style.frames?.fullCard,
       ].filter(Boolean).length
     : 0;
@@ -618,20 +614,6 @@ function StyleSpecification({
                     Border
                   </span>
                 )}
-                {style.frames?.textBacking && (
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
-                      layout.useFrames?.textBacking
-                        ? "bg-teal/10 text-teal"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {layout.useFrames?.textBacking && (
-                      <Check className="size-3" aria-hidden="true" />
-                    )}
-                    Text Backing
-                  </span>
-                )}
                 {style.frames?.fullCard && (
                   <span
                     className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
@@ -698,9 +680,13 @@ interface StyledCardGridProps {
       headingFont: string;
       bodyFont: string;
     };
+    cardLayout?: {
+      textPosition?: "bottom" | "overlay" | "integrated";
+      contentHeight?: number;
+      imageOverlap?: number;
+    };
     frameUrls?: {
       border?: string | null;
-      textBacking?: string | null;
       fullCard?: string | null;
     };
   } | null;
@@ -723,6 +709,7 @@ function StyledCardGrid({ cards, images, layout, style }: StyledCardGridProps) {
             description={card.description}
             cardsPerPage={layout.cardsPerPage}
             style={style ?? undefined}
+            cardLayout={style?.cardLayout}
             frameUrls={style?.frameUrls}
             useFrames={layout.useFrames}
           />

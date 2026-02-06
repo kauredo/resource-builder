@@ -31,7 +31,10 @@ export const generateEmotionCard = action({
   },
   handler: async (ctx, args) => {
     // Get style from either styleId or direct style data
-    let styleData: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
+    let styleData: {
+      colors: { primary: string; secondary: string; accent: string };
+      illustrationStyle: string;
+    };
 
     if (args.style) {
       // Use directly provided style data
@@ -273,7 +276,7 @@ function buildEmotionCardPrompt({
   }
 
   // Add the base prompt
-  let basePrompt = `A child-friendly illustration showing the emotion "${emotion}"`;
+  let basePrompt = `A illustration showing the emotion "${emotion}"`;
   if (description) {
     basePrompt += `. ${description}`;
   }
@@ -298,7 +301,7 @@ function buildEmotionCardPrompt({
 
   // Additional quality guidance
   parts.push(
-    "Create a single cohesive square illustration (1:1 aspect ratio) with a clean background suitable for a therapy emotion card",
+    "Create a single cohesive square illustration (1:1 aspect ratio) with a CLEAN WHITE background suitable for a therapy emotion card. Keep the style consistent and focused on clearly conveying the specified emotion through facial expressions, body language, and color use. Avoid any extraneous details or elements that do not contribute to expressing the emotion clearly. Keep the subject centered and prominent in the frame.",
   );
 
   return parts.join(". ");

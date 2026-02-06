@@ -57,7 +57,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
 
   // Extract frame data
   const frames = style?.frames as StyleFrames | undefined;
-  const frameCount = [frames?.border, frames?.textBacking, frames?.fullCard].filter(Boolean).length;
+  const frameCount = [frames?.border, frames?.fullCard].filter(Boolean).length;
 
   // Get image URLs
   const storageIds = resource?.images.map((img) => img.storageId) || [];
@@ -93,6 +93,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
         showDescriptions: state.layout.showDescriptions,
         showCutLines,
         useFrames: state.layout.useFrames,
+        cardLayout: style?.cardLayout ?? undefined,
       };
 
       // Build style options from queried style or preset
@@ -113,7 +114,6 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
         style?.frameUrls && state.layout.useFrames
           ? {
               borderUrl: style.frameUrls.border ?? undefined,
-              textBackingUrl: style.frameUrls.textBacking ?? undefined,
               fullCardUrl: style.frameUrls.fullCard ?? undefined,
             }
           : undefined;
