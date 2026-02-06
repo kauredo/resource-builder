@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as characterActions from "../characterActions.js";
 import type * as characters from "../characters.js";
 import type * as frameActions from "../frameActions.js";
 import type * as frames from "../frames.js";
@@ -26,6 +27,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  characterActions: typeof characterActions;
   characters: typeof characters;
   frameActions: typeof frameActions;
   frames: typeof frames;

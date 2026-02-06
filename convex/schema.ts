@@ -90,16 +90,15 @@ export default defineSchema({
 
   characters: defineTable({
     userId: v.id("users"),
-    styleId: v.id("styles"),
+    styleId: v.optional(v.id("styles")),
     name: v.string(),
     description: v.string(),
     personality: v.string(),
     referenceImages: v.array(v.id("_storage")),
     promptFragment: v.string(),
     createdAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_style", ["styleId"]),
+    updatedAt: v.optional(v.number()),
+  }).index("by_user", ["userId"]),
 
   resources: defineTable({
     userId: v.id("users"),

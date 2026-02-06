@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, use } from "react";
+import { useState, useCallback, useEffect, use, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FrameGenerator } from "@/components/style/FrameGenerator";
 import { useGoogleFonts } from "@/lib/fonts";
+import { useDebouncedSave } from "@/hooks/use-debounced-save";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -84,9 +85,6 @@ export default function StyleDetailPage({ params }: PageProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [duplicateName, setDuplicateName] = useState("");
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-    "idle",
-  );
   const [framesExpanded, setFramesExpanded] = useState(false);
 
   // Local state for debounced fields
@@ -114,6 +112,24 @@ export default function StyleDetailPage({ params }: PageProps) {
   const displayFramePromptSuffix =
     localFramePromptSuffix ?? style?.framePromptSuffix ?? "";
 
+  // Ref to track whether style is a preset (for the save callback)
+  const isPresetRef = useRef(style?.isPreset ?? false);
+  isPresetRef.current = style?.isPreset ?? false;
+
+  const { saveStatus, debouncedSave } = useDebouncedSave({
+    onSave: useCallback(
+      async (updates: Record<string, unknown>) => {
+        if (isPresetRef.current) return;
+        await updateStyle({
+          styleId,
+          ...updates,
+        });
+      },
+      [styleId, updateStyle],
+    ),
+  });
+
+  // Non-debounced style change (for immediate updates like color/font selects)
   const handleStyleChange = useCallback(
     async (updates: {
       name?: string;
@@ -137,57 +153,36 @@ export default function StyleDetailPage({ params }: PageProps) {
       framePromptSuffix?: string;
     }) => {
       if (!style || style.isPreset) return;
-
-      setSaveStatus("saving");
-      try {
-        await updateStyle({
-          styleId,
-          ...updates,
-        });
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-      } catch (error) {
-        console.error("Failed to update style:", error);
-        setSaveStatus("idle");
-      }
+      debouncedSave(updates);
     },
-    [style, styleId, updateStyle],
+    [style, debouncedSave],
   );
 
   // Debounced name change
   const handleNameChange = useCallback(
     (value: string) => {
       setLocalName(value);
-      const timeout = setTimeout(() => {
-        handleStyleChange({ name: value });
-      }, 500);
-      return () => clearTimeout(timeout);
+      debouncedSave({ name: value });
     },
-    [handleStyleChange],
+    [debouncedSave],
   );
 
   // Debounced illustration style change
   const handleIllustrationStyleChange = useCallback(
     (value: string) => {
       setLocalIllustrationStyle(value);
-      const timeout = setTimeout(() => {
-        handleStyleChange({ illustrationStyle: value });
-      }, 500);
-      return () => clearTimeout(timeout);
+      debouncedSave({ illustrationStyle: value });
     },
-    [handleStyleChange],
+    [debouncedSave],
   );
 
   // Debounced frame prompt suffix change
   const handleFramePromptSuffixChange = useCallback(
     (value: string) => {
       setLocalFramePromptSuffix(value);
-      const timeout = setTimeout(() => {
-        handleStyleChange({ framePromptSuffix: value || undefined });
-      }, 500);
-      return () => clearTimeout(timeout);
+      debouncedSave({ framePromptSuffix: value || undefined });
     },
-    [handleStyleChange],
+    [debouncedSave],
   );
 
   const handleDuplicate = async () => {

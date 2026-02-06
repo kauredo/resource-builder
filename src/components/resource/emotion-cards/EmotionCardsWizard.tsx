@@ -433,7 +433,6 @@ export function EmotionCardsWizard({
         return (
           <CharacterStep
             characterId={state.characterId}
-            styleId={state.styleId}
             onUpdate={updateState}
           />
         );
