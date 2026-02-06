@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { formatRelativeDate } from "@/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames } from "@/types";
 import { useGoogleFonts } from "@/lib/fonts";
@@ -24,21 +25,6 @@ interface StyleCardProps {
   illustrationStyle: string;
   frames?: StyleFrames;
   updatedAt?: number;
-}
-
-function formatRelativeDate(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function StyleCard({
@@ -109,7 +95,7 @@ export function StyleCard({
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
                 style={{
-                  backgroundColor: colors.text + "12",
+                  backgroundColor: `color-mix(in oklch, ${colors.text} 8%, transparent)`,
                   color: colors.text,
                 }}
               >
@@ -121,7 +107,7 @@ export function StyleCard({
               <span
                 className="text-[10px] font-medium px-1.5 py-0.5 rounded tabular-nums"
                 style={{
-                  backgroundColor: colors.primary + "20",
+                  backgroundColor: `color-mix(in oklch, ${colors.primary} 12%, transparent)`,
                   color: colors.text,
                 }}
               >

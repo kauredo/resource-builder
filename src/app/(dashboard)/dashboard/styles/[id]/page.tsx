@@ -42,7 +42,7 @@ import {
   ChevronDown,
   Palette,
   Type,
-  Sparkles,
+  Paintbrush,
   Layers,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -537,7 +537,7 @@ export default function StyleDetailPage({ params }: PageProps) {
         {/* Illustration Style */}
         <section className="p-5 rounded-xl bg-muted/30 border border-border/50">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles
+            <Paintbrush
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -931,7 +931,7 @@ function StylePreview({
             </>
           )}
 
-          {!hasAnyFrame && !styleIsPreset() && (
+          {!hasAnyFrame && (
             <p className="text-xs text-muted-foreground">
               Generate frames below to preview them here.
             </p>
@@ -940,11 +940,6 @@ function StylePreview({
       </div>
     </div>
   );
-
-  function styleIsPreset() {
-    // Check if we're viewing a preset (no frame generation available)
-    return false;
-  }
 }
 
 // Toggle row component

@@ -489,12 +489,12 @@ export function EmotionCardsWizard({
         </h1>
       </div>
 
-      {/* Compact progress indicator */}
+      {/* Progress indicator */}
       <nav
-        className="mb-6 flex items-center gap-3"
+        className="mb-6 flex items-center gap-4"
         aria-label="Wizard progress"
       >
-        <div className="flex items-center gap-1.5" role="list">
+        <div className="flex items-center gap-2" role="list">
           {Array.from({ length: totalDisplaySteps }).map((_, i) => {
             const isComplete = i < currentStep;
             const isCurrent = i === currentStep;
@@ -504,17 +504,17 @@ export function EmotionCardsWizard({
                 role="listitem"
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-200",
-                  isCurrent ? "w-6 bg-coral" : "w-1.5",
+                  "rounded-full transition-all duration-200",
+                  isCurrent ? "w-8 h-2 bg-coral" : "size-2",
                   isComplete ? "bg-coral" : "",
-                  !isComplete && !isCurrent ? "bg-muted" : ""
+                  !isComplete && !isCurrent ? "bg-border" : ""
                 )}
               />
             );
           })}
         </div>
         <span className="text-sm text-muted-foreground tabular-nums">
-          Step {currentStep + 1} of {totalDisplaySteps}
+          {currentStep + 1}/{totalDisplaySteps}
         </span>
       </nav>
 

@@ -553,7 +553,7 @@ export default function Home() {
       <footer className="border-t border-border py-12 px-6 safe-area-inset-bottom">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <p className="text-sm text-muted-foreground">
-            © 2025 Resource Builder
+            © {new Date().getFullYear()} Resource Builder
           </p>
           <nav aria-label="Footer navigation">
             <ul className="flex gap-1 text-sm text-muted-foreground">
