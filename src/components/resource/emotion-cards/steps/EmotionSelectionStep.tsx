@@ -188,25 +188,22 @@ export function EmotionSelectionStep({
             {selectedEmotions.length} emotion{selectedEmotions.length !== 1 ? "s" : ""} selected
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
+        <div className="flex items-center gap-3">
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             onClick={() => selectAll([...PRIMARY_EMOTIONS, ...SECONDARY_EMOTIONS, ...NUANCED_EMOTIONS])}
+            className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors duration-150"
           >
-            All ({PRIMARY_EMOTIONS.length + SECONDARY_EMOTIONS.length + NUANCED_EMOTIONS.length})
-          </Button>
+            Select all
+          </button>
           {selectedEmotions.length > 0 && (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={() => onUpdate({ selectedEmotions: [] })}
-              className="text-muted-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors duration-150"
             >
               Clear
-            </Button>
+            </button>
           )}
         </div>
       </div>

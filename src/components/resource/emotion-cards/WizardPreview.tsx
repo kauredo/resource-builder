@@ -97,7 +97,7 @@ export function WizardPreview({
 
         {/* The card itself */}
         <div
-          className="relative rounded-lg overflow-hidden transition-all duration-300 ease-out group-hover:scale-[1.02]"
+          className="relative rounded-lg overflow-hidden"
           style={{
             width: CARD_WIDTH,
             backgroundColor: previewColors.background,

@@ -226,7 +226,9 @@ export default function CharactersPage() {
           {/* Count and Sort */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-muted-foreground">
-              {characters?.length ?? 0} character{(characters?.length ?? 0) !== 1 ? "s" : ""}
+              {isFiltering
+                ? `${filteredCharacters.length} of ${characters?.length ?? 0} characters`
+                : `${characters?.length ?? 0} character${(characters?.length ?? 0) !== 1 ? "s" : ""}`}
             </p>
             <SortDropdown
               value={sortOption}
@@ -303,17 +305,6 @@ export default function CharactersPage() {
       {/* Character Grid */}
       {hasFilteredResults && (
         <>
-          {/* Results count when filtering */}
-          {isFiltering && (
-            <p
-              className="text-sm text-muted-foreground mb-4"
-              aria-live="polite"
-            >
-              Showing {filteredCharacters.length} of{" "}
-              {characters?.length ?? 0} character
-              {(characters?.length ?? 0) !== 1 ? "s" : ""}
-            </p>
-          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredCharacters.map((character) => (
               <CharacterCard

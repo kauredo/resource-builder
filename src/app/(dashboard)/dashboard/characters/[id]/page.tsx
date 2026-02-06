@@ -61,6 +61,10 @@ export default function CharacterDetailPage({ params }: PageProps) {
 
   // Error states
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSuggestions, setImageSuggestions] = useState<{
+    description: string;
+    personality: string;
+  } | null>(null);
   const [promptError, setPromptError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -121,8 +125,11 @@ export default function CharacterDetailPage({ params }: PageProps) {
   const canGenerateImage = hasName && hasDescription;
   const hasPromptFragment = displayPromptFragment.trim().length > 0;
   const hasReferenceImages = (character?.referenceImages.length ?? 0) > 0;
-  const showGettingStarted =
-    !hasDescription && !hasPromptFragment && !hasReferenceImages;
+  const isPromptStale =
+    hasPromptFragment &&
+    character?.promptFragmentUpdatedAt !== undefined &&
+    character?.updatedAt !== undefined &&
+    character.updatedAt > character.promptFragmentUpdatedAt;
 
   // Auto-focus name input for new characters
   const hasAutoFocused = useRef(false);
@@ -137,6 +144,15 @@ export default function CharacterDetailPage({ params }: PageProps) {
       nameInputRef.current.select();
     }
   }, [character]);
+
+  // Auto-expand visual description section when prerequisites are met but none exists
+  const hasAutoExpanded = useRef(false);
+  useEffect(() => {
+    if (canGeneratePrompt && !hasPromptFragment && !hasAutoExpanded.current) {
+      hasAutoExpanded.current = true;
+      setPromptExpanded(true);
+    }
+  }, [canGeneratePrompt, hasPromptFragment]);
 
   // Debounced field handlers — clear errors on edit
   const handleNameChange = useCallback(
@@ -187,42 +203,52 @@ export default function CharacterDetailPage({ params }: PageProps) {
     }
   };
 
-  // File upload handler — triggers image analysis after successful upload
+  // File upload handler — supports multiple files, triggers batch analysis after
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     setUploadError(null);
     setImageError(null);
+
+    const newStorageIds: Id<"_storage">[] = [];
     try {
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      const { storageId } = await result.json();
-      await addReferenceImage({ characterId, storageId });
+      // Upload all files in parallel
+      await Promise.all(
+        Array.from(files).map(async (file) => {
+          const uploadUrl = await generateUploadUrl();
+          const result = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+          const { storageId } = await result.json();
+          await addReferenceImage({ characterId, storageId });
+          newStorageIds.push(storageId);
+        }),
+      );
       setIsUploading(false);
 
-      // After successful upload, analyze the image and update prompt
-      setIsAnalyzingUpload(true);
-      try {
-        const analysisResult = await analyzeAndUpdatePrompt({
-          characterId,
-          storageId,
-        });
-        setLocalPromptFragment(analysisResult.promptFragment);
-        setPromptExpanded(true);
-      } catch (error) {
-        // Non-blocking — upload succeeded even if analysis fails
-        console.error("Image analysis failed:", error);
-      } finally {
-        setIsAnalyzingUpload(false);
+      // After all uploads, analyze all new images together
+      if (newStorageIds.length > 0) {
+        setIsAnalyzingUpload(true);
+        try {
+          const analysisResult = await analyzeAndUpdatePrompt({
+            characterId,
+            storageIds: newStorageIds,
+          });
+          setLocalPromptFragment(analysisResult.promptFragment);
+          setPromptExpanded(true);
+        } catch (error) {
+          // Non-blocking — uploads succeeded even if analysis fails
+          console.error("Image analysis failed:", error);
+        } finally {
+          setIsAnalyzingUpload(false);
+        }
       }
     } catch (error) {
-      console.error("Failed to upload image:", error);
+      console.error("Failed to upload images:", error);
       setUploadError("Failed to upload. Please try again.");
       setIsUploading(false);
     } finally {
@@ -233,14 +259,42 @@ export default function CharacterDetailPage({ params }: PageProps) {
   const handleGenerateImage = async () => {
     setIsGeneratingImage(true);
     setImageError(null);
+    setImageSuggestions(null);
     try {
       await generateReferenceImage({ characterId });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to generate image:", error);
-      setImageError("Image generation failed. Try adjusting the description.");
+      // Try to parse structured safety block error with suggestions
+      const message = error instanceof Error ? error.message : String(error);
+      try {
+        const jsonStart = message.indexOf("{");
+        const jsonEnd = message.lastIndexOf("}");
+        const jsonStr = jsonStart >= 0 && jsonEnd > jsonStart ? message.slice(jsonStart, jsonEnd + 1) : "";
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.type === "SAFETY_BLOCK" && parsed.suggestions) {
+          setImageError(
+            "Image generation was blocked — the description may contain trademarked or copyrighted references.",
+          );
+          setImageSuggestions(parsed.suggestions);
+        } else {
+          setImageError("Image generation failed. Try adjusting the description.");
+        }
+      } catch {
+        setImageError("Image generation failed. Try adjusting the description.");
+      }
     } finally {
       setIsGeneratingImage(false);
     }
+  };
+
+  const handleApplySuggestions = () => {
+    if (!imageSuggestions) return;
+    handleDescriptionChange(imageSuggestions.description);
+    if (imageSuggestions.personality) {
+      handlePersonalityChange(imageSuggestions.personality);
+    }
+    setImageError(null);
+    setImageSuggestions(null);
   };
 
   const handleGeneratePrompt = async () => {
@@ -252,7 +306,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
       setPromptExpanded(true);
     } catch (error) {
       console.error("Failed to generate prompt:", error);
-      setPromptError("Failed to generate prompt. Try adding more detail.");
+      setPromptError("Failed to generate. Try adding more detail.");
     } finally {
       setIsGeneratingPrompt(false);
     }
@@ -260,10 +314,10 @@ export default function CharacterDetailPage({ params }: PageProps) {
 
   const handleRemoveImageClick = (storageId: string) => {
     if (hasPromptFragment) {
-      // Prompt exists — show confirmation so user knows to review it
+      // Visual description exists — show confirmation so user knows to review it
       setPendingRemoveImageId(storageId);
     } else {
-      // No prompt — just remove silently
+      // No visual description — just remove silently
       handleRemoveImage(storageId);
     }
   };
@@ -285,7 +339,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
   const handleRemoveAndReviewPrompt = async () => {
     if (!pendingRemoveImageId) return;
     await handleRemoveImage(pendingRemoveImageId);
-    // Expand prompt section and scroll to it
+    // Expand visual description section and scroll to it
     setPromptExpanded(true);
     requestAnimationFrame(() => {
       promptSectionRef.current?.scrollIntoView({
@@ -384,13 +438,6 @@ export default function CharacterDetailPage({ params }: PageProps) {
                   </p>
                 </div>
               )}
-              {/* Primary badge when portrait is populated */}
-              {primaryImageUrl && (
-                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-black/50 text-white backdrop-blur-sm">
-                  <Star className="size-2.5" aria-hidden="true" />
-                  Primary
-                </span>
-              )}
             </div>
           </div>
 
@@ -478,73 +525,44 @@ export default function CharacterDetailPage({ params }: PageProps) {
                 htmlFor="description"
                 className="text-xs text-muted-foreground"
               >
-                Description
+                Appearance
               </Label>
               <Textarea
                 id="description"
                 value={displayDescription}
                 onChange={e => handleDescriptionChange(e.target.value)}
-                placeholder="Describe the character's appearance and key traits..."
+                placeholder="How does this character look? e.g. A friendly brown bear with round glasses, a blue knitted scarf, and soft fur..."
                 rows={3}
                 className="resize-none text-sm"
               />
-              <p className="text-xs text-muted-foreground">
-                {!hasDescription
-                  ? "Start here \u2014 describe how the character looks so AI can generate consistent illustrations"
-                  : "Visual details help AI generate consistent illustrations"}
-              </p>
             </div>
-            <div className="space-y-2">
+            <div className={cn("space-y-2", !hasDescription && "opacity-50")}>
               <Label
                 htmlFor="personality"
                 className="text-xs text-muted-foreground"
               >
-                Personality
+                Personality{" "}
+                <span className="text-muted-foreground/60">(optional)</span>
               </Label>
               <Textarea
                 id="personality"
                 value={displayPersonality}
                 onChange={e => handlePersonalityChange(e.target.value)}
-                placeholder="Describe the character's personality, mannerisms, and emotional range..."
-                rows={3}
+                placeholder="What is this character like? e.g. Gentle and curious, speaks softly, tilts head when listening..."
+                rows={2}
                 className="resize-none text-sm"
               />
-              <p className="text-xs text-muted-foreground">
-                {!displayPersonality.trim() && hasDescription
-                  ? "Optional but recommended \u2014 personality traits influence how emotions are expressed"
-                  : "Personality traits influence how emotions are expressed"}
-              </p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Getting started banner */}
-      {showGettingStarted && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-teal/5 border border-teal/15 mb-8">
-          <Paintbrush
-            className="size-4 text-teal shrink-0 mt-0.5"
-            aria-hidden="true"
-          />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Getting started
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              Describe your character&apos;s appearance, then generate a prompt
-              fragment for AI consistency. You can also upload a reference image
-              &mdash; we&apos;ll analyze it and update the prompt automatically.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Sections */}
       <div className="space-y-8">
         {/* Reference Images */}
         <section className="p-5 rounded-xl bg-muted/30 border border-border/50">
           {/* Header — stacks on mobile */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <ImageIcon className="size-4 text-teal" aria-hidden="true" />
               <h2 className="text-sm font-medium text-foreground">
@@ -563,9 +581,10 @@ export default function CharacterDetailPage({ params }: PageProps) {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleFileUpload}
                 className="hidden"
-                aria-label="Upload reference image"
+                aria-label="Upload reference images"
               />
               <Button
                 variant="outline"
@@ -607,23 +626,55 @@ export default function CharacterDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Section help text */}
-          <p className="text-xs text-muted-foreground mb-4 ml-6">
-            Upload a reference image and we&apos;ll analyze it to update the
-            prompt fragment automatically. You can also generate images with AI.
-          </p>
-
-          {/* Disabled hint for generate button */}
-          {!canGenerateImage && !isAnyOperationInProgress && (
-            <p className="text-xs text-muted-foreground mb-4 ml-6">
-              Add a name and description to enable AI generation
-            </p>
-          )}
-
-          {/* In-progress feedback */}
-          {(isUploading || isAnalyzingUpload || isGeneratingImage) && (
+          {/* Single status area — shows the most relevant message */}
+          {(imageError || uploadError) ? (
             <div
-              className="flex items-center gap-2 mb-4 ml-6"
+              className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 mb-4 space-y-3"
+              role="alert"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle
+                  className="size-3.5 text-destructive shrink-0"
+                  aria-hidden="true"
+                />
+                <p className="text-xs text-destructive">
+                  {uploadError || imageError}
+                </p>
+              </div>
+              {imageSuggestions && (
+                <div className="space-y-2 border-t border-destructive/10 pt-3">
+                  <p className="text-xs font-medium text-foreground">
+                    Suggested changes:
+                  </p>
+                  <div className="space-y-1.5">
+                    {imageSuggestions.description !== displayDescription && (
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Appearance: </span>
+                        <span className="text-foreground">{imageSuggestions.description}</span>
+                      </div>
+                    )}
+                    {imageSuggestions.personality && imageSuggestions.personality !== displayPersonality && (
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Personality: </span>
+                        <span className="text-foreground">{imageSuggestions.personality}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleApplySuggestions}
+                    className="gap-1.5 text-xs"
+                  >
+                    <Check className="size-3" aria-hidden="true" />
+                    Apply suggestions
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (isUploading || isAnalyzingUpload || isGeneratingImage) ? (
+            <div
+              className="flex items-center gap-2 mb-4"
               aria-live="polite"
             >
               <Loader2
@@ -631,32 +682,20 @@ export default function CharacterDetailPage({ params }: PageProps) {
                 aria-hidden="true"
               />
               <p className="text-xs text-teal font-medium">
-                {isUploading && "Uploading image..."}
+                {isUploading && "Uploading images..."}
                 {isAnalyzingUpload &&
-                  "Analyzing image and updating prompt fragment..."}
+                  "Analyzing image and updating visual description..."}
                 {isGeneratingImage &&
                   (hasPromptFragment
-                    ? "Creating a portrait using the prompt fragment for consistency..."
-                    : "Creating a portrait from the character description...")}
+                    ? "Creating a portrait using the visual description..."
+                    : "Creating a portrait from the character details...")}
               </p>
             </div>
-          )}
-
-          {/* Error display */}
-          {(imageError || uploadError) && (
-            <div
-              className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 mb-4"
-              role="alert"
-            >
-              <AlertCircle
-                className="size-3.5 text-destructive shrink-0"
-                aria-hidden="true"
-              />
-              <p className="text-xs text-destructive">
-                {uploadError || imageError}
-              </p>
-            </div>
-          )}
+          ) : (!canGenerateImage && !isAnyOperationInProgress && !hasReferenceImages) ? (
+            <p className="text-xs text-muted-foreground mb-4">
+              Add a name and description to enable AI generation
+            </p>
+          ) : null}
 
           {/* Image grid */}
           {character.referenceImages.length > 0 ? (
@@ -721,7 +760,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
           )}
         </section>
 
-        {/* Remove image confirmation — shown when prompt fragment exists */}
+        {/* Remove image confirmation — shown when visual description exists */}
         <AlertDialog
           open={pendingRemoveImageId !== null}
           onOpenChange={open => {
@@ -732,20 +771,20 @@ export default function CharacterDetailPage({ params }: PageProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove this image?</AlertDialogTitle>
               <AlertDialogDescription>
-                The prompt fragment may still reference details from this image.
-                You&apos;ll want to review and update it after removing.
+                The visual description may still reference details from this
+                image. You&apos;ll want to review and update it after removing.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleRemoveAndReviewPrompt}>
-                Remove &amp; Review Prompt
+                Remove &amp; Review
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* AI Prompt Fragment — collapsible */}
+        {/* Visual Description — collapsible */}
         <section
           ref={promptSectionRef}
           className="border border-border/50 rounded-xl overflow-hidden"
@@ -763,20 +802,27 @@ export default function CharacterDetailPage({ params }: PageProps) {
                   aria-hidden="true"
                 />
                 <h2 className="text-sm font-medium text-foreground">
-                  AI Prompt Fragment
+                  Visual Description
                 </h2>
-                {hasPromptFragment && (
+                {hasPromptFragment && !isPromptStale && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal/8 text-teal">
                     Active
                   </span>
                 )}
+                {isPromptStale && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">
+                    May be outdated
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 ml-6 line-clamp-1">
-                {hasPromptFragment
-                  ? "Visual description used to keep this character consistent"
-                  : canGeneratePrompt
-                    ? "Generate a visual prompt to ensure consistency across illustrations"
-                    : "Fill in the character details above, then generate a consistency prompt"}
+                {isPromptStale
+                  ? "Character details changed since this was last generated"
+                  : hasPromptFragment
+                    ? "Ensures consistent look across all illustrations"
+                    : canGeneratePrompt
+                      ? "Generate from your character details for AI consistency"
+                      : "Complete the character details above first"}
               </p>
             </div>
             <ChevronDown
@@ -790,61 +836,43 @@ export default function CharacterDetailPage({ params }: PageProps) {
           {promptExpanded && (
             <div className="px-5 pb-5 border-t border-border/50">
               <div className="pt-5 space-y-3">
-                <div className="space-y-2">
-                  <Button
-                    size="sm"
-                    onClick={handleGeneratePrompt}
-                    disabled={isAnyOperationInProgress || !canGeneratePrompt}
-                    className="gap-1.5 bg-teal text-white hover:bg-teal/90"
-                  >
-                    {isGeneratingPrompt ? (
-                      <Loader2
-                        className="size-3.5 animate-spin"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Wand2 className="size-3.5" aria-hidden="true" />
-                    )}
-                    {isGeneratingPrompt
-                      ? "Analyzing description..."
-                      : hasPromptFragment
-                        ? "Regenerate"
-                        : "Generate from Description"}
-                  </Button>
-
-                  {/* Contextual help below button */}
-                  {!canGeneratePrompt && !isAnyOperationInProgress && (
-                    <p className="text-xs text-muted-foreground">
-                      Add a name and description above to enable generation
-                    </p>
-                  )}
-                  {canGeneratePrompt &&
-                    !hasPromptFragment &&
-                    !isGeneratingPrompt && (
-                      <p className="text-xs text-muted-foreground">
-                        Creates a visual description from your character
-                        details, used in every image generation for this
-                        character.
-                      </p>
-                    )}
-                </div>
-
-                {/* In-progress feedback */}
-                {isGeneratingPrompt && (
-                  <div className="flex items-center gap-2" aria-live="polite">
+                <Button
+                  size="sm"
+                  onClick={handleGeneratePrompt}
+                  disabled={isAnyOperationInProgress || !canGeneratePrompt}
+                  className="gap-1.5 bg-teal text-white hover:bg-teal/90"
+                >
+                  {isGeneratingPrompt ? (
                     <Loader2
-                      className="size-3.5 animate-spin text-teal"
+                      className="size-3.5 animate-spin"
                       aria-hidden="true"
                     />
-                    <p className="text-xs text-teal font-medium">
-                      Reading character details and crafting a visual
-                      description...
+                  ) : (
+                    <Wand2 className="size-3.5" aria-hidden="true" />
+                  )}
+                  {isGeneratingPrompt
+                    ? "Crafting description..."
+                    : hasPromptFragment
+                      ? "Regenerate"
+                      : "Generate from Details"}
+                </Button>
+
+                {/* Stale warning */}
+                {isPromptStale && !isGeneratingPrompt && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/15">
+                    <AlertCircle
+                      className="size-3.5 text-amber-600 shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <p className="text-xs text-amber-800">
+                      Character details have changed since this was last
+                      generated. Regenerate to keep illustrations consistent.
                     </p>
                   </div>
                 )}
 
-                {/* Error display */}
-                {promptError && (
+                {/* Single status area */}
+                {promptError ? (
                   <div
                     className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20"
                     role="alert"
@@ -855,7 +883,22 @@ export default function CharacterDetailPage({ params }: PageProps) {
                     />
                     <p className="text-xs text-destructive">{promptError}</p>
                   </div>
-                )}
+                ) : isGeneratingPrompt ? (
+                  <div className="flex items-center gap-2" aria-live="polite">
+                    <Loader2
+                      className="size-3.5 animate-spin text-teal"
+                      aria-hidden="true"
+                    />
+                    <p className="text-xs text-teal font-medium">
+                      Reading character details and crafting a visual
+                      description...
+                    </p>
+                  </div>
+                ) : !canGeneratePrompt && !isAnyOperationInProgress ? (
+                  <p className="text-xs text-muted-foreground">
+                    Add a name and appearance above to generate
+                  </p>
+                ) : null}
 
                 <Textarea
                   value={displayPromptFragment}
@@ -863,12 +906,11 @@ export default function CharacterDetailPage({ params }: PageProps) {
                   placeholder="A friendly bear character with round brown fur, wearing a blue scarf and small round glasses..."
                   rows={4}
                   className="resize-none text-sm"
-                  aria-label="AI prompt fragment"
+                  aria-label="Visual description"
                 />
                 <p className="text-xs text-muted-foreground">
-                  This text is prepended to every image generation prompt for
-                  this character, ensuring a consistent look. Uploading
-                  reference images will update this automatically.
+                  Prepended to every AI image prompt for consistent results.
+                  Updated automatically when you upload reference images.
                 </p>
               </div>
             </div>

@@ -34,10 +34,10 @@ export interface WizardState {
   // Track original emotions for edit mode (to detect changes)
   originalEmotions: string[];
 
-  // Step 3: Character (optional)
+  // Step 3: Character (optional, in Options step)
   characterId: Id<"characters"> | null;
 
-  // Step 4: Layout
+  // Step 3: Layout (in Options step)
   layout: EmotionCardLayout;
 
   // Image generation options
@@ -74,12 +74,30 @@ const INITIAL_STATE: WizardState = {
   isEditMode: false,
 };
 
+// 5 steps: Name & Style → Emotions → Options → Generate → Export
+const STEP_LABELS = [
+  "Style",
+  "Emotions",
+  "Options",
+  "Generate",
+  "Export",
+];
+
 const STEP_TITLES = [
   "Name & Style",
   "Select Emotions",
-  "Character",
-  "Layout",
+  "Options",
   "Generate",
+  "Export",
+];
+
+const TOTAL_STEPS = 5;
+
+// Context-aware button labels for "Continue"
+const NEXT_BUTTON_LABELS = [
+  "Choose Emotions",
+  "Configure Options",
+  "Generate Cards",
   "Export",
 ];
 
@@ -226,19 +244,8 @@ export function EmotionCardsWizard({
     }
   }, [styleWithFrames, state.styleId, state.isEditMode]);
 
-  // Check if character step should be shown (only if user has characters)
+  // Check if user has characters (for Options step)
   const hasCharacters = userCharacters && userCharacters.length > 0;
-
-  // Get actual steps (skip character step if no characters)
-  const getActualStepIndex = (displayStep: number): number => {
-    if (!hasCharacters && displayStep >= 2) {
-      return displayStep + 1; // Skip character step
-    }
-    return displayStep;
-  };
-
-  const totalDisplaySteps = hasCharacters ? 6 : 5;
-  const actualStep = getActualStepIndex(currentStep);
 
   // Update state helper
   const updateState = useCallback((updates: Partial<WizardState>) => {
@@ -324,7 +331,7 @@ export function EmotionCardsWizard({
 
   // Navigation handlers
   const canGoNext = (): boolean => {
-    switch (actualStep) {
+    switch (currentStep) {
       case 0: // Name & Style
         return (
           state.name.trim().length > 0 &&
@@ -332,13 +339,11 @@ export function EmotionCardsWizard({
         );
       case 1: // Emotions
         return state.selectedEmotions.length > 0;
-      case 2: // Character (optional)
+      case 2: // Options (Character + Layout)
         return true;
-      case 3: // Layout
-        return true;
-      case 4: // Generate
+      case 3: // Generate
         return state.generationStatus === "complete";
-      case 5: // Export
+      case 4: // Export
         return true;
       default:
         return false;
@@ -351,7 +356,7 @@ export function EmotionCardsWizard({
 
     try {
       // Save draft after Step 1
-      if (actualStep === 0 && !state.resourceId) {
+      if (currentStep === 0 && !state.resourceId) {
         const resourceId = await saveDraft();
         if (resourceId) {
           updateState({ resourceId });
@@ -359,11 +364,11 @@ export function EmotionCardsWizard({
       }
 
       // Update content when moving forward
-      if (state.resourceId && actualStep > 0) {
+      if (state.resourceId && currentStep > 0) {
         await saveDraft();
       }
 
-      setCurrentStep((prev) => Math.min(prev + 1, totalDisplaySteps - 1));
+      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS - 1));
     } finally {
       setIsNavigating(false);
     }
@@ -396,8 +401,8 @@ export function EmotionCardsWizard({
   // Get first emotion for preview
   const previewEmotion = state.selectedEmotions[0] || "Happy";
 
-  // Determine if we should show the preview sidebar (steps 0-3)
-  const showPreviewSidebar = actualStep <= 3;
+  // Determine if we should show the preview sidebar (steps 0-2)
+  const showPreviewSidebar = currentStep <= 2;
 
   // Get style data for preview
   const previewStyle = styleWithFrames || state.stylePreset;
@@ -408,7 +413,7 @@ export function EmotionCardsWizard({
 
   // Render current step
   const renderStep = () => {
-    switch (actualStep) {
+    switch (currentStep) {
       case 0:
         return (
           <NameStyleStep
@@ -430,25 +435,30 @@ export function EmotionCardsWizard({
           />
         );
       case 2:
+        // Combined Options step: Character (if available) + Layout
         return (
-          <CharacterStep
-            characterId={state.characterId}
-            onUpdate={updateState}
-          />
+          <div className="space-y-10">
+            {hasCharacters && (
+              <>
+                <CharacterStep
+                  characterId={state.characterId}
+                  onUpdate={updateState}
+                />
+                <hr className="border-border/50" />
+              </>
+            )}
+            <LayoutOptionsStep
+              layout={state.layout}
+              includeTextInImage={state.includeTextInImage}
+              onUpdate={updateState}
+              isFirstTimeUser={!user?.firstResourceCreatedAt}
+              styleId={state.styleId}
+            />
+          </div>
         );
       case 3:
-        return (
-          <LayoutOptionsStep
-            layout={state.layout}
-            includeTextInImage={state.includeTextInImage}
-            onUpdate={updateState}
-            isFirstTimeUser={!user?.firstResourceCreatedAt}
-            styleId={state.styleId}
-          />
-        );
-      case 4:
         return <GenerateReviewStep state={state} onUpdate={updateState} />;
-      case 5:
+      case 4:
         return <ExportStep state={state} onUpdate={updateState} />;
       default:
         return null;
@@ -483,18 +493,18 @@ export function EmotionCardsWizard({
         </button>
         <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
           {state.isEditMode
-            ? `Edit: ${STEP_TITLES[actualStep]}`
-            : STEP_TITLES[actualStep]}
+            ? `Edit: ${STEP_TITLES[currentStep]}`
+            : STEP_TITLES[currentStep]}
         </h1>
       </div>
 
-      {/* Progress indicator */}
+      {/* Progress indicator with labels */}
       <nav
         className="mb-6 flex items-center gap-4"
         aria-label="Wizard progress"
       >
-        <div className="flex items-center gap-2" role="list">
-          {Array.from({ length: totalDisplaySteps }).map((_, i) => {
+        <div className="flex items-center gap-3" role="list">
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
             const isComplete = i < currentStep;
             const isCurrent = i === currentStep;
             return (
@@ -502,18 +512,34 @@ export function EmotionCardsWizard({
                 key={i}
                 role="listitem"
                 aria-current={isCurrent ? "step" : undefined}
-                className={cn(
-                  "rounded-full transition-all duration-200",
-                  isCurrent ? "w-8 h-2 bg-coral" : "size-2",
-                  isComplete ? "bg-coral" : "",
-                  !isComplete && !isCurrent ? "bg-border" : ""
-                )}
-              />
+                className="flex items-center gap-1.5"
+              >
+                <div
+                  className={cn(
+                    "rounded-full transition-all duration-200",
+                    isCurrent ? "w-6 h-2 bg-coral" : "size-2",
+                    isComplete ? "bg-coral" : "",
+                    !isComplete && !isCurrent ? "bg-border" : ""
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs hidden sm:inline transition-colors",
+                    isCurrent
+                      ? "text-foreground font-medium"
+                      : isComplete
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/50"
+                  )}
+                >
+                  {STEP_LABELS[i]}
+                </span>
+              </div>
             );
           })}
         </div>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {currentStep + 1}/{totalDisplaySteps}
+        <span className="text-sm text-muted-foreground tabular-nums sm:hidden">
+          {currentStep + 1}/{TOTAL_STEPS}
         </span>
       </nav>
 
@@ -554,7 +580,7 @@ export function EmotionCardsWizard({
           Back
         </Button>
 
-        {actualStep < 5 ? (
+        {currentStep < TOTAL_STEPS - 1 ? (
           <Button
             className="btn-coral min-w-[120px]"
             onClick={handleNext}
@@ -570,7 +596,7 @@ export function EmotionCardsWizard({
               </>
             ) : (
               <>
-                Continue
+                {NEXT_BUTTON_LABELS[currentStep] ?? "Continue"}
                 <ArrowRight className="size-4" aria-hidden="true" />
               </>
             )}

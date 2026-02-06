@@ -56,13 +56,19 @@ export const generateEmotionCard = action({
     }
 
     // Get character if provided
-    let characterPromptFragment: string | undefined;
+    let characterContext: {
+      promptFragment?: string;
+      description?: string;
+    } = {};
     if (args.characterId) {
       const character = await ctx.runQuery(api.characters.getCharacter, {
         characterId: args.characterId,
       });
       if (character) {
-        characterPromptFragment = character.promptFragment;
+        characterContext = {
+          promptFragment: character.promptFragment || undefined,
+          description: character.description || undefined,
+        };
       }
     }
 
@@ -70,7 +76,7 @@ export const generateEmotionCard = action({
     const prompt = buildEmotionCardPrompt({
       emotion: args.emotion,
       style: styleData,
-      characterPromptFragment,
+      characterContext,
       description: args.description,
       includeText: args.includeText ?? false,
     });
@@ -251,7 +257,7 @@ export const getImageUrls = query({
 function buildEmotionCardPrompt({
   emotion,
   style,
-  characterPromptFragment,
+  characterContext,
   description,
   includeText = false,
 }: {
@@ -264,15 +270,21 @@ function buildEmotionCardPrompt({
     };
     illustrationStyle: string;
   };
-  characterPromptFragment?: string;
+  characterContext?: {
+    promptFragment?: string;
+    description?: string;
+  };
   description?: string;
   includeText?: boolean;
 }): string {
   const parts: string[] = [];
 
-  // Start with character prompt fragment if provided
-  if (characterPromptFragment) {
-    parts.push(characterPromptFragment);
+  // Start with character details if provided
+  if (characterContext?.promptFragment) {
+    parts.push(characterContext.promptFragment);
+  }
+  if (characterContext?.description) {
+    parts.push(`Character appearance: ${characterContext.description}`);
   }
 
   // Add the base prompt

@@ -1,3 +1,5 @@
+"use node";
+
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
@@ -7,7 +9,113 @@ const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const IMAGE_MODEL = "models/gemini-3-pro-image-preview";
 const TEXT_MODEL = "models/gemini-2.0-flash";
 
-// Generate a prompt fragment from character details
+// Shared helper: merge character details + image descriptions into a prompt fragment
+async function mergeIntoPromptFragment(
+  apiKey: string,
+  opts: {
+    name: string;
+    description: string;
+    personality: string;
+    imageDescriptions?: string;
+  },
+): Promise<string> {
+  const hasImages = opts.imageDescriptions && opts.imageDescriptions.length > 0;
+
+  const prompt = `You are helping a therapist create consistent AI-generated illustrations for therapy materials (emotion cards, worksheets, etc.).
+
+Given this character's details${hasImages ? " and reference image analyses" : ""}, create a concise visual prompt fragment (2-4 sentences) that describes exactly how this character should look in any illustration.${hasImages ? " Prioritize visual details from the image analyses." : ""}
+
+Character Name: ${opts.name}
+${opts.description ? `Description: ${opts.description}` : ""}
+${opts.personality ? `Personality: ${opts.personality}` : ""}
+${hasImages ? `\nReference image analyses:\n${opts.imageDescriptions}` : ""}
+
+Generate a prompt fragment that describes the character's VISUAL appearance in detail: body type, hair, skin tone, clothing style, distinguishing features, and overall vibe. Be specific enough that an image generation model would consistently recreate this character.
+
+Do NOT include any emotion-specific language. The fragment should work when combined with any emotion or scene.
+Respond with ONLY the prompt fragment text, no explanation or quotes.`;
+
+  const response: Response = await fetch(
+    `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error?.message || "Failed to generate prompt fragment",
+    );
+  }
+
+  const data = await response.json();
+  const generatedText: string | undefined =
+    data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!generatedText) throw new Error("No text generated");
+
+  return generatedText;
+}
+
+// Suggest copyright-free rewrites when image generation is blocked
+async function suggestDescriptionFix(
+  apiKey: string,
+  opts: { name: string; description: string; personality: string },
+): Promise<{ description: string; personality: string }> {
+  const prompt = `An AI image generator blocked this character description, likely due to trademarked or copyrighted references.
+
+Character Name: ${opts.name}
+Description: ${opts.description}
+Personality: ${opts.personality}
+
+Rewrite BOTH the description and personality to remove any trademarked names, brand references, or copyrighted character references (e.g. "Disney", "Pixar", "Marvel", specific show/movie names) while keeping the same visual look and personality traits. Describe the visual style generically instead of referencing brands (e.g. "cartoon animated style with bold outlines" instead of "Disney style").
+
+Respond in EXACTLY this JSON format, no other text:
+{"description": "...", "personality": "..."}`;
+
+  try {
+    const response = await fetch(
+      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      return { description: opts.description, personality: opts.personality };
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) {
+      return { description: opts.description, personality: opts.personality };
+    }
+
+    // Extract JSON from response (may be wrapped in ```json blocks)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return { description: opts.description, personality: opts.personality };
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      description: parsed.description || opts.description,
+      personality: parsed.personality || opts.personality,
+    };
+  } catch {
+    return { description: opts.description, personality: opts.personality };
+  }
+}
+
+// Generate a prompt fragment from character details + stored image descriptions
 export const generatePromptFragment = action({
   args: { characterId: v.id("characters") },
   handler: async (
@@ -22,41 +130,20 @@ export const generatePromptFragment = action({
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
 
-    const prompt: string = `You are helping a therapist create consistent AI-generated illustrations for therapy materials (emotion cards, worksheets, etc.).
+    // Include stored image descriptions so regeneration doesn't lose image context
+    const descriptions = character.imageDescriptions ?? {};
+    const descriptionsText = Object.values(descriptions).length > 0
+      ? Object.values(descriptions)
+          .map((d, i) => `Image ${i + 1}: ${d}`)
+          .join("\n")
+      : undefined;
 
-Given this character description, generate a concise visual prompt fragment that can be prepended to any image generation prompt to ensure the character looks consistent across all illustrations.
-
-Character Name: ${character.name}
-${character.description ? `Description: ${character.description}` : ""}
-${character.personality ? `Personality: ${character.personality}` : ""}
-
-Generate a prompt fragment (2-4 sentences) that describes the character's VISUAL appearance in detail: body type, hair, skin tone, clothing style, distinguishing features, and overall vibe. Be specific enough that an image generation model would consistently recreate this character.
-
-Do NOT include any emotion-specific language. The fragment should work when combined with any emotion or scene.
-Respond with ONLY the prompt fragment text, no explanation or quotes.`;
-
-    const response: Response = await fetch(
-      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error?.message || "Failed to generate prompt fragment",
-      );
-    }
-
-    const data = await response.json();
-    const generatedText: string | undefined =
-      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!generatedText) throw new Error("No text generated");
+    const generatedText = await mergeIntoPromptFragment(apiKey, {
+      name: character.name,
+      description: character.description,
+      personality: character.personality,
+      imageDescriptions: descriptionsText,
+    });
 
     // Update character with generated prompt fragment
     await ctx.runMutation(api.characters.updateCharacter, {
@@ -68,11 +155,11 @@ Respond with ONLY the prompt fragment text, no explanation or quotes.`;
   },
 });
 
-// Analyze an uploaded reference image and update the prompt fragment
+// Analyze uploaded reference images and update the prompt fragment
 export const analyzeAndUpdatePrompt = action({
   args: {
     characterId: v.id("characters"),
-    storageId: v.id("_storage"),
+    storageIds: v.array(v.id("_storage")),
   },
   handler: async (
     ctx,
@@ -86,91 +173,80 @@ export const analyzeAndUpdatePrompt = action({
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
 
-    // Get image URL and fetch bytes
-    const imageUrl = await ctx.storage.getUrl(args.storageId);
-    if (!imageUrl) throw new Error("Could not retrieve image URL");
+    // Step 1: Analyze each new image individually and store descriptions
+    const newDescriptions: Record<string, string> = {};
+    await Promise.all(
+      args.storageIds.map(async (storageId) => {
+        const imageUrl = await ctx.storage.getUrl(storageId);
+        if (!imageUrl) return;
 
-    const imageResponse: Response = await fetch(imageUrl);
-    if (!imageResponse.ok) throw new Error("Failed to fetch image data");
+        const imageResponse: Response = await fetch(imageUrl);
+        if (!imageResponse.ok) return;
 
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64 = Buffer.from(imageBuffer).toString("base64");
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64 = Buffer.from(imageBuffer).toString("base64");
+        const mimeType =
+          imageUrl.includes(".jpg") || imageUrl.includes(".jpeg")
+            ? "image/jpeg"
+            : "image/png";
 
-    // Determine mime type from URL or default to png
-    const mimeType =
-      imageUrl.includes(".jpg") || imageUrl.includes(".jpeg")
-        ? "image/jpeg"
-        : "image/png";
-
-    // Step 1: Vision — describe the character in the image
-    const visionResponse: Response = await fetch(
-      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
+        const visionResponse: Response = await fetch(
+          `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
                 {
-                  text: "Describe this character's visual appearance in precise detail. Focus on: body type, proportions, colors, clothing, accessories, hair/fur, distinguishing features. Be specific about colors and shapes. Do not describe the background or art style.",
-                },
-                {
-                  inlineData: { mimeType, data: base64 },
+                  parts: [
+                    {
+                      text: "Describe this character's visual appearance in precise detail. Focus on: body type, proportions, colors, clothing, accessories, hair/fur, distinguishing features. Be specific about colors and shapes. Do not describe the background or art style.",
+                    },
+                    { inlineData: { mimeType, data: base64 } },
+                  ],
                 },
               ],
-            },
-          ],
-        }),
-      },
+            }),
+          },
+        );
+
+        if (!visionResponse.ok) return;
+
+        const visionData = await visionResponse.json();
+        const analysis: string | undefined =
+          visionData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (analysis) {
+          newDescriptions[storageId] = analysis;
+        }
+      }),
     );
 
-    if (!visionResponse.ok) {
-      const errorData = await visionResponse.json();
-      throw new Error(errorData.error?.message || "Failed to analyze image");
+    if (Object.keys(newDescriptions).length === 0) {
+      throw new Error("Could not analyze any of the uploaded images");
     }
 
-    const visionData = await visionResponse.json();
-    const imageAnalysis: string | undefined =
-      visionData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!imageAnalysis) throw new Error("No analysis generated from image");
+    // Merge new descriptions with existing ones and persist
+    const allDescriptions = {
+      ...(character.imageDescriptions ?? {}),
+      ...newDescriptions,
+    };
+    await ctx.runMutation(api.characters.updateImageDescriptions, {
+      characterId: args.characterId,
+      imageDescriptions: allDescriptions,
+    });
 
-    // Step 2: Merge analysis with character details into a prompt fragment
-    const mergePrompt: string = `Given this character's details and an image analysis, create a concise visual prompt fragment (2-4 sentences) that describes exactly how this character should look in any illustration. Combine all sources, prioritizing visual details from the image analysis.
+    // Step 2: Merge ALL image descriptions + character details into prompt fragment
+    const descriptionsText = Object.values(allDescriptions)
+      .map((d, i) => `Image ${i + 1}: ${d}`)
+      .join("\n");
 
-Character Name: ${character.name}
-${character.description ? `Description: ${character.description}` : ""}
-${character.personality ? `Personality: ${character.personality}` : ""}
-${character.promptFragment ? `Current prompt: ${character.promptFragment}` : ""}
-Image analysis: ${imageAnalysis}
+    const updatedPrompt = await mergeIntoPromptFragment(apiKey, {
+      name: character.name,
+      description: character.description,
+      personality: character.personality,
+      imageDescriptions: descriptionsText,
+    });
 
-Write only the visual prompt fragment, no preamble.`;
-
-    const mergeResponse: Response = await fetch(
-      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: mergePrompt }] }],
-        }),
-      },
-    );
-
-    if (!mergeResponse.ok) {
-      const errorData = await mergeResponse.json();
-      throw new Error(
-        errorData.error?.message ||
-          "Failed to generate updated prompt fragment",
-      );
-    }
-
-    const mergeData = await mergeResponse.json();
-    const updatedPrompt: string | undefined =
-      mergeData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!updatedPrompt) throw new Error("No prompt fragment generated");
-
-    // Update the character's prompt fragment
     await ctx.runMutation(api.characters.updateCharacter, {
       characterId: args.characterId,
       promptFragment: updatedPrompt,
@@ -214,10 +290,13 @@ export const generateReferenceImage = action({
     }
 
     parts.push(
-      "Create a clear, centered character portrait with a clean white background. The character should be shown from the waist up, facing slightly towards the viewer with a neutral, friendly expression. The illustration should be suitable as a character reference sheet for consistent reproduction in future illustrations.",
+      "Create a clear, centered character portrait in 3:4 portrait orientation with a clean white background. The character should be shown from the waist up, facing slightly towards the viewer with a neutral, friendly expression. The illustration should be suitable as a character reference sheet for consistent reproduction in future illustrations.",
     );
     parts.push(
       "IMPORTANT: Do NOT include any text, words, letters, or labels in the image.",
+    );
+    parts.push(
+      "This is an original character for therapy materials, not a copyrighted character. If the description resembles an existing character, make it visually distinct enough to be clearly original.",
     );
 
     const prompt: string = parts.join(". ");
@@ -232,6 +311,12 @@ export const generateReferenceImage = action({
           generationConfig: {
             responseModalities: ["image", "text"],
           },
+          safetySettings: [
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+          ],
         }),
       },
     );
@@ -245,18 +330,31 @@ export const generateReferenceImage = action({
 
     const data = await response.json();
     const candidates = data.candidates;
-    if (!candidates || candidates.length === 0) {
-      throw new Error("No image generated");
+    const blocked =
+      (!candidates || candidates.length === 0) ||
+      candidates[0].finishReason === "SAFETY" ||
+      !candidates[0].content?.parts;
+
+    if (blocked) {
+      // Ask the text model to suggest a copyright-free rewrite
+      const suggestions = await suggestDescriptionFix(apiKey, {
+        name: character.name,
+        description: character.description,
+        personality: character.personality,
+      });
+      throw new Error(
+        JSON.stringify({ type: "SAFETY_BLOCK", suggestions }),
+      );
     }
 
-    const responseParts = candidates[0].content?.parts;
-    if (!responseParts) throw new Error("Invalid response format");
+    const candidate = candidates[0];
 
+    const responseParts = candidate.content.parts;
     const imagePart = responseParts.find(
       (part: { inlineData?: { data: string; mimeType: string } }) =>
         part.inlineData,
     );
-    if (!imagePart?.inlineData) throw new Error("No image in response");
+    if (!imagePart?.inlineData) throw new Error("No image in response — the model returned only text.");
 
     // Convert base64 to blob and store
     const imageData: string = imagePart.inlineData.data;

@@ -95,7 +95,10 @@ export default defineSchema({
     description: v.string(),
     personality: v.string(),
     referenceImages: v.array(v.id("_storage")),
+    // Per-image AI-generated visual descriptions, keyed by storageId
+    imageDescriptions: v.optional(v.record(v.string(), v.string())),
     promptFragment: v.string(),
+    promptFragmentUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),

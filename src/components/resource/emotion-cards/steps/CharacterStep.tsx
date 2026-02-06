@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
-import { Check, User, UserX, Plus } from "lucide-react";
+import { Check, User, UserX, Plus, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WizardState } from "../EmotionCardsWizard";
 
@@ -46,36 +46,33 @@ export function CharacterStep({
         onClick={() => onUpdate({ characterId: null })}
         className={cn(
           "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer",
-          "transition-colors duration-150 hover:border-coral/40 hover:bg-coral/5",
+          "transition-colors duration-150 hover:border-border hover:bg-muted/30",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
           characterId === null
-            ? "border-coral bg-coral/5"
+            ? "border-foreground/15 bg-muted/20"
             : "border-border bg-card"
         )}
       >
         <div
           className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-            characterId === null ? "bg-coral/20" : "bg-muted"
+            characterId === null ? "bg-muted" : "bg-muted"
           )}
         >
           <UserX
-            className={cn(
-              "size-6",
-              characterId === null ? "text-coral" : "text-muted-foreground"
-            )}
+            className="size-6 text-muted-foreground"
             aria-hidden="true"
           />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="font-medium">No character</span>
-          <p className="text-sm text-muted-foreground">
-            Generate unique illustrations for each emotion without a recurring character.
+          <span className="font-medium text-muted-foreground">No character</span>
+          <p className="text-sm text-muted-foreground/70">
+            Generate unique illustrations for each emotion.
           </p>
         </div>
         {characterId === null && (
-          <div className="w-6 h-6 bg-coral rounded-full flex items-center justify-center shrink-0">
-            <Check className="size-4 text-white" aria-hidden="true" />
+          <div className="w-6 h-6 bg-foreground/15 rounded-full flex items-center justify-center shrink-0">
+            <Check className="size-4 text-foreground/50" aria-hidden="true" />
           </div>
         )}
       </button>
@@ -144,6 +141,37 @@ export function CharacterStep({
           </div>
         </div>
       )}
+
+      {/* Stale visual description warning */}
+      {characterId && characters && (() => {
+        const selected = characters.find(c => c._id === characterId);
+        if (
+          !selected ||
+          !selected.promptFragment.trim() ||
+          selected.promptFragmentUpdatedAt === undefined ||
+          selected.updatedAt === undefined ||
+          selected.updatedAt <= selected.promptFragmentUpdatedAt
+        ) return null;
+        return (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/5 border border-amber-500/15">
+            <AlertCircle className="size-3.5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="text-xs text-amber-800">
+              <p>
+                <span className="font-medium">{selected.name}&apos;s</span> visual
+                description may be outdated.{" "}
+                <Link
+                  href={`/dashboard/characters/${selected._id}`}
+                  target="_blank"
+                  className="underline underline-offset-2 hover:text-amber-900 transition-colors"
+                >
+                  Update it
+                </Link>{" "}
+                for the most consistent results.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* No characters available */}
       {characters && characters.length === 0 && (

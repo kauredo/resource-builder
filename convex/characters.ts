@@ -88,9 +88,14 @@ export const updateCharacter = mutation({
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([, value]) => value !== undefined)
     );
+    const now = Date.now();
     await ctx.db.patch(characterId, {
       ...filteredUpdates,
-      updatedAt: Date.now(),
+      updatedAt: now,
+      // Track when visual description was last set for staleness detection
+      ...(args.promptFragment !== undefined
+        ? { promptFragmentUpdatedAt: now }
+        : {}),
     });
   },
 });
@@ -133,6 +138,19 @@ export const addReferenceImage = mutation({
   },
 });
 
+// Update stored image descriptions
+export const updateImageDescriptions = mutation({
+  args: {
+    characterId: v.id("characters"),
+    imageDescriptions: v.record(v.string(), v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.characterId, {
+      imageDescriptions: args.imageDescriptions,
+    });
+  },
+});
+
 // Remove a reference image from a character
 export const removeReferenceImage = mutation({
   args: {
@@ -143,12 +161,15 @@ export const removeReferenceImage = mutation({
     const character = await ctx.db.get(args.characterId);
     if (!character) throw new Error("Character not found");
 
-    // Remove from array
+    // Remove from array and clean up stored description
     const updatedImages = character.referenceImages.filter(
       (id) => id !== args.storageId
     );
+    const updatedDescriptions = { ...(character.imageDescriptions ?? {}) };
+    delete updatedDescriptions[args.storageId];
     await ctx.db.patch(args.characterId, {
       referenceImages: updatedImages,
+      imageDescriptions: updatedDescriptions,
       updatedAt: Date.now(),
     });
 
