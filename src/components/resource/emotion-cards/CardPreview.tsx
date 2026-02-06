@@ -15,6 +15,7 @@ interface CardPreviewProps {
   imageUrl: string | null;
   isGenerating: boolean;
   hasError: boolean;
+  variant?: "standard" | "compact";
   showLabel?: boolean;
   showDescription?: boolean;
   description?: string;
@@ -52,6 +53,7 @@ export function CardPreview({
   imageUrl,
   isGenerating,
   hasError,
+  variant = "standard",
   showLabel = true,
   showDescription = false,
   description,
@@ -93,6 +95,19 @@ export function CardPreview({
     () => getCardAspectRatio(cardsPerPage),
     [cardsPerPage],
   );
+
+  // Match PDF font sizing for consistency
+  const baseLabelSize =
+    cardsPerPage === 9 ? 10 : cardsPerPage === 6 ? 12 : 14;
+  const baseDescriptionSize =
+    cardsPerPage === 9 ? 8 : cardsPerPage === 6 ? 9 : 10;
+  const fontScale = variant === "compact" ? 0.75 : 1;
+  const labelFontSize = Math.max(8, Math.round(baseLabelSize * fontScale));
+  const descriptionFontSize = Math.max(
+    7,
+    Math.round(baseDescriptionSize * fontScale),
+  );
+  const textPaddingX = variant === "compact" ? 6 : 32;
 
   // CSS border from card layout settings
   const cssBorderWidth = cardDimensions.borderWidth || 2;
@@ -209,13 +224,18 @@ export function CardPreview({
           )}
 
           {/* Text content */}
-          <div className="relative z-10 text-center px-8">
+          <div
+            className="relative z-10 text-center"
+            style={{ paddingLeft: textPaddingX, paddingRight: textPaddingX }}
+          >
             {showLabel && (
               <span
-                className="font-semibold text-sm block leading-tight"
+                className="block leading-tight"
                 style={{
                   color: textColor,
                   fontFamily: `"${headingFont}", system-ui, sans-serif`,
+                  fontWeight: 700,
+                  fontSize: labelFontSize,
                 }}
               >
                 {emotion}
@@ -223,11 +243,13 @@ export function CardPreview({
             )}
             {showDescription && description && (
               <span
-                className="text-xs mt-0.5 block leading-tight"
+                className="mt-0.5 block leading-tight"
                 style={{
                   color: textColor,
                   opacity: 0.7,
                   fontFamily: `"${bodyFont}", system-ui, sans-serif`,
+                  fontWeight: 400,
+                  fontSize: descriptionFontSize,
                 }}
               >
                 {description}

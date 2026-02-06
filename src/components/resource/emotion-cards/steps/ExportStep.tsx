@@ -17,7 +17,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   generateEmotionCardsPDF,
   PDFLayoutOptions,
@@ -26,6 +25,7 @@ import {
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
 import { StyleContextBar } from "../StyleContextBar";
+import { CardPreview } from "../CardPreview";
 import type { WizardState } from "../use-emotion-cards-wizard";
 import type { StyleFrames } from "@/types";
 
@@ -164,13 +164,14 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
     };
   }, [pdfUrl]);
 
-  // Style values for card thumbnails
-  const cardStyle = state.stylePreset
-    ? {
-        colors: state.stylePreset.colors,
-        typography: state.stylePreset.typography,
-      }
-    : undefined;
+  const previewStyle = style
+    ? { colors: style.colors, typography: style.typography }
+    : state.stylePreset
+      ? {
+          colors: state.stylePreset.colors,
+          typography: state.stylePreset.typography,
+        }
+      : undefined;
 
   const totalPages = Math.ceil(state.selectedEmotions.length / state.layout.cardsPerPage);
 
@@ -344,58 +345,23 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                 const image = resource?.images.find((img) => img.description === emotion);
                 const imageUrl = image?.storageId && imageUrls?.[image.storageId];
 
-                const textColor = cardStyle?.colors.text ?? "#1A1A1A";
-                const bgColor = cardStyle?.colors.background ?? "#FAFAFA";
-                const secondaryColor = cardStyle?.colors.secondary ?? "#E8E8E8";
-
                 return (
-                  <div
+                  <CardPreview
                     key={emotion}
-                    className="rounded-lg overflow-hidden border"
-                    style={{
-                      backgroundColor: bgColor,
-                      borderColor: `color-mix(in oklch, ${textColor} 12%, transparent)`,
-                    }}
-                  >
-                    {/* Mini image */}
-                    <div
-                      className="aspect-square relative"
-                      style={{
-                        backgroundColor: `color-mix(in oklch, ${secondaryColor} 19%, transparent)`,
-                      }}
-                    >
-                      {imageUrl && (
-                        <Image
-                          src={imageUrl}
-                          alt={emotion}
-                          fill
-                          className="object-cover"
-                          sizes="80px"
-                        />
-                      )}
-                    </div>
-                    {/* Mini label */}
-                    {state.layout.showLabels && (
-                      <div
-                        className="px-1 py-0.5 text-center truncate"
-                        style={{
-                          borderTop: `1px solid color-mix(in oklch, ${textColor} 6%, transparent)`,
-                        }}
-                      >
-                        <span
-                          className="text-[8px] sm:text-[9px] font-medium leading-tight"
-                          style={{
-                            color: textColor,
-                            fontFamily: cardStyle
-                              ? `"${cardStyle.typography.headingFont}", system-ui, sans-serif`
-                              : "system-ui",
-                          }}
-                        >
-                          {emotion}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    emotion={emotion}
+                    imageUrl={imageUrl || null}
+                    isGenerating={false}
+                    hasError={false}
+                    variant="compact"
+                    showLabel={state.layout.showLabels}
+                    showDescription={state.layout.showDescriptions}
+                    description={getEmotionDescription(emotion)}
+                    cardsPerPage={state.layout.cardsPerPage}
+                    style={previewStyle}
+                    cardLayout={style?.cardLayout}
+                    frameUrls={style?.frameUrls}
+                    useFrames={state.layout.useFrames}
+                  />
                 );
               })}
             </div>

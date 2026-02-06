@@ -152,6 +152,21 @@ export function getImageAspectRatio(
   return dimensions.cardWidth / imageHeight;
 }
 
+function getOverlayGradientDataUrl(bgColor: string): string {
+  const color = bgColor || "#FFFFFF";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="100" viewBox="0 0 1 100" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
+      <stop offset="60%" stop-color="${color}" stop-opacity="1"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1" height="100" fill="url(#g)"/>
+</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 // Create styles for PDF
 const createStyles = (
   options: PDFLayoutOptions,
@@ -173,15 +188,11 @@ const createStyles = (
   const contentHeightPercent = cardDimensions.hasContent
     ? `${cardDimensions.contentHeightPercent}%`
     : "0%";
+  const contentTopPercent = `${cardDimensions.contentTopPercent}%`;
 
-  // Calculate overlap from card layout settings
-  const imageOverlap =
-    options.cardLayout?.imageOverlap ?? DEFAULT_CARD_LAYOUT.imageOverlap;
-  const contentOverlap = cardDimensions.hasContent
-    ? dimensions.cardHeight * (imageOverlap / 100)
-    : 0;
+  // Overlap is already accounted for in calculateCardLayout
 
-  return StyleSheet.create({
+  const styles = StyleSheet.create({
     page: {
       padding: dimensions.margin,
       backgroundColor: "#FFFFFF",
@@ -218,30 +229,33 @@ const createStyles = (
       objectFit: "cover",
     },
     cardContent: {
-      padding: 8,
+      paddingLeft: 32,
+      paddingRight: 32,
       height: contentHeightPercent,
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: style.colors.background,
-      position: "relative",
-      // Pull content up to overlap with image (matches web CardPreview)
-      marginTop: -contentOverlap,
-    },
-    // Overlay mode: content positioned absolutely over image with semi-transparent backdrop
-    cardContentOverlay: {
-      padding: 8,
-      height: contentHeightPercent,
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: style.colors.background + "E6", // 90% opacity
       position: "absolute",
-      bottom: 0,
       left: 0,
       right: 0,
+      top: contentTopPercent,
+      backgroundColor: "transparent",
+    },
+    // Overlay mode: content positioned absolutely over image with gradient backdrop
+    cardContentOverlay: {
+      paddingLeft: 32,
+      paddingRight: 32,
+      height: contentHeightPercent,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: contentTopPercent,
+      backgroundColor: "transparent",
     },
     cardLabel: {
       fontSize:
@@ -305,6 +319,11 @@ const createStyles = (
       // No objectFit - stretch to fill card (matches web previews)
     },
   });
+
+  return {
+    styles,
+    overlayGradientSrc: getOverlayGradientDataUrl(style.colors.background),
+  };
 };
 
 // Emotion Card component
@@ -313,11 +332,13 @@ function EmotionCard({
   styles,
   options,
   frames,
+  overlayGradientSrc,
 }: {
   card: EmotionCardData;
-  styles: ReturnType<typeof createStyles>;
+  styles: ReturnType<typeof createStyles>["styles"];
   options: PDFLayoutOptions;
   frames?: PDFFrameOptions;
+  overlayGradientSrc?: string;
 }) {
   // Use shared layout calculation for consistency
   const cardDimensions = calculateCardLayout(
@@ -330,6 +351,9 @@ function EmotionCard({
   // Border is disabled when fullCard is active (fullCard takes precedence)
   const showBorder =
     options.useFrames?.border && frames?.borderUrl && !showFullCard;
+
+  const overlayGradient =
+    cardDimensions.isOverlay && overlayGradientSrc ? overlayGradientSrc : null;
 
   return createElement(
     View,
@@ -346,6 +370,17 @@ function EmotionCard({
             createElement(Text, { style: styles.placeholderText }, "No image"),
           ),
     ),
+    // Border/full card overlays (above image, below text)
+    showBorder &&
+      createElement(Image, {
+        src: frames!.borderUrl,
+        style: styles.frameBorder,
+      }),
+    showFullCard &&
+      createElement(Image, {
+        src: frames!.fullCardUrl,
+        style: styles.frameBorder,
+      }),
     // Content area (label/description)
     // Use overlay style when text position is "overlay" - positioned over image with backdrop
     cardDimensions.hasContent &&
@@ -356,6 +391,13 @@ function EmotionCard({
             ? styles.cardContentOverlay
             : styles.cardContent,
         },
+        // Gradient backdrop for overlay mode (matches CardPreview)
+        cardDimensions.isOverlay &&
+          overlayGradient &&
+          createElement(Image, {
+            src: overlayGradient,
+            style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+          }),
         // Label text
         options.showLabels &&
           createElement(Text, { style: styles.cardLabel }, card.emotion),
@@ -368,18 +410,6 @@ function EmotionCard({
             card.description,
           ),
       ),
-    // Border overlay (on top of everything)
-    showBorder &&
-      createElement(Image, {
-        src: frames!.borderUrl,
-        style: styles.frameBorder,
-      }),
-    // Full card template overlay (takes precedence over border)
-    showFullCard &&
-      createElement(Image, {
-        src: frames!.fullCardUrl,
-        style: styles.frameBorder,
-      }),
   );
 }
 
@@ -389,11 +419,13 @@ function CardPage({
   styles,
   options,
   frames,
+  overlayGradientSrc,
 }: {
   cards: EmotionCardData[];
-  styles: ReturnType<typeof createStyles>;
+  styles: ReturnType<typeof createStyles>["styles"];
   options: PDFLayoutOptions;
   frames?: PDFFrameOptions;
+  overlayGradientSrc?: string;
 }) {
   return createElement(
     Page,
@@ -408,6 +440,7 @@ function CardPage({
           styles,
           options,
           frames,
+          overlayGradientSrc,
         }),
       ),
     ),
@@ -459,7 +492,7 @@ export async function generateEmotionCardsPDF(
         }
       : effectiveStyle;
 
-  const styles = createStyles(options, resolvedStyle);
+  const { styles, overlayGradientSrc } = createStyles(options, resolvedStyle);
 
   // Split cards into pages
   const pages: EmotionCardData[][] = [];
@@ -477,6 +510,7 @@ export async function generateEmotionCardsPDF(
         styles,
         options,
         frames,
+        overlayGradientSrc,
       }),
     ),
   );
