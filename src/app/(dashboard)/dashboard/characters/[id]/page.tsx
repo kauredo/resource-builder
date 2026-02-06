@@ -397,10 +397,10 @@ export default function CharacterDetailPage({ params }: PageProps) {
   }
 
   // Resolve primary (first) reference image
+  const primaryImageId =
+    character.primaryImageId ?? character.referenceImages[0];
   const primaryImageUrl =
-    character.referenceImages.length > 0
-      ? character.imageUrls[character.referenceImages[0]]
-      : null;
+    primaryImageId ? character.imageUrls[primaryImageId] : null;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -700,9 +700,9 @@ export default function CharacterDetailPage({ params }: PageProps) {
           {/* Image grid */}
           {character.referenceImages.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {character.referenceImages.map((storageId, index) => {
+              {character.referenceImages.map((storageId) => {
                 const url = character.imageUrls[storageId];
-                const isPrimary = index === 0;
+                const isPrimary = storageId === primaryImageId;
                 return (
                   <div
                     key={storageId}
@@ -731,11 +731,27 @@ export default function CharacterDetailPage({ params }: PageProps) {
                         Primary
                       </span>
                     )}
+                    {!isPrimary && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateCharacter({
+                            characterId,
+                            primaryImageId: storageId as Id<"_storage">,
+                          })
+                        }
+                        disabled={isAnyOperationInProgress}
+                        className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 text-white text-[10px] px-2 py-1 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:opacity-100 disabled:opacity-0 disabled:pointer-events-none"
+                      >
+                        <Star className="size-2.5" aria-hidden="true" />
+                        Set primary
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveImageClick(storageId)}
                       disabled={isAnyOperationInProgress}
-                      className="absolute top-2 right-2 size-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:opacity-100 disabled:opacity-0 disabled:pointer-events-none motion-reduce:transition-none"
+                      className="absolute top-2 right-2 size-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:opacity-100 disabled:opacity-0 disabled:pointer-events-none motion-reduce:transition-none"
                       aria-label="Remove image"
                     >
                       <X className="size-3.5" />
@@ -792,7 +808,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
           <button
             type="button"
             onClick={() => setPromptExpanded(!promptExpanded)}
-            className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-inset motion-reduce:transition-none"
+            className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/20 transition-colors duration-150 motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             aria-expanded={promptExpanded}
           >
             <div className="min-w-0">

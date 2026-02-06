@@ -16,6 +16,7 @@ import type * as frames from "../frames.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as resources from "../resources.js";
+import type * as styleActions from "../styleActions.js";
 import type * as styles from "../styles.js";
 import type * as users from "../users.js";
 
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   images: typeof images;
   resources: typeof resources;
+  styleActions: typeof styleActions;
   styles: typeof styles;
   users: typeof users;
 }>;

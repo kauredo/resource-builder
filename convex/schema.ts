@@ -91,6 +91,7 @@ export default defineSchema({
   characters: defineTable({
     userId: v.id("users"),
     styleId: v.optional(v.id("styles")),
+    primaryImageId: v.optional(v.id("_storage")),
     name: v.string(),
     description: v.string(),
     personality: v.string(),

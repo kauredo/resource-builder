@@ -53,7 +53,8 @@ function StyleOption({
       className={cn(
         "group block text-left rounded-lg cursor-pointer",
         "transition-shadow duration-150 motion-reduce:transition-none",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         accentColor === "coral" ? "focus-visible:ring-coral" : "focus-visible:ring-teal",
         isSelected
           ? accentColor === "coral"

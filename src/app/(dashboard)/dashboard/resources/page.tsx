@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortDropdown } from "@/components/ui/sort-dropdown";
 import { ResourceCard } from "@/components/resource/ResourceCard";
+import { useListFilters } from "@/hooks/use-list-filters";
 import {
   Plus,
   FileStack,
@@ -16,48 +16,36 @@ import {
   X,
 } from "lucide-react";
 
-type StatusFilter = "all" | "draft" | "complete";
-type SortOption = "newest" | "oldest" | "name-asc" | "name-desc";
+const STATUS_FILTERS = ["all", "draft", "complete"] as const;
+const SORT_OPTIONS = ["newest", "oldest", "name-asc", "name-desc"] as const;
 
-const SORT_OPTIONS: SortOption[] = ["newest", "oldest", "name-asc", "name-desc"];
+type StatusFilter = typeof STATUS_FILTERS[number];
+type SortOption = typeof SORT_OPTIONS[number];
 
 export default function ResourcesPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
   const user = useQuery(api.users.currentUser);
   const resources = useQuery(
     api.resources.getUserResources,
     user?._id ? { userId: user._id } : "skip"
   );
-
-  // Initialize state from URL params
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
-    (searchParams.get("status") as StatusFilter) || "all"
-  );
-  const [sortOption, setSortOption] = useState<SortOption>(
-    (searchParams.get("sort") as SortOption) || "newest"
-  );
-
-  // Sync state to URL
-  const updateURL = useCallback((newSearch: string, newStatus: StatusFilter, newSort: SortOption) => {
-    const params = new URLSearchParams();
-    if (newSearch.trim()) params.set("q", newSearch.trim());
-    if (newStatus !== "all") params.set("status", newStatus);
-    if (newSort !== "newest") params.set("sort", newSort);
-
-    const queryString = params.toString();
-    router.replace(`/dashboard/resources${queryString ? `?${queryString}` : ""}`, { scroll: false });
-  }, [router]);
-
-  // Update URL when filters change (debounced for search)
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      updateURL(search, statusFilter, sortOption);
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [search, statusFilter, sortOption, updateURL]);
+  const {
+    search,
+    setSearch,
+    filter: statusFilter,
+    setFilter: setStatusFilter,
+    sort: sortOption,
+    setSort: setSortOption,
+    clearFilters,
+    isFiltering,
+  } = useListFilters<StatusFilter, SortOption>({
+    route: "/dashboard/resources",
+    filterParam: "status",
+    sortParam: "sort",
+    allowedFilters: STATUS_FILTERS,
+    allowedSorts: SORT_OPTIONS,
+    defaultFilter: "all",
+    defaultSort: "newest",
+  });
 
   // Count resources by status
   const statusCounts = useMemo(() => {
@@ -116,13 +104,7 @@ export default function ResourcesPage() {
 
   const hasAnyResources = resources && resources.length > 0;
   const hasFilteredResults = filteredResources.length > 0;
-  const isFiltering = search.trim() !== "" || statusFilter !== "all";
-
-  const clearFilters = () => {
-    setSearch("");
-    setStatusFilter("all");
-    setSortOption("newest");
-  };
+  
 
   // Loading state
   if (resources === undefined) {
@@ -207,7 +189,7 @@ export default function ResourcesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             {/* Status Filter Pills */}
             <div className="flex gap-2" role="group" aria-label="Filter by status">
-              {(["all", "draft", "complete"] as StatusFilter[]).map((status) => (
+              {STATUS_FILTERS.map((status) => (
                 <button
                   key={status}
                   type="button"

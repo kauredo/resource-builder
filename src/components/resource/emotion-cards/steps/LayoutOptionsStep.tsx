@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { HelpTip } from "@/components/onboarding/HelpTip";
 import type { EmotionCardLayout, StyleFrames } from "@/types";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 
 interface LayoutOptionsStepProps {

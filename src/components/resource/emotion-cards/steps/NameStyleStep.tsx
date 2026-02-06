@@ -9,7 +9,7 @@ import { StylePicker } from "../StylePicker";
 import { StylePreset } from "@/types";
 import { HelpTip } from "@/components/onboarding/HelpTip";
 import { Lock } from "lucide-react";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 
 interface NameStyleStepProps {
   name: string;

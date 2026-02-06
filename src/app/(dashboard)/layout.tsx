@@ -163,7 +163,7 @@ export default function DashboardLayout({
               <hr className="my-2 border-border" />
               <button
                 onClick={() => signOut()}
-                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-150"
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
               >
                 <LogOut className="size-4" aria-hidden="true" />
                 Sign out

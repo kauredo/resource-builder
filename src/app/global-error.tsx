@@ -82,6 +82,7 @@ export default function GlobalError({
           >
             <button
               onClick={reset}
+              className="cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
               style={{
                 backgroundColor: "#d4665a",
                 color: "white",
@@ -97,6 +98,7 @@ export default function GlobalError({
             </button>
             <button
               onClick={() => (window.location.href = "/")}
+              className="cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
               style={{
                 backgroundColor: "transparent",
                 color: "#2d2a26",

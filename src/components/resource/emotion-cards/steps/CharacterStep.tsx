@@ -1,27 +1,59 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
-import { Check, User, UserX, Plus, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Check, User, UserX, Plus, AlertCircle, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 
 interface CharacterStepProps {
   characterId: Id<"characters"> | null;
+  styleId: Id<"styles"> | null;
   onUpdate: (updates: Partial<WizardState>) => void;
 }
 
 export function CharacterStep({
   characterId,
+  styleId,
   onUpdate,
 }: CharacterStepProps) {
+  const [dismissedStyleHint, setDismissedStyleHint] = useState(false);
   const user = useQuery(api.users.currentUser);
   const characters = useQuery(
     api.characters.getUserCharactersWithThumbnails,
     user?._id ? { userId: user._id } : "skip"
   );
+
+  // Get the selected character's linked style (if different from current)
+  const selectedChar = characters?.find(c => c._id === characterId);
+  const charStyleId = selectedChar?.styleId;
+  const charStyle = useQuery(
+    api.styles.getStyle,
+    charStyleId && charStyleId !== styleId ? { styleId: charStyleId } : "skip"
+  );
+  const showStyleHint = charStyle && charStyleId !== styleId && !dismissedStyleHint;
+
+  const handleCharacterSelect = (id: Id<"characters"> | null) => {
+    setDismissedStyleHint(false);
+    onUpdate({ characterId: id });
+  };
+
+  const handleApplyCharacterStyle = () => {
+    if (!charStyle || !charStyleId) return;
+    onUpdate({
+      styleId: charStyleId,
+      stylePreset: {
+        name: charStyle.name,
+        colors: charStyle.colors,
+        typography: charStyle.typography,
+        illustrationStyle: charStyle.illustrationStyle,
+      },
+    });
+  };
 
   if (!user) {
     return (
@@ -43,11 +75,11 @@ export function CharacterStep({
       {/* No Character Option */}
       <button
         type="button"
-        onClick={() => onUpdate({ characterId: null })}
+        onClick={() => handleCharacterSelect(null)}
         className={cn(
           "w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer",
-          "transition-colors duration-150 hover:border-border hover:bg-muted/30",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+          "transition-colors duration-150 motion-reduce:transition-none hover:border-border hover:bg-muted/30",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
           characterId === null
             ? "border-foreground/15 bg-muted/20"
             : "border-border bg-card"
@@ -90,11 +122,11 @@ export function CharacterStep({
                 <button
                   key={character._id}
                   type="button"
-                  onClick={() => onUpdate({ characterId: character._id })}
+                  onClick={() => handleCharacterSelect(character._id)}
                   className={cn(
                     "flex items-center gap-4 p-4 rounded-xl border-2 text-left cursor-pointer",
-                    "transition-colors duration-150 hover:border-teal/40 hover:bg-teal/5",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
+                    "transition-colors duration-150 motion-reduce:transition-none hover:border-teal/40 hover:bg-teal/5",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2",
                     isSelected
                       ? "border-teal bg-teal/5"
                       : "border-border bg-card"
@@ -138,6 +170,40 @@ export function CharacterStep({
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Style hint — character has a linked style different from current */}
+      {showStyleHint && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-teal/5 border border-teal/20">
+          <Palette className="size-4 text-teal shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground">
+              <span className="font-medium">{selectedChar?.name}</span> is linked to the{" "}
+              <span className="font-medium">{charStyle.name}</span> style.
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Switch to it for the best visual match.
+            </p>
+            <div className="flex gap-2 mt-2.5">
+              <Button
+                size="sm"
+                onClick={handleApplyCharacterStyle}
+                className="gap-1.5 bg-teal text-white hover:bg-teal/90 text-xs"
+              >
+                <Check className="size-3" aria-hidden="true" />
+                Use {charStyle.name}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setDismissedStyleHint(true)}
+                className="text-xs text-muted-foreground"
+              >
+                Keep current
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -26,7 +26,7 @@ import {
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
 import { StyleContextBar } from "../StyleContextBar";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 import type { StyleFrames } from "@/types";
 
 interface ExportStepProps {
@@ -291,7 +291,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
                     setPdfUrl(null);
                     setPdfError(null);
                   }}
-                  className="text-sm text-muted-foreground cursor-pointer hover:text-foreground underline underline-offset-2 transition-colors duration-150 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                  className="text-sm text-muted-foreground cursor-pointer hover:text-foreground underline underline-offset-2 transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Regenerate
                 </button>

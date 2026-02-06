@@ -295,7 +295,10 @@ function buildEmotionCardPrompt({
   parts.push(basePrompt);
 
   // Always include the style's illustration style
-  parts.push(style.illustrationStyle);
+  parts.push(
+    "IMPORTANT: follow the illustration style guidance EXACTLY: ",
+    style.illustrationStyle,
+  );
 
   // Add color guidance
   parts.push(
@@ -313,7 +316,9 @@ function buildEmotionCardPrompt({
 
   // Additional quality guidance
   parts.push(
-    "Create a single cohesive square illustration (1:1 aspect ratio) with a CLEAN WHITE background suitable for a therapy emotion card. Keep the style consistent and focused on clearly conveying the specified emotion through facial expressions, body language, and color use. Avoid any extraneous details or elements that do not contribute to expressing the emotion clearly. Keep the subject centered and prominent in the frame.",
+    "Create a single cohesive square illustration (1:1 aspect ratio) with a CLEAN WHITE background suitable for a therapy emotion card. Keep the style consistent and focused on clearly conveying the specified emotion through facial expressions, body language, and color use. Avoid any extraneous details or elements that do not contribute to expressing the emotion clearly. Keep the subject centered and prominent in the frame",
+    "The white background should be edge to edge with no extra padding, no extra border, card, or framing",
+    "This is an original character for therapy materials, not a copyrighted character. If the description resembles an existing character, make it visually distinct enough to be clearly original",
   );
 
   return parts.join(". ");

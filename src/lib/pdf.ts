@@ -439,12 +439,27 @@ export async function generateEmotionCardsPDF(
     : DEFAULT_STYLE;
 
   // Register fonts before creating styles
-  registerFonts([
+  const { failed } = registerFonts([
     effectiveStyle.typography.headingFont,
     effectiveStyle.typography.bodyFont,
   ]);
 
-  const styles = createStyles(options, effectiveStyle);
+  const resolvedStyle =
+    failed.length > 0
+      ? {
+          ...effectiveStyle,
+          typography: {
+            headingFont: failed.includes(effectiveStyle.typography.headingFont)
+              ? "Helvetica"
+              : effectiveStyle.typography.headingFont,
+            bodyFont: failed.includes(effectiveStyle.typography.bodyFont)
+              ? "Helvetica"
+              : effectiveStyle.typography.bodyFont,
+          },
+        }
+      : effectiveStyle;
+
+  const styles = createStyles(options, resolvedStyle);
 
   // Split cards into pages
   const pages: EmotionCardData[][] = [];

@@ -6,6 +6,7 @@
  */
 
 import { Font } from "@react-pdf/renderer";
+import { GENERATED_PDF_FONT_CONFIG } from "./pdf-fonts.generated";
 
 /**
  * Font configuration with TTF URLs for @react-pdf
@@ -13,7 +14,7 @@ import { Font } from "@react-pdf/renderer";
  * Note: These URLs point to Google Fonts static files.
  * The URLs are relatively stable but may change with font updates.
  */
-export const PDF_FONT_CONFIG: Record<
+export const FALLBACK_PDF_FONT_CONFIG: Record<
   string,
   {
     family: string;
@@ -308,8 +309,34 @@ export const PDF_FONT_CONFIG: Record<
   },
 };
 
+const PDF_FONT_CONFIG: Record<
+  string,
+  {
+    family: string;
+    fonts: Array<{
+      src: string;
+      fontWeight?: number | "normal" | "bold";
+      fontStyle?: "normal" | "italic";
+    }>;
+  }
+> =
+  Object.keys(GENERATED_PDF_FONT_CONFIG).length > 0
+    ? (GENERATED_PDF_FONT_CONFIG as Record<
+        string,
+        {
+          family: string;
+          fonts: Array<{
+            src: string;
+            fontWeight?: number | "normal" | "bold";
+            fontStyle?: "normal" | "italic";
+          }>;
+        }
+      >)
+    : FALLBACK_PDF_FONT_CONFIG;
+
 // Track registered fonts to avoid duplicate registration
 const registeredFonts = new Set<string>();
+const failedFonts = new Set<string>();
 
 /**
  * Register a font with @react-pdf/renderer
@@ -321,6 +348,9 @@ export function registerFont(fontName: string): boolean {
   // Already registered
   if (registeredFonts.has(fontName)) {
     return true;
+  }
+  if (failedFonts.has(fontName)) {
+    return false;
   }
 
   const config = PDF_FONT_CONFIG[fontName];
@@ -341,6 +371,7 @@ export function registerFont(fontName: string): boolean {
       `Failed to register font "${fontName}": ${errorMessage}. ` +
       `This may be due to a network issue or outdated font URL. Using Helvetica fallback.`
     );
+    failedFonts.add(fontName);
     return false;
   }
 }
@@ -378,8 +409,10 @@ export function getPDFFontFamily(fontName: string): string {
   // Check if font exists in our config
   if (PDF_FONT_CONFIG[fontName]) {
     // Ensure it's registered
-    registerFont(fontName);
-    return PDF_FONT_CONFIG[fontName].family;
+    if (registerFont(fontName)) {
+      return PDF_FONT_CONFIG[fontName].family;
+    }
+    return "Helvetica";
   }
 
   // Fallback to Helvetica (built-in PDF font)

@@ -11,7 +11,7 @@ import { StyleContextBar } from "../StyleContextBar";
 import { Wand2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getEmotionDescription } from "@/lib/emotions";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 import type { StyleFrames } from "@/types";
 
 interface GenerateReviewStepProps {

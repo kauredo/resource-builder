@@ -480,7 +480,7 @@ function StyleSpecification({
       {/* Compact clickable header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded-lg"
+        className="w-full text-left group cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded-lg"
         aria-expanded={isExpanded}
         aria-controls="style-details"
       >

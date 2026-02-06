@@ -23,8 +23,10 @@ export const getUserCharactersWithThumbnails = query({
     return await Promise.all(
       characters.map(async (character) => {
         let thumbnailUrl: string | null = null;
-        if (character.referenceImages.length > 0) {
-          thumbnailUrl = await ctx.storage.getUrl(character.referenceImages[0]);
+        const primaryId =
+          character.primaryImageId ?? character.referenceImages[0];
+        if (primaryId) {
+          thumbnailUrl = await ctx.storage.getUrl(primaryId);
         }
         return { ...character, thumbnailUrl };
       })
@@ -78,6 +80,8 @@ export const createCharacter = mutation({
 export const updateCharacter = mutation({
   args: {
     characterId: v.id("characters"),
+    styleId: v.optional(v.id("styles")),
+    primaryImageId: v.optional(v.id("_storage")),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     personality: v.optional(v.string()),
@@ -133,6 +137,7 @@ export const addReferenceImage = mutation({
 
     await ctx.db.patch(args.characterId, {
       referenceImages: [...character.referenceImages, args.storageId],
+      ...(character.primaryImageId ? {} : { primaryImageId: args.storageId }),
       updatedAt: Date.now(),
     });
   },
@@ -167,9 +172,13 @@ export const removeReferenceImage = mutation({
     );
     const updatedDescriptions = { ...(character.imageDescriptions ?? {}) };
     delete updatedDescriptions[args.storageId];
+    const shouldClearPrimary = character.primaryImageId === args.storageId;
     await ctx.db.patch(args.characterId, {
       referenceImages: updatedImages,
       imageDescriptions: updatedDescriptions,
+      primaryImageId: shouldClearPrimary
+        ? updatedImages[0]
+        : character.primaryImageId,
       updatedAt: Date.now(),
     });
 

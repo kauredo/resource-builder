@@ -30,7 +30,8 @@ export default function DashboardPage() {
       )
     : 0;
 
-  const hasResources = resources && resources.length > 0;
+  const isResourcesLoading = resources === undefined;
+  const hasResources = (resources?.length ?? 0) > 0;
 
   return (
     <>
@@ -160,7 +161,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Empty State */}
-          {!hasResources ? (
+          {isResourcesLoading ? (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              aria-hidden="true"
+            >
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-border/50 bg-card p-4 animate-pulse motion-reduce:animate-none"
+                >
+                  <div className="h-32 rounded-xl bg-muted mb-4" />
+                  <div className="h-5 w-3/4 bg-muted rounded mb-2" />
+                  <div className="h-4 w-1/2 bg-muted rounded" />
+                </div>
+              ))}
+            </div>
+          ) : !hasResources ? (
             <div className="rounded-xl border-2 border-dashed border-border/60 bg-muted/30">
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                 <div className="size-14 rounded-2xl bg-coral/10 flex items-center justify-center mb-4">

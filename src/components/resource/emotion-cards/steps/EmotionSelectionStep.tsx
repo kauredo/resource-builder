@@ -13,7 +13,7 @@ import {
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTip } from "@/components/onboarding/HelpTip";
-import type { WizardState } from "../EmotionCardsWizard";
+import type { WizardState } from "../use-emotion-cards-wizard";
 
 interface EmotionSelectionStepProps {
   selectedEmotions: string[];
@@ -53,7 +53,7 @@ function CollapsibleSection({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
+        className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
       >
         <div className="flex items-center gap-3">
           {isOpen ? (
@@ -79,7 +79,7 @@ function CollapsibleSection({
             <button
               type="button"
               onClick={allSelected ? onDeselectAll : onSelectAll}
-              className="text-xs text-coral cursor-pointer hover:underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+              className="text-xs text-coral cursor-pointer hover:underline underline-offset-2 rounded transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               {allSelected ? "Deselect all" : "Select all"}
             </button>
@@ -192,7 +192,7 @@ export function EmotionSelectionStep({
           <button
             type="button"
             onClick={() => selectAll([...PRIMARY_EMOTIONS, ...SECONDARY_EMOTIONS, ...NUANCED_EMOTIONS])}
-            className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors duration-150"
+            className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
           >
             Select all
           </button>
@@ -200,7 +200,7 @@ export function EmotionSelectionStep({
             <button
               type="button"
               onClick={() => onUpdate({ selectedEmotions: [] })}
-              className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors duration-150"
+              className="text-xs text-muted-foreground hover:text-foreground cursor-pointer underline-offset-2 hover:underline rounded transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               Clear
             </button>
@@ -246,12 +246,12 @@ export function EmotionSelectionStep({
 
       {/* Custom emotions - collapsed by default */}
       <div className="border rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowCustom(!showCustom)}
-          aria-expanded={showCustom}
-          className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral"
-        >
+      <button
+        type="button"
+        onClick={() => setShowCustom(!showCustom)}
+        aria-expanded={showCustom}
+        className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+      >
           <div className="flex items-center gap-3">
             {showCustom ? (
               <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />

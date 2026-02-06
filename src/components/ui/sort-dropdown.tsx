@@ -125,7 +125,7 @@ export function SortDropdown<T extends string>({
                 triggerRef.current?.focus();
               }}
               onMouseEnter={() => setFocusedIndex(index)}
-              className={`w-full min-h-[36px] px-3 py-2 text-sm text-left cursor-pointer transition-colors duration-150 motion-reduce:transition-none ${
+              className={`w-full min-h-[36px] px-3 py-2 text-sm text-left cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
                 focusedIndex === index
                   ? "bg-muted border-l-2 border-coral"
                   : "border-l-2 border-transparent"

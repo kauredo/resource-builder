@@ -42,8 +42,8 @@ export function EmotionChip({
         onKeyDown={handleKeyDown}
         className={cn(
           "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium cursor-pointer",
-          "transition-colors duration-150 border-2",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+          "transition-colors duration-150 motion-reduce:transition-none border-2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
           isCustom && onRemove ? "rounded-l-full" : "rounded-full",
           isSelected
             ? "bg-coral/10 border-coral text-coral hover:bg-coral/20"
@@ -65,8 +65,8 @@ export function EmotionChip({
           onClick={handleRemoveClick}
           className={cn(
             "inline-flex items-center justify-center px-2 py-1.5 rounded-r-full text-sm cursor-pointer",
-            "transition-colors duration-150 border-2 border-l-0",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+            "transition-colors duration-150 motion-reduce:transition-none border-2 border-l-0",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
             isSelected
               ? "bg-coral/10 border-coral text-coral hover:bg-coral/30"
               : "bg-card border-border text-foreground/60 hover:bg-destructive/10 hover:text-destructive"

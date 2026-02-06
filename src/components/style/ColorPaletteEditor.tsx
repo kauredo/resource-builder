@@ -106,7 +106,7 @@ function ColorInput({ label, value, onChange, disabled }: ColorInputProps) {
             disabled={disabled}
             className="h-7 text-xs font-mono text-muted-foreground uppercase text-center cursor-pointer
               hover:text-foreground transition-colors duration-150 motion-reduce:transition-none
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-1 rounded
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded
               disabled:cursor-not-allowed"
           >
             {localValue.toUpperCase()}

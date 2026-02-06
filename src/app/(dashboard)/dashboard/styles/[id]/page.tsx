@@ -559,7 +559,7 @@ export default function StyleDetailPage({ params }: PageProps) {
             <button
               type="button"
               onClick={() => setFramesExpanded(!framesExpanded)}
-              className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-inset"
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/20 transition-colors duration-150 motion-reduce:transition-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               <div>
                 <h2 className="text-sm font-medium text-foreground">
@@ -693,7 +693,7 @@ function ColorSwatch({
           input.click();
         }}
         disabled={disabled}
-        className="w-full aspect-square rounded-lg border border-border/50 cursor-pointer hover:scale-105 hover:border-coral/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="w-full aspect-square rounded-lg border border-border/50 cursor-pointer hover:scale-105 hover:border-coral/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors transition-all duration-150 motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         style={{ backgroundColor: value }}
         aria-label={`Change ${label.toLowerCase()} color`}
       />
@@ -964,7 +964,7 @@ function ToggleRow({
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
           checked ? "bg-coral" : "bg-muted",
           disabled && "cursor-not-allowed",
         )}
