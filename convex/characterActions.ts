@@ -12,7 +12,7 @@ export const generatePromptFragment = action({
   args: { characterId: v.id("characters") },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{ success: boolean; promptFragment: string }> => {
     const character = await ctx.runQuery(api.characters.getCharacter, {
       characterId: args.characterId,
@@ -43,13 +43,13 @@ Respond with ONLY the prompt fragment text, no explanation or quotes.`;
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error?.message || "Failed to generate prompt fragment"
+        errorData.error?.message || "Failed to generate prompt fragment",
       );
     }
 
@@ -68,12 +68,124 @@ Respond with ONLY the prompt fragment text, no explanation or quotes.`;
   },
 });
 
+// Analyze an uploaded reference image and update the prompt fragment
+export const analyzeAndUpdatePrompt = action({
+  args: {
+    characterId: v.id("characters"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ success: boolean; promptFragment: string }> => {
+    const character = await ctx.runQuery(api.characters.getCharacter, {
+      characterId: args.characterId,
+    });
+    if (!character) throw new Error("Character not found");
+
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
+
+    // Get image URL and fetch bytes
+    const imageUrl = await ctx.storage.getUrl(args.storageId);
+    if (!imageUrl) throw new Error("Could not retrieve image URL");
+
+    const imageResponse: Response = await fetch(imageUrl);
+    if (!imageResponse.ok) throw new Error("Failed to fetch image data");
+
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64 = Buffer.from(imageBuffer).toString("base64");
+
+    // Determine mime type from URL or default to png
+    const mimeType =
+      imageUrl.includes(".jpg") || imageUrl.includes(".jpeg")
+        ? "image/jpeg"
+        : "image/png";
+
+    // Step 1: Vision — describe the character in the image
+    const visionResponse: Response = await fetch(
+      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: "Describe this character's visual appearance in precise detail. Focus on: body type, proportions, colors, clothing, accessories, hair/fur, distinguishing features. Be specific about colors and shapes. Do not describe the background or art style.",
+                },
+                {
+                  inlineData: { mimeType, data: base64 },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    );
+
+    if (!visionResponse.ok) {
+      const errorData = await visionResponse.json();
+      throw new Error(errorData.error?.message || "Failed to analyze image");
+    }
+
+    const visionData = await visionResponse.json();
+    const imageAnalysis: string | undefined =
+      visionData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!imageAnalysis) throw new Error("No analysis generated from image");
+
+    // Step 2: Merge analysis with character details into a prompt fragment
+    const mergePrompt: string = `Given this character's details and an image analysis, create a concise visual prompt fragment (2-4 sentences) that describes exactly how this character should look in any illustration. Combine all sources, prioritizing visual details from the image analysis.
+
+Character Name: ${character.name}
+${character.description ? `Description: ${character.description}` : ""}
+${character.personality ? `Personality: ${character.personality}` : ""}
+${character.promptFragment ? `Current prompt: ${character.promptFragment}` : ""}
+Image analysis: ${imageAnalysis}
+
+Write only the visual prompt fragment, no preamble.`;
+
+    const mergeResponse: Response = await fetch(
+      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: mergePrompt }] }],
+        }),
+      },
+    );
+
+    if (!mergeResponse.ok) {
+      const errorData = await mergeResponse.json();
+      throw new Error(
+        errorData.error?.message ||
+          "Failed to generate updated prompt fragment",
+      );
+    }
+
+    const mergeData = await mergeResponse.json();
+    const updatedPrompt: string | undefined =
+      mergeData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!updatedPrompt) throw new Error("No prompt fragment generated");
+
+    // Update the character's prompt fragment
+    await ctx.runMutation(api.characters.updateCharacter, {
+      characterId: args.characterId,
+      promptFragment: updatedPrompt,
+    });
+
+    return { success: true, promptFragment: updatedPrompt };
+  },
+});
+
 // Generate a reference image for a character
 export const generateReferenceImage = action({
   args: { characterId: v.id("characters") },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{ success: boolean; storageId: Id<"_storage"> }> => {
     const character = await ctx.runQuery(api.characters.getCharacter, {
       characterId: args.characterId,
@@ -91,7 +203,7 @@ export const generateReferenceImage = action({
     }
 
     parts.push(
-      `Create a character reference illustration of "${character.name}".`
+      `Create a character reference illustration of "${character.name}".`,
     );
 
     if (character.description) {
@@ -102,10 +214,10 @@ export const generateReferenceImage = action({
     }
 
     parts.push(
-      "Create a clear, centered character portrait with a clean white background. The character should be shown from the waist up, facing slightly towards the viewer with a neutral, friendly expression. The illustration should be suitable as a character reference sheet for consistent reproduction in future illustrations."
+      "Create a clear, centered character portrait with a clean white background. The character should be shown from the waist up, facing slightly towards the viewer with a neutral, friendly expression. The illustration should be suitable as a character reference sheet for consistent reproduction in future illustrations.",
     );
     parts.push(
-      "IMPORTANT: Do NOT include any text, words, letters, or labels in the image."
+      "IMPORTANT: Do NOT include any text, words, letters, or labels in the image.",
     );
 
     const prompt: string = parts.join(". ");
@@ -121,13 +233,13 @@ export const generateReferenceImage = action({
             responseModalities: ["image", "text"],
           },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error?.message || "Failed to generate reference image"
+        errorData.error?.message || "Failed to generate reference image",
       );
     }
 
@@ -142,7 +254,7 @@ export const generateReferenceImage = action({
 
     const imagePart = responseParts.find(
       (part: { inlineData?: { data: string; mimeType: string } }) =>
-        part.inlineData
+        part.inlineData,
     );
     if (!imagePart?.inlineData) throw new Error("No image in response");
 
