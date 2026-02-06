@@ -1,39 +1,36 @@
 # TODO
 
-Features and improvements to implement after Emotion Cards MVP is complete.
+Priorities only. Higher number = lower priority.
 
-## Style System
+## Priority 1
 
-- [ ] **Style customization UI** — Allow users to customize presets and save as their own style
-  - Color pickers for primary, secondary, accent, background, text
-  - Typography selection (heading font, body font)
-  - Illustration style description textarea
-  - "Customize" button on preset cards opens editor pre-filled
-  - Save creates new style with `isPreset: false`
+- [ ] **Resource type picker** — replace single CTA with a resource selection flow
+- [ ] **Type-aware resource detail page** — render based on `resource.type`
+- [ ] **Type-aware resource edit page** — route to the correct builder per type
+- [ ] **No-style option** — allow building without a defined style (add a neutral default preset and allow “No style” in wizards)
+- [ ] **Asset iteration + history** — regenerate a single asset, store versions, and revert per asset (cards, frames, game assets, etc.)
+- [ ] **Prompt + parameter history** — store prompt/inputs per asset generation for repeatability
+- [ ] **In-app image editing** — basic edit layer (text overlay, crop, reposition, undo/redo) or document a recommended external tool flow
+- [ ] **Resume draft resources** — detect drafts and offer “Resume” vs “Start new”
+- [ ] **Clickable Wizard** — click on any step to resume
 
-- [ ] **Style management page** (`/styles`) — Dedicated page to view, edit, delete custom styles
+## Priority 2
 
-## Resource Types
+- [ ] **Poster builder** — single image + headline + optional subtext
+- [ ] **Flashcards builder** — front/back text + optional image
+- [ ] **Worksheet builder** — structured form blocks + minimal images
+- [ ] **Board game builder** — grid board + tokens (optional) + cards (optional)
+- [ ] **Card game builder** — make your own deck, UNO-like rules, new game templates
+- [ ] **Free prompt section** — open-ended promptable resource generator
 
-- [ ] **Board games** — Game boards with custom illustrations
-- [ ] **Worksheets** — Fillable therapy worksheets
-- [ ] **Posters** — Printable posters with affirmations/reminders
-- [ ] **Flashcards** — General purpose flashcard decks
+## Priority 3
 
-## Characters
+- [ ] **Resource templates** — starting points per resource type
+- [ ] **Library organization** — tags, folders, and search by type
 
-- [ ] **Character creator** — UI to create persistent characters with reference images
-- [ ] **Character in emotion cards** — Use character instead of generic child illustrations
+## Completed (verify if any regressions)
 
-## Wizard UX
-
-- [ ] **Resume draft resources** — Allow users to continue incomplete resources after page refresh
-  - Query existing draft resources on wizard mount
-  - Offer to resume or start fresh
-  - Restore wizard state from saved draft data
-
-## Infrastructure
-
-- [ ] **Stripe integration** — Subscription management after trial
-- [ ] **Usage tracking** — Track image generations for billing
-
+- [x] **Style customization UI** — colors, typography, illustration style, frames
+- [x] **Style management page** — list, edit, duplicate, delete, preset seeding
+- [x] **Character creator** — create characters, upload images, generate prompt fragments
+- [x] **Character in emotion cards** — optional character in emotion cards
