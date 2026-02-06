@@ -10,8 +10,9 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
   pdf,
+  Svg,
+  Rect,
 } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
@@ -175,6 +176,9 @@ const createStyles = (
   const dimensions = calculateCardDimensions(options);
   const headingFontFamily = getPDFFontFamily(style.typography.headingFont);
   const bodyFontFamily = getPDFFontFamily(style.typography.bodyFont);
+  const cutLineOffset = 4;
+  const cutLineWidth = dimensions.cardWidth + cutLineOffset * 2;
+  const cutLineHeight = dimensions.cardHeight + cutLineOffset * 2;
 
   // Use shared layout calculation for consistency with web previews
   const cardDimensions = calculateCardLayout(
@@ -182,6 +186,7 @@ const createStyles = (
     options.showLabels,
     options.showDescriptions,
   );
+  const borderColor = cardDimensions.borderColor || style.colors.text;
 
   // Convert percentages to actual heights for PDF positioning
   const imageHeightPercent = `${cardDimensions.imageHeightPercent}%`;
@@ -192,7 +197,7 @@ const createStyles = (
 
   // Overlap is already accounted for in calculateCardLayout
 
-  const styles = StyleSheet.create({
+  const styles = {
     page: {
       padding: dimensions.margin,
       backgroundColor: "#FFFFFF",
@@ -203,19 +208,26 @@ const createStyles = (
       flexWrap: "wrap",
       gap: dimensions.gap,
     },
+    cardWrapper: {
+      width: dimensions.cardWidth,
+      height: dimensions.cardHeight,
+      position: "relative",
+      overflow: "visible",
+    },
     card: {
       width: dimensions.cardWidth,
       height: dimensions.cardHeight,
       backgroundColor: style.colors.background,
       borderRadius: 8,
       overflow: "hidden",
-      // CSS border from card layout settings, or default subtle border
-      border: options.showCutLines
-        ? "1px dashed #CCCCCC"
-        : cardDimensions.borderWidth
-          ? `${cardDimensions.borderWidth}px solid ${cardDimensions.borderColor || style.colors.text}`
-          : `1px solid ${style.colors.text}20`,
       position: "relative",
+    },
+    cardBorderOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: dimensions.cardWidth,
+      height: dimensions.cardHeight,
     },
     cardImageContainer: {
       width: "100%",
@@ -288,19 +300,12 @@ const createStyles = (
       color: style.colors.text,
       opacity: 0.5,
     },
-    cutLinesHorizontal: {
+    cutLineBox: {
       position: "absolute",
-      left: 0,
-      right: 0,
-      height: 1,
-      borderTop: "1px dashed #CCCCCC",
-    },
-    cutLinesVertical: {
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      width: 1,
-      borderLeft: "1px dashed #CCCCCC",
+      top: -cutLineOffset,
+      left: -cutLineOffset,
+      width: cutLineWidth,
+      height: cutLineHeight,
     },
     // Frame overlay styles
     frameOverlay: {
@@ -318,11 +323,16 @@ const createStyles = (
       height: "100%",
       // No objectFit - stretch to fill card (matches web previews)
     },
-  });
+  };
 
   return {
     styles,
     overlayGradientSrc: getOverlayGradientDataUrl(style.colors.background),
+    cutLineWidth,
+    cutLineHeight,
+    cardWidth: dimensions.cardWidth,
+    cardHeight: dimensions.cardHeight,
+    borderColor,
   };
 };
 
@@ -333,12 +343,22 @@ function EmotionCard({
   options,
   frames,
   overlayGradientSrc,
+  cutLineWidth,
+  cutLineHeight,
+  cardWidth,
+  cardHeight,
+  borderColor,
 }: {
   card: EmotionCardData;
   styles: ReturnType<typeof createStyles>["styles"];
   options: PDFLayoutOptions;
   frames?: PDFFrameOptions;
   overlayGradientSrc?: string;
+  cutLineWidth: number;
+  cutLineHeight: number;
+  cardWidth: number;
+  cardHeight: number;
+  borderColor: string;
 }) {
   // Use shared layout calculation for consistency
   const cardDimensions = calculateCardLayout(
@@ -352,64 +372,116 @@ function EmotionCard({
   const showBorder =
     options.useFrames?.border && frames?.borderUrl && !showFullCard;
 
+  const borderWidth = cardDimensions.borderWidth ?? 0;
+  const borderRadius = 8;
+
   const overlayGradient =
     cardDimensions.isOverlay && overlayGradientSrc ? overlayGradientSrc : null;
 
   return createElement(
     View,
-    { style: styles.card },
-    // Image container
-    createElement(
-      View,
-      { style: styles.cardImageContainer },
-      card.imageUrl
-        ? createElement(Image, { src: card.imageUrl, style: styles.cardImage })
-        : createElement(
-            View,
-            { style: styles.noImagePlaceholder },
-            createElement(Text, { style: styles.placeholderText }, "No image"),
-          ),
-    ),
-    // Border/full card overlays (above image, below text)
-    showBorder &&
-      createElement(Image, {
-        src: frames!.borderUrl,
-        style: styles.frameBorder,
-      }),
-    showFullCard &&
-      createElement(Image, {
-        src: frames!.fullCardUrl,
-        style: styles.frameBorder,
-      }),
-    // Content area (label/description)
-    // Use overlay style when text position is "overlay" - positioned over image with backdrop
-    cardDimensions.hasContent &&
+    { style: styles.cardWrapper },
+    options.showCutLines &&
       createElement(
         View,
-        {
-          style: cardDimensions.isOverlay
-            ? styles.cardContentOverlay
-            : styles.cardContent,
-        },
-        // Gradient backdrop for overlay mode (matches CardPreview)
-        cardDimensions.isOverlay &&
-          overlayGradient &&
-          createElement(Image, {
-            src: overlayGradient,
-            style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+        { style: styles.cutLineBox },
+        createElement(
+          Svg,
+          { width: cutLineWidth, height: cutLineHeight },
+          createElement(Rect, {
+            x: 0.5,
+            y: 0.5,
+            width: cutLineWidth - 1,
+            height: cutLineHeight - 1,
+            stroke: "#C8C8C8",
+            strokeWidth: 1,
+            strokeDasharray: "4 3",
+            fill: "none",
           }),
-        // Label text
-        options.showLabels &&
-          createElement(Text, { style: styles.cardLabel }, card.emotion),
-        // Description text
-        options.showDescriptions &&
-          card.description &&
-          createElement(
-            Text,
-            { style: styles.cardDescription },
-            card.description,
-          ),
+        ),
       ),
+    createElement(
+      View,
+      { style: styles.card },
+      // Image container
+      createElement(
+        View,
+        { style: styles.cardImageContainer },
+        card.imageUrl
+          ? createElement(Image, { src: card.imageUrl, style: styles.cardImage })
+          : createElement(
+              View,
+              { style: styles.noImagePlaceholder },
+              createElement(Text, { style: styles.placeholderText }, "No image"),
+            ),
+      ),
+      // Border/full card overlays (above image, below text)
+      borderWidth > 0 &&
+        createElement(
+          View,
+          { style: styles.cardBorderOverlay },
+          createElement(
+            Svg,
+            { width: cardWidth, height: cardHeight },
+            createElement(Rect, {
+              x: borderWidth / 2,
+              y: borderWidth / 2,
+              width: cardWidth - borderWidth,
+              height: cardHeight - borderWidth,
+              stroke: borderColor,
+              strokeWidth: borderWidth,
+              fill: "none",
+              rx: borderRadius,
+              ry: borderRadius,
+            }),
+          ),
+        ),
+      showBorder &&
+        createElement(Image, {
+          src: frames!.borderUrl,
+          style: styles.frameBorder,
+        }),
+      showFullCard &&
+        createElement(Image, {
+          src: frames!.fullCardUrl,
+          style: styles.frameBorder,
+        }),
+      // Content area (label/description)
+      // Use overlay style when text position is "overlay" - positioned over image with backdrop
+      cardDimensions.hasContent &&
+        createElement(
+          View,
+          {
+            style: cardDimensions.isOverlay
+              ? styles.cardContentOverlay
+              : styles.cardContent,
+          },
+          // Gradient backdrop for overlay mode (matches CardPreview)
+          cardDimensions.isOverlay &&
+            overlayGradient &&
+            createElement(Image, {
+              src: overlayGradient,
+              style: {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              },
+            }),
+          // Label text
+          options.showLabels &&
+            createElement(Text, { style: styles.cardLabel }, card.emotion),
+          // Description text
+          options.showDescriptions &&
+            card.description &&
+            createElement(
+              Text,
+              { style: styles.cardDescription },
+              card.description,
+            ),
+        ),
+    ),
   );
 }
 
@@ -420,12 +492,22 @@ function CardPage({
   options,
   frames,
   overlayGradientSrc,
+  cutLineWidth,
+  cutLineHeight,
+  cardWidth,
+  cardHeight,
+  borderColor,
 }: {
   cards: EmotionCardData[];
   styles: ReturnType<typeof createStyles>["styles"];
   options: PDFLayoutOptions;
   frames?: PDFFrameOptions;
   overlayGradientSrc?: string;
+  cutLineWidth: number;
+  cutLineHeight: number;
+  cardWidth: number;
+  cardHeight: number;
+  borderColor: string;
 }) {
   return createElement(
     Page,
@@ -441,6 +523,11 @@ function CardPage({
           options,
           frames,
           overlayGradientSrc,
+          cutLineWidth,
+          cutLineHeight,
+          cardWidth,
+          cardHeight,
+          borderColor,
         }),
       ),
     ),
@@ -492,7 +579,15 @@ export async function generateEmotionCardsPDF(
         }
       : effectiveStyle;
 
-  const { styles, overlayGradientSrc } = createStyles(options, resolvedStyle);
+  const {
+    styles,
+    overlayGradientSrc,
+    cutLineWidth,
+    cutLineHeight,
+    cardWidth,
+    cardHeight,
+    borderColor,
+  } = createStyles(options, resolvedStyle);
 
   // Split cards into pages
   const pages: EmotionCardData[][] = [];
@@ -511,6 +606,11 @@ export async function generateEmotionCardsPDF(
         options,
         frames,
         overlayGradientSrc,
+        cutLineWidth,
+        cutLineHeight,
+        cardWidth,
+        cardHeight,
+        borderColor,
       }),
     ),
   );
