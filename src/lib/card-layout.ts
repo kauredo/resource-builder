@@ -30,7 +30,7 @@ export interface CardLayoutDimensions {
 export const DEFAULT_CARD_LAYOUT = {
   textPosition: "bottom" as const,
   contentHeight: 25,
-  imageOverlap: 11,
+  imageOverlap: 0,
   borderWidth: 0,
   borderColor: null as string | null,
 };
@@ -46,16 +46,22 @@ export const DEFAULT_CARD_LAYOUT = {
 export function calculateCardLayout(
   cardLayout?: CardLayoutSettings,
   showLabels = true,
-  showDescriptions = false
+  showDescriptions = false,
 ): CardLayoutDimensions {
-  const textPosition = cardLayout?.textPosition ?? DEFAULT_CARD_LAYOUT.textPosition;
-  const contentHeight = cardLayout?.contentHeight ?? DEFAULT_CARD_LAYOUT.contentHeight;
-  const imageOverlap = cardLayout?.imageOverlap ?? DEFAULT_CARD_LAYOUT.imageOverlap;
-  const borderWidth = cardLayout?.borderWidth ?? DEFAULT_CARD_LAYOUT.borderWidth;
-  const borderColor = cardLayout?.borderColor ?? DEFAULT_CARD_LAYOUT.borderColor;
+  const textPosition =
+    cardLayout?.textPosition ?? DEFAULT_CARD_LAYOUT.textPosition;
+  const contentHeight =
+    cardLayout?.contentHeight ?? DEFAULT_CARD_LAYOUT.contentHeight;
+  const imageOverlap =
+    cardLayout?.imageOverlap ?? DEFAULT_CARD_LAYOUT.imageOverlap;
+  const borderWidth =
+    cardLayout?.borderWidth ?? DEFAULT_CARD_LAYOUT.borderWidth;
+  const borderColor =
+    cardLayout?.borderColor ?? DEFAULT_CARD_LAYOUT.borderColor;
 
   // For "integrated" position, text is in the image - no separate content area
-  const hasContent = textPosition !== "integrated" && (showLabels || showDescriptions);
+  const hasContent =
+    textPosition !== "integrated" && (showLabels || showDescriptions);
   const isOverlay = textPosition === "overlay";
 
   if (!hasContent) {

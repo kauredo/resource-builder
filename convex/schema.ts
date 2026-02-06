@@ -10,7 +10,7 @@ export default defineSchema({
     subscription: v.union(
       v.literal("trial"),
       v.literal("active"),
-      v.literal("expired")
+      v.literal("expired"),
     ),
     trialEndsAt: v.optional(v.number()),
     stripeCustomerId: v.optional(v.string()),
@@ -37,41 +37,53 @@ export default defineSchema({
     }),
     illustrationStyle: v.string(),
     // Card text positioning settings
-    cardLayout: v.optional(v.object({
-      // Where text sits: bottom (separate area), overlay (over image), integrated (no separate area)
-      textPosition: v.optional(v.union(
-        v.literal("bottom"),
-        v.literal("overlay"),
-        v.literal("integrated")
-      )),
-      // Height of content area as percentage (10-40), default 25
-      contentHeight: v.optional(v.number()),
-      // How much content overlaps image as percentage (0-20), default 11
-      imageOverlap: v.optional(v.number()),
-      // Simple CSS border (alternative to generated frame assets)
-      borderWidth: v.optional(v.number()), // 0-8 pixels
-      borderColor: v.optional(v.string()), // CSS color
-    })),
+    cardLayout: v.optional(
+      v.object({
+        // Where text sits: bottom (separate area), overlay (over image), integrated (no separate area)
+        textPosition: v.optional(
+          v.union(
+            v.literal("bottom"),
+            v.literal("overlay"),
+            v.literal("integrated"),
+          ),
+        ),
+        // Height of content area as percentage (10-40), default 25
+        contentHeight: v.optional(v.number()),
+        // How much content overlaps image as percentage (0-20), default 0
+        imageOverlap: v.optional(v.number()),
+        // Simple CSS border (alternative to generated frame assets)
+        borderWidth: v.optional(v.number()), // 0-8 pixels
+        borderColor: v.optional(v.string()), // CSS color
+      }),
+    ),
     // Custom suffix to add to frame generation prompts
     framePromptSuffix: v.optional(v.string()),
     // Default frame usage settings (inherited by new resources)
-    defaultUseFrames: v.optional(v.object({
-      border: v.optional(v.boolean()),
-      fullCard: v.optional(v.boolean()),
-    })),
+    defaultUseFrames: v.optional(
+      v.object({
+        border: v.optional(v.boolean()),
+        fullCard: v.optional(v.boolean()),
+      }),
+    ),
     // Frame assets for card decoration
-    frames: v.optional(v.object({
-      border: v.optional(v.object({
-        storageId: v.id("_storage"),
-        prompt: v.string(),
-        generatedAt: v.number(),
-      })),
-      fullCard: v.optional(v.object({
-        storageId: v.id("_storage"),
-        prompt: v.string(),
-        generatedAt: v.number(),
-      })),
-    })),
+    frames: v.optional(
+      v.object({
+        border: v.optional(
+          v.object({
+            storageId: v.id("_storage"),
+            prompt: v.string(),
+            generatedAt: v.number(),
+          }),
+        ),
+        fullCard: v.optional(
+          v.object({
+            storageId: v.id("_storage"),
+            prompt: v.string(),
+            generatedAt: v.number(),
+          }),
+        ),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
@@ -97,7 +109,7 @@ export default defineSchema({
       v.literal("board_game"),
       v.literal("worksheet"),
       v.literal("poster"),
-      v.literal("flashcards")
+      v.literal("flashcards"),
     ),
     name: v.string(),
     description: v.string(),
@@ -107,7 +119,7 @@ export default defineSchema({
         storageId: v.id("_storage"),
         description: v.string(),
         prompt: v.string(),
-      })
+      }),
     ),
     pdfStorageId: v.optional(v.id("_storage")),
     status: v.union(v.literal("draft"), v.literal("complete")),

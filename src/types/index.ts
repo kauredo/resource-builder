@@ -56,7 +56,7 @@ export interface CardLayoutSettings {
   textPosition?: "bottom" | "overlay" | "integrated";
   // Height of content area as percentage (10-40), default 25
   contentHeight?: number;
-  // How much content overlaps image as percentage (0-20), default 11
+  // How much content overlaps image as percentage (0-20), default 0
   imageOverlap?: number;
   // Simple CSS border (alternative to generated frame assets)
   borderWidth?: number; // 0-8 pixels, default 0 (none)

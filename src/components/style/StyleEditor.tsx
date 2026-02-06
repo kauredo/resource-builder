@@ -87,11 +87,12 @@ export function StyleEditor({
 }: StyleEditorProps) {
   // Local state for debounced updates
   const [localName, setLocalName] = useState(name);
-  const [localIllustrationStyle, setLocalIllustrationStyle] = useState(illustrationStyle);
+  const [localIllustrationStyle, setLocalIllustrationStyle] =
+    useState(illustrationStyle);
   const [localCardLayout, setLocalCardLayout] = useState<CardLayoutSettings>({
     textPosition: cardLayout?.textPosition ?? "bottom",
     contentHeight: cardLayout?.contentHeight ?? 25,
-    imageOverlap: cardLayout?.imageOverlap ?? 11,
+    imageOverlap: cardLayout?.imageOverlap ?? 0,
   });
 
   // Load Google Fonts for previews
@@ -111,7 +112,7 @@ export function StyleEditor({
     setLocalCardLayout({
       textPosition: cardLayout?.textPosition ?? "bottom",
       contentHeight: cardLayout?.contentHeight ?? 25,
-      imageOverlap: cardLayout?.imageOverlap ?? 11,
+      imageOverlap: cardLayout?.imageOverlap ?? 0,
     });
   }, [cardLayout]);
 
@@ -128,7 +129,8 @@ export function StyleEditor({
 
   // Debounced illustration style update
   useEffect(() => {
-    if (localIllustrationStyle === illustrationStyle || autoSaveDelay === 0) return;
+    if (localIllustrationStyle === illustrationStyle || autoSaveDelay === 0)
+      return;
 
     const timeout = setTimeout(() => {
       onChange({ illustrationStyle: localIllustrationStyle });
@@ -142,7 +144,7 @@ export function StyleEditor({
     const hasChanged =
       localCardLayout.textPosition !== (cardLayout?.textPosition ?? "bottom") ||
       localCardLayout.contentHeight !== (cardLayout?.contentHeight ?? 25) ||
-      localCardLayout.imageOverlap !== (cardLayout?.imageOverlap ?? 11);
+      localCardLayout.imageOverlap !== (cardLayout?.imageOverlap ?? 0);
 
     if (!hasChanged || autoSaveDelay === 0) return;
 
@@ -157,7 +159,7 @@ export function StyleEditor({
     (newColors: typeof colors) => {
       onChange({ colors: newColors });
     },
-    [onChange]
+    [onChange],
   );
 
   const handleTypographyChange = useCallback(
@@ -169,7 +171,7 @@ export function StyleEditor({
         },
       });
     },
-    [onChange, typography]
+    [onChange, typography],
   );
 
   return (
@@ -183,7 +185,7 @@ export function StyleEditor({
           id="style-name"
           type="text"
           value={localName}
-          onChange={(e) => setLocalName(e.target.value)}
+          onChange={e => setLocalName(e.target.value)}
           disabled={disabled}
           placeholder="My Custom Style"
           className="max-w-md"
@@ -220,26 +222,30 @@ export function StyleEditor({
             </Label>
             <Select
               value={typography.headingFont}
-              onValueChange={(value) => handleTypographyChange("headingFont", value)}
+              onValueChange={value =>
+                handleTypographyChange("headingFont", value)
+              }
               disabled={disabled}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a font" />
               </SelectTrigger>
               <SelectContent>
-                {HEADING_FONTS.map((font) => (
+                {HEADING_FONTS.map(font => (
                   <SelectItem key={font} value={font}>
-                    <span style={{ fontFamily: `"${font}", sans-serif` }}>{font}</span>
+                    <span style={{ fontFamily: `"${font}", sans-serif` }}>
+                      {font}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <div
-              className="pt-2 pb-3 px-3 bg-muted/30 rounded-md"
-            >
+            <div className="pt-2 pb-3 px-3 bg-muted/30 rounded-md">
               <p
                 className="text-xl font-medium"
-                style={{ fontFamily: `"${typography.headingFont}", sans-serif` }}
+                style={{
+                  fontFamily: `"${typography.headingFont}", sans-serif`,
+                }}
               >
                 The quick brown fox
               </p>
@@ -252,23 +258,23 @@ export function StyleEditor({
             </Label>
             <Select
               value={typography.bodyFont}
-              onValueChange={(value) => handleTypographyChange("bodyFont", value)}
+              onValueChange={value => handleTypographyChange("bodyFont", value)}
               disabled={disabled}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a font" />
               </SelectTrigger>
               <SelectContent>
-                {BODY_FONTS.map((font) => (
+                {BODY_FONTS.map(font => (
                   <SelectItem key={font} value={font}>
-                    <span style={{ fontFamily: `"${font}", sans-serif` }}>{font}</span>
+                    <span style={{ fontFamily: `"${font}", sans-serif` }}>
+                      {font}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <div
-              className="pt-2 pb-3 px-3 bg-muted/30 rounded-md"
-            >
+            <div className="pt-2 pb-3 px-3 bg-muted/30 rounded-md">
               <p
                 className="text-sm text-muted-foreground"
                 style={{ fontFamily: `"${typography.bodyFont}", sans-serif` }}
@@ -296,7 +302,7 @@ export function StyleEditor({
             <Select
               value={localCardLayout.textPosition}
               onValueChange={(value: "bottom" | "overlay" | "integrated") =>
-                setLocalCardLayout((prev) => ({ ...prev, textPosition: value }))
+                setLocalCardLayout(prev => ({ ...prev, textPosition: value }))
               }
               disabled={disabled}
             >
@@ -307,19 +313,25 @@ export function StyleEditor({
                 <SelectItem value="bottom">
                   <span className="flex flex-col items-start">
                     <span>Bottom area</span>
-                    <span className="text-xs text-muted-foreground">Text in dedicated space below image</span>
+                    <span className="text-xs text-muted-foreground">
+                      Text in dedicated space below image
+                    </span>
                   </span>
                 </SelectItem>
                 <SelectItem value="overlay">
                   <span className="flex flex-col items-start">
                     <span>Overlay</span>
-                    <span className="text-xs text-muted-foreground">Text overlaps the image</span>
+                    <span className="text-xs text-muted-foreground">
+                      Text overlaps the image
+                    </span>
                   </span>
                 </SelectItem>
                 <SelectItem value="integrated">
                   <span className="flex flex-col items-start">
                     <span>Integrated</span>
-                    <span className="text-xs text-muted-foreground">Text included in generated image</span>
+                    <span className="text-xs text-muted-foreground">
+                      Text included in generated image
+                    </span>
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -338,7 +350,10 @@ export function StyleEditor({
               <Slider
                 value={[localCardLayout.contentHeight ?? 25]}
                 onValueChange={([value]) =>
-                  setLocalCardLayout((prev) => ({ ...prev, contentHeight: value }))
+                  setLocalCardLayout(prev => ({
+                    ...prev,
+                    contentHeight: value,
+                  }))
                 }
                 min={10}
                 max={40}
@@ -362,9 +377,9 @@ export function StyleEditor({
                 </span>
               </div>
               <Slider
-                value={[localCardLayout.imageOverlap ?? 11]}
+                value={[localCardLayout.imageOverlap ?? 0]}
                 onValueChange={([value]) =>
-                  setLocalCardLayout((prev) => ({ ...prev, imageOverlap: value }))
+                  setLocalCardLayout(prev => ({ ...prev, imageOverlap: value }))
                 }
                 min={0}
                 max={20}
@@ -383,22 +398,25 @@ export function StyleEditor({
       {/* Illustration Style */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-foreground">Illustration Style</h3>
+          <h3 className="text-sm font-medium text-foreground">
+            Illustration Style
+          </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             Describe how AI-generated illustrations should look
           </p>
         </div>
         <Textarea
           value={localIllustrationStyle}
-          onChange={(e) => setLocalIllustrationStyle(e.target.value)}
+          onChange={e => setLocalIllustrationStyle(e.target.value)}
           disabled={disabled}
           placeholder="Describe the visual style: shapes, colors, mood, artistic influences..."
           rows={4}
           className="resize-none"
         />
         <p className="text-xs text-muted-foreground">
-          Tip: Include details about shapes (rounded, geometric), mood (playful, calm),
-          artistic style (cartoon, watercolor), and any specific elements to include or avoid.
+          Tip: Include details about shapes (rounded, geometric), mood (playful,
+          calm), artistic style (cartoon, watercolor), and any specific elements
+          to include or avoid.
         </p>
       </div>
     </div>
