@@ -16,7 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, Trash2, Pencil } from "lucide-react";
+import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
+import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames, FrameType } from "@/types";
 
@@ -74,6 +76,7 @@ export function FrameGenerator({
     new Set(),
   );
   const [deletingType, setDeletingType] = useState<FrameType | null>(null);
+  const [editingType, setEditingType] = useState<FrameType | null>(null);
 
   const generateFrame = useAction(api.frameActions.generateFrame);
   const deleteFrameMutation = useMutation(api.frames.deleteFrame);
@@ -177,6 +180,8 @@ export function FrameGenerator({
           const isGenerating = generatingTypes.has(config.type);
           const isDeleting = deletingType === config.type;
           const isDisabled = isAnyOperationInProgress;
+          const assetType =
+            config.type === "border" ? "frame_border" : "frame_full_card";
 
           return (
             <div
@@ -214,7 +219,28 @@ export function FrameGenerator({
                     >
                       <RefreshCw className="size-3" aria-hidden="true" />
                       <span className="sr-only">Regenerate</span>
-                    </Button>
+                      </Button>
+                    {frameUrl && (
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => setEditingType(config.type)}
+                        disabled={isDisabled}
+                        className="h-6 w-6 bg-white/90 hover:bg-white shadow-sm"
+                      >
+                        <Pencil className="size-3" aria-hidden="true" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                    )}
+                    <AssetHistoryDialog
+                      assetRef={{
+                        ownerType: "style",
+                        ownerId: styleId,
+                        assetType: assetType as any,
+                        assetKey: config.type,
+                      }}
+                      triggerLabel=""
+                    />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -283,6 +309,21 @@ export function FrameGenerator({
           );
         })}
       </div>
+
+      {editingType && frameUrls?.[editingType] && (
+        <ImageEditorModal
+          open={!!editingType}
+          onOpenChange={(open) => setEditingType(open ? editingType : null)}
+          assetRef={{
+            ownerType: "style",
+            ownerId: styleId,
+            assetType: editingType === "border" ? "frame_border" : "frame_full_card",
+            assetKey: editingType,
+          }}
+          imageUrl={frameUrls?.[editingType] as string}
+          title={`Edit ${editingType === "border" ? "Border" : "Full Card"} Frame`}
+        />
+      )}
     </div>
   );
 }

@@ -71,6 +71,11 @@ export interface StylePreset {
   cardLayout?: CardLayoutSettings;
 }
 
+export interface CharacterSelection {
+  mode: "resource" | "per_item";
+  characterIds: string[];
+}
+
 // Emotion card content
 export interface EmotionCard {
   emotion: string;
@@ -115,10 +120,50 @@ export interface DefaultUseFrames {
 
 export type FrameType = "border" | "fullCard";
 
+// Asset system
+export type AssetOwnerType = "resource" | "style";
+
+export type AssetType =
+  | "emotion_card_image"
+  | "poster_image"
+  | "flashcard_front_image"
+  | "flashcard_back_image"
+  | "worksheet_image"
+  | "board_image"
+  | "token_image"
+  | "card_image"
+  | "free_prompt_image"
+  | "frame_border"
+  | "frame_full_card";
+
+export type AssetKey = string;
+
+export interface GeneratedAssetParams {
+  model?: string;
+  style?: {
+    colors: StyleColors;
+    typography?: StyleTypography;
+    illustrationStyle: string;
+  };
+  characterId?: string;
+  includeText?: boolean;
+  layout?: Record<string, unknown>;
+  editState?: Record<string, unknown>;
+}
+
+export interface AssetRef {
+  ownerType: AssetOwnerType;
+  ownerId: string;
+  assetType: AssetType;
+  assetKey: AssetKey;
+}
+
 // Resource types
 export type ResourceType =
   | "emotion_cards"
   | "board_game"
+  | "card_game"
+  | "free_prompt"
   | "worksheet"
   | "poster"
   | "flashcards";
@@ -126,3 +171,111 @@ export type ResourceType =
 export type SubscriptionStatus = "trial" | "active" | "expired";
 
 export type ResourceStatus = "draft" | "complete";
+
+// New resource content types
+export interface PosterContent {
+  headline: string;
+  subtext?: string;
+  imageAssetKey: AssetKey;
+  layout?: {
+    alignment?: "left" | "center" | "right";
+  };
+  characters?: CharacterSelection;
+}
+
+export interface FlashcardContentItem {
+  id?: string;
+  frontText: string;
+  backText: string;
+  imagePrompt?: string;
+  frontImageAssetKey?: AssetKey;
+  backImageAssetKey?: AssetKey;
+  characterId?: string;
+}
+
+export interface FlashcardsContent {
+  cards: FlashcardContentItem[];
+  layout?: {
+    cardsPerPage?: 4 | 6 | 9;
+  };
+  characters?: CharacterSelection;
+}
+
+export type WorksheetBlockType =
+  | "heading"
+  | "prompt"
+  | "lines"
+  | "checklist"
+  | "scale"
+  | "text";
+
+export interface WorksheetBlock {
+  type: WorksheetBlockType;
+  text?: string;
+  items?: string[];
+  scaleLabels?: { min: string; max: string };
+  lines?: number;
+}
+
+export interface WorksheetContent {
+  title: string;
+  blocks: WorksheetBlock[];
+  imageAssetKey?: AssetKey;
+  imagePrompt?: string;
+  headerImagePrompt?: string;
+  headerImageAssetKey?: AssetKey;
+  characters?: CharacterSelection;
+}
+
+export interface BoardGameCell {
+  label?: string;
+  assetKey?: AssetKey;
+}
+
+export interface BoardGameContent {
+  grid: {
+    rows: number;
+    cols: number;
+    cells: BoardGameCell[];
+  };
+  boardImagePrompt?: string;
+  boardImageAssetKey?: AssetKey;
+  tokens?: {
+    name: string;
+    color?: string;
+    assetKey?: AssetKey;
+    characterId?: string;
+  }[];
+  cards?: {
+    title: string;
+    text: string;
+    assetKey?: AssetKey;
+    characterId?: string;
+  }[];
+  characters?: CharacterSelection;
+}
+
+export interface CardGameContent {
+  deckName: string;
+  rules: string;
+  cards: {
+    id?: string;
+    title: string;
+    text: string;
+    count: number;
+    imagePrompt?: string;
+    imageAssetKey?: AssetKey;
+    characterId?: string;
+  }[];
+  characters?: CharacterSelection;
+}
+
+export interface FreePromptContent {
+  prompt: string;
+  output: {
+    type: "single_image";
+    aspect: "1:1" | "3:4" | "4:3";
+  };
+  imageAssetKey: AssetKey;
+  characters?: CharacterSelection;
+}

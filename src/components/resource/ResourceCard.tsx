@@ -11,7 +11,7 @@ interface ResourceCardProps {
   name: string;
   type: string;
   status: "draft" | "complete";
-  cardCount: number;
+  itemCount: number;
   updatedAt: number;
   thumbnailUrl?: string | null;
   /** Show compact version without thumbnail */
@@ -26,12 +26,30 @@ function formatResourceType(type: string): string {
     .join(" ");
 }
 
+function formatCountLabel(type: string, count: number): string {
+  switch (type) {
+    case "emotion_cards":
+    case "flashcards":
+    case "card_game":
+      return `${count} card${count !== 1 ? "s" : ""}`;
+    case "worksheet":
+      return `${count} block${count !== 1 ? "s" : ""}`;
+    case "board_game":
+      return `${count} space${count !== 1 ? "s" : ""}`;
+    case "poster":
+    case "free_prompt":
+      return `${count} image${count !== 1 ? "s" : ""}`;
+    default:
+      return `${count} item${count !== 1 ? "s" : ""}`;
+  }
+}
+
 export function ResourceCard({
   id,
   name,
   type,
   status,
-  cardCount,
+  itemCount,
   updatedAt,
   thumbnailUrl,
   compact = false,
@@ -42,15 +60,15 @@ export function ResourceCard({
   return (
     <Link
       href={`/dashboard/resources/${id}`}
-      className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
     >
       <article
         className={`
-          relative overflow-hidden rounded-2xl border bg-card
-          transition-all duration-200 ease-out
-          hover:shadow-lg hover:border-coral/50
-          motion-reduce:transition-none
-          ${hasThumbnail ? "border-border/50" : "border-border p-4"}
+          relative overflow-hidden rounded-xl border bg-card
+          transition-[transform,border-color,background-color] duration-200 ease-out
+          hover:-translate-y-0.5 hover:border-foreground/20
+          motion-reduce:transition-none motion-reduce:transform-none
+          ${hasThumbnail ? "border-border/60" : "border-border/60 p-4"}
         `}
       >
         {/* Thumbnail version */}
@@ -70,19 +88,22 @@ export function ResourceCard({
 
               {/* Card count badge - top left */}
               <div className="absolute top-3 left-3">
-                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-white/90 backdrop-blur-sm text-foreground rounded-md shadow-sm">
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-background/90 border border-border/60 text-foreground rounded-md whitespace-nowrap max-w-[140px] truncate"
+                  title={formatCountLabel(type, itemCount)}
+                >
                   <Layers className="size-3" aria-hidden="true" />
-                  {cardCount}
+                  {formatCountLabel(type, itemCount)}
                 </span>
               </div>
 
               {/* Status badge - top right */}
               <div className="absolute top-3 right-3">
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md shadow-sm backdrop-blur-sm ${
+                  className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border whitespace-nowrap bg-background/90 ${
                     isComplete
-                      ? "bg-teal/90 text-white"
-                      : "bg-white/90 text-muted-foreground"
+                      ? "border-teal/40 text-foreground"
+                      : "border-border/60 text-muted-foreground"
                   }`}
                 >
                   {isComplete ? (
@@ -136,7 +157,7 @@ export function ResourceCard({
               </span>
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Layers className="size-3" aria-hidden="true" />
-                {cardCount} card{cardCount !== 1 ? "s" : ""}
+                {formatCountLabel(type, itemCount)}
               </span>
             </div>
 

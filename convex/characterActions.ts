@@ -256,6 +256,111 @@ export const analyzeAndUpdatePrompt = action({
   },
 });
 
+// Generate a character group: N related but distinct characters from a description
+export const generateCharacterGroup = action({
+  args: {
+    userId: v.id("users"),
+    groupName: v.string(),
+    groupDescription: v.string(),
+    count: v.number(),
+    styleId: v.optional(v.id("styles")),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ groupId: Id<"characterGroups">; characterIds: Id<"characters">[] }> => {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
+
+    const count = Math.max(2, Math.min(8, args.count));
+
+    const prompt = `You are helping a therapist create a group of ${count} related but visually distinct characters for therapy materials (emotion cards, board games, worksheets).
+
+Group Name: ${args.groupName}
+Group Description: ${args.groupDescription}
+
+Create ${count} characters that belong together as a group but are each visually unique. They should share a general theme or world but differ in appearance, personality, and role.
+
+For each character provide:
+- name: A distinct, child-friendly name
+- description: 2-3 sentences describing their visual appearance (body type, colors, clothing, distinguishing features)
+- personality: 1-2 sentences describing their personality traits
+- promptFragment: A concise visual prompt fragment (2-4 sentences) for consistent image generation. Focus on physical appearance only — no emotions or scenes.
+
+Respond in EXACTLY this JSON format, no other text:
+[
+  { "name": "...", "description": "...", "personality": "...", "promptFragment": "..." },
+  ...
+]`;
+
+    const response: Response = await fetch(
+      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error?.message || "Failed to generate character group",
+      );
+    }
+
+    const data = await response.json();
+    const text: string | undefined =
+      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) throw new Error("No response from AI");
+
+    // Extract JSON array from response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error("Could not parse character data from AI response");
+
+    const characters: Array<{
+      name: string;
+      description: string;
+      personality: string;
+      promptFragment: string;
+    }> = JSON.parse(jsonMatch[0]);
+
+    if (!Array.isArray(characters) || characters.length === 0) {
+      throw new Error("AI returned empty character list");
+    }
+
+    // Create each character
+    const characterIds: Id<"characters">[] = [];
+    for (const char of characters.slice(0, count)) {
+      const charId = await ctx.runMutation(api.characters.createCharacter, {
+        userId: args.userId,
+        name: char.name,
+      });
+      await ctx.runMutation(api.characters.updateCharacter, {
+        characterId: charId,
+        description: char.description,
+        personality: char.personality,
+        promptFragment: char.promptFragment,
+        ...(args.styleId ? { styleId: args.styleId } : {}),
+      });
+      characterIds.push(charId);
+    }
+
+    // Create the group
+    const groupId = await ctx.runMutation(api.characterGroups.createGroup, {
+      userId: args.userId,
+      name: args.groupName,
+      description: args.groupDescription,
+      characterIds,
+      ...(args.styleId ? { sharedStyleId: args.styleId } : {}),
+    });
+
+    return { groupId, characterIds };
+  },
+});
+
 // Generate a reference image for a character
 export const generateReferenceImage = action({
   args: { characterId: v.id("characters") },

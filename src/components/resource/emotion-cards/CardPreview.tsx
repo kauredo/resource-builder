@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { RefreshCw, Loader2, AlertCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleFonts } from "@/lib/fonts";
 import { getCardAspectRatio } from "@/lib/pdf";
 import { calculateCardLayout } from "@/lib/card-layout";
-import type { CardLayoutSettings } from "@/types";
+import type { AssetRef, CardLayoutSettings } from "@/types";
+import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
+import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 
 interface CardPreviewProps {
   emotion: string;
@@ -20,6 +22,7 @@ interface CardPreviewProps {
   showDescription?: boolean;
   description?: string;
   onRegenerate?: () => void;
+  assetRef?: AssetRef;
   // Layout for correct proportions
   cardsPerPage?: 4 | 6 | 9;
   // Style integration
@@ -58,6 +61,7 @@ export function CardPreview({
   showDescription = false,
   description,
   onRegenerate,
+  assetRef,
   cardsPerPage = 6,
   style,
   cardLayout,
@@ -65,6 +69,9 @@ export function CardPreview({
   useFrames,
 }: CardPreviewProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const isActive = isHovered || isFocused;
 
   // Load fonts if style is provided
   const fontsToLoad = style
@@ -97,8 +104,7 @@ export function CardPreview({
   );
 
   // Match PDF font sizing for consistency
-  const baseLabelSize =
-    cardsPerPage === 9 ? 10 : cardsPerPage === 6 ? 12 : 14;
+  const baseLabelSize = cardsPerPage === 9 ? 10 : cardsPerPage === 6 ? 12 : 14;
   const baseDescriptionSize =
     cardsPerPage === 9 ? 8 : cardsPerPage === 6 ? 9 : 10;
   const fontScale = variant === "compact" ? 0.75 : 1;
@@ -121,7 +127,7 @@ export function CardPreview({
 
   return (
     <div
-      className="relative flex flex-col rounded-xl overflow-hidden transition-all duration-200"
+      className="relative flex flex-col rounded-xl overflow-hidden transition-colors duration-200 motion-reduce:transition-none"
       style={{
         backgroundColor: bgColor,
         aspectRatio: cardAspectRatio,
@@ -131,12 +137,18 @@ export function CardPreview({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setIsFocused(true)}
+      onBlurCapture={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setIsFocused(false);
+        }
+      }}
     >
       {/* Image container */}
       <div
         className="relative"
         style={{
-          backgroundColor: accentColor + "30",
+          backgroundColor: `color-mix(in oklch, ${accentColor} 30%, transparent)`,
           height: `${cardDimensions.imageHeightPercent}%`,
         }}
       >
@@ -171,23 +183,45 @@ export function CardPreview({
               className="object-cover"
             />
             {/* Regenerate overlay */}
-            {onRegenerate && (
+            {(onRegenerate || assetRef) && (
               <div
                 className={cn(
-                  "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200",
-                  isHovered ? "opacity-100" : "opacity-0",
+                  "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200 motion-reduce:transition-none",
+                  isActive
+                    ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none",
                 )}
               >
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={onRegenerate}
-                  className="gap-1.5"
-                  tabIndex={isHovered ? 0 : -1}
-                >
-                  <RefreshCw className="size-3.5" aria-hidden="true" />
-                  Regenerate
-                </Button>
+                <div className="flex flex-col gap-2">
+                  {onRegenerate && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={onRegenerate}
+                      className="gap-1.5"
+                    >
+                      <RefreshCw className="size-3.5" aria-hidden="true" />
+                      Regenerate
+                    </Button>
+                  )}
+                  {assetRef && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setIsEditorOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <Pencil className="size-3.5" aria-hidden="true" />
+                        Edit
+                      </Button>
+                      <AssetHistoryDialog
+                        assetRef={assetRef}
+                        triggerLabel="History"
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </>
@@ -275,7 +309,12 @@ export function CardPreview({
 
       {/* Error retry button */}
       {hasError && onRegenerate && (
-        <div className="p-3 border-t" style={{ borderColor: textColor + "15" }}>
+        <div
+          className="p-3 border-t"
+          style={{
+            borderColor: `color-mix(in oklch, ${textColor} 15%, transparent)`,
+          }}
+        >
           <Button
             size="sm"
             variant="outline"
@@ -286,6 +325,16 @@ export function CardPreview({
             Retry
           </Button>
         </div>
+      )}
+
+      {assetRef && imageUrl && (
+        <ImageEditorModal
+          open={isEditorOpen}
+          onOpenChange={setIsEditorOpen}
+          assetRef={assetRef}
+          imageUrl={imageUrl}
+          title={`Edit ${emotion}`}
+        />
       )}
     </div>
   );

@@ -173,7 +173,7 @@ function Testimonial({
         style={{ color: accentColor }}
         aria-hidden="true"
       >
-        "
+        &ldquo;
       </span>
       <blockquote
         className={`leading-relaxed text-foreground/90 mb-6 relative z-10 ${
@@ -392,8 +392,8 @@ export default function Home() {
                   <h3 className="mb-3">Select emotions</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Choose from 20+ research-backed emotions or add your own.
-                    From primary feelings to nuanced states like "overwhelmed"
-                    or "hopeful."
+                    From primary feelings to nuanced states like &ldquo;overwhelmed&rdquo;
+                    or &ldquo;hopeful.&rdquo;
                   </p>
                 </div>
               </div>

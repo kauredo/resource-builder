@@ -110,12 +110,15 @@ export default defineSchema({
     type: v.union(
       v.literal("emotion_cards"),
       v.literal("board_game"),
+      v.literal("card_game"),
+      v.literal("free_prompt"),
       v.literal("worksheet"),
       v.literal("poster"),
       v.literal("flashcards"),
     ),
     name: v.string(),
     description: v.string(),
+    tags: v.optional(v.array(v.string())),
     content: v.any(), // Type-specific content (EmotionCardContent, etc.)
     images: v.array(
       v.object({
@@ -132,4 +135,50 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_style", ["styleId"])
     .index("by_type", ["type"]),
+
+  characterGroups: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.string(),
+    sharedStyleId: v.optional(v.id("styles")),
+    characterIds: v.array(v.id("characters")),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }).index("by_user", ["userId"]),
+
+  assets: defineTable({
+    ownerType: v.union(v.literal("resource"), v.literal("style")),
+    ownerId: v.union(v.id("resources"), v.id("styles")),
+    assetType: v.string(),
+    assetKey: v.string(),
+    currentVersionId: v.optional(v.id("assetVersions")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner", ["ownerType", "ownerId"])
+    .index("by_owner_type", ["ownerType", "ownerId", "assetType"])
+    .index("by_owner_type_key", [
+      "ownerType",
+      "ownerId",
+      "assetType",
+      "assetKey",
+    ])
+    .index("by_type", ["assetType"]),
+
+  assetVersions: defineTable({
+    assetId: v.id("assets"),
+    storageId: v.id("_storage"),
+    prompt: v.string(),
+    params: v.any(),
+    source: v.union(
+      v.literal("generated"),
+      v.literal("edited"),
+      v.literal("uploaded"),
+    ),
+    sourceVersionId: v.optional(v.id("assetVersions")),
+    pinned: v.optional(v.boolean()),
+    createdAt: v.number(),
+  })
+    .index("by_asset", ["assetId"])
+    .index("by_asset_created", ["assetId", "createdAt"]),
 });

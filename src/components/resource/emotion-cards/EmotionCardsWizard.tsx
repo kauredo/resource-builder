@@ -11,6 +11,7 @@ import { LayoutOptionsStep } from "./steps/LayoutOptionsStep";
 import { GenerateReviewStep } from "./steps/GenerateReviewStep";
 import { ExportStep } from "./steps/ExportStep";
 import { WizardPreview } from "./WizardPreview";
+import { DraftResumeDialog } from "@/components/resource/DraftResumeDialog";
 import {
   NEXT_BUTTON_LABELS,
   STEP_LABELS,
@@ -33,15 +34,19 @@ export function EmotionCardsWizard({
     currentStep,
     isNavigating,
     canGoNext,
+    isStepComplete,
+    goToStep,
     handleNext,
     handleBack,
     handleCancel,
+    resumeDialog,
     emotionsWithImages,
     hasCharacters,
     showPreviewSidebar,
     preview,
     isLoading,
   } = useEmotionCardsWizard({ editResourceId });
+  const progress = (currentStep + 1) / TOTAL_STEPS;
 
   // Render current step
   const renderStep = () => {
@@ -112,8 +117,13 @@ export function EmotionCardsWizard({
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <DraftResumeDialog
+        open={resumeDialog.open}
+        onResume={resumeDialog.onResume}
+        onStartFresh={resumeDialog.onStartFresh}
+      />
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8 border-b border-border/60 pb-5">
         <button
           onClick={handleCancel}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 motion-reduce:transition-none mb-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
@@ -121,57 +131,64 @@ export function EmotionCardsWizard({
           <ArrowLeft className="size-3.5" aria-hidden="true" />
           {state.isEditMode ? "Back to Resource" : "Dashboard"}
         </button>
-        <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
-          {state.isEditMode
-            ? `Edit: ${STEP_TITLES[currentStep]}`
-            : STEP_TITLES[currentStep]}
-        </h1>
-      </div>
 
-      {/* Progress indicator with labels */}
-      <nav
-        className="mb-6 flex items-center gap-4"
-        aria-label="Wizard progress"
-      >
-        <div className="flex items-center gap-3" role="list">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
-            const isComplete = i < currentStep;
-            const isCurrent = i === currentStep;
-            return (
-              <div
-                key={i}
-                role="listitem"
-                aria-current={isCurrent ? "step" : undefined}
-                className="flex items-center gap-1.5"
-              >
-                <div
-                  className={cn(
-                    "rounded-full transition-all duration-200",
-                    isCurrent ? "w-6 h-2 bg-coral" : "size-2",
-                    isComplete ? "bg-coral" : "",
-                    !isComplete && !isCurrent ? "bg-border" : ""
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-xs hidden sm:inline transition-colors",
-                    isCurrent
-                      ? "text-foreground font-medium"
-                      : isComplete
-                        ? "text-muted-foreground"
-                        : "text-muted-foreground/50"
-                  )}
-                >
-                  {STEP_LABELS[i]}
-                </span>
-              </div>
-            );
-          })}
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+              {state.isEditMode ? "Editing" : "New"} Emotion Cards
+            </p>
+            <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight mt-2">
+              {STEP_TITLES[currentStep]}
+            </h1>
+          </div>
+          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Step {currentStep + 1} of {TOTAL_STEPS}
+          </span>
         </div>
-        <span className="text-sm text-muted-foreground tabular-nums sm:hidden">
-          {currentStep + 1}/{TOTAL_STEPS}
-        </span>
-      </nav>
+
+        {/* Progress indicator with labels */}
+        <nav className="mt-4" aria-label="Wizard progress">
+          <div className="h-1 w-full rounded-full bg-border/70">
+            <div
+              className="h-1 rounded-full bg-coral origin-left transition-transform duration-300 ease-out motion-reduce:transition-none"
+              style={{ transform: `scaleX(${progress})` }}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2" role="list">
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
+              const isComplete = i < currentStep;
+              const isCurrent = i === currentStep;
+              const canNavigate = i <= currentStep && isStepComplete(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  role="listitem"
+                  aria-current={isCurrent ? "step" : undefined}
+                  onClick={() => {
+                    if (canNavigate) goToStep(i);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.2em]",
+                    "transition-colors duration-150 motion-reduce:transition-none",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+                    !canNavigate && "cursor-not-allowed",
+                    isCurrent
+                      ? "border-coral/40 text-foreground bg-[color-mix(in_oklch,var(--coral)_12%,transparent)]"
+                      : isComplete
+                        ? "border-border/70 text-muted-foreground"
+                        : "border-border/60 text-muted-foreground/60"
+                  )}
+                  disabled={!canNavigate}
+                >
+                  <span className="tabular-nums">{i + 1}</span>
+                  <span className="hidden sm:inline">{STEP_LABELS[i]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
 
       {/* Main content area with optional preview */}
       <div className="min-h-[400px]">

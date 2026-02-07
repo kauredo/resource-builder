@@ -5,6 +5,22 @@ import { mutation, query } from "./_generated/server";
 // Duplicated here because Convex backend can't import from src/
 const STYLE_PRESETS = [
   {
+    name: "Neutral / No Style",
+    colors: {
+      primary: "#7A7A7A",
+      secondary: "#B0B0B0",
+      accent: "#D7D7D7",
+      background: "#FFFFFF",
+      text: "#1A1A1A",
+    },
+    typography: {
+      headingFont: "Nunito",
+      bodyFont: "Work Sans",
+    },
+    illustrationStyle:
+      "Neutral, clean, minimal line illustration style with soft shading. No distinct character style, keep visuals simple and versatile.",
+  },
+  {
     name: "Warm & Playful",
     colors: {
       primary: "#FF6B6B",
@@ -219,7 +235,7 @@ export const getStyleWithFrameUrls = query({
     if (!style) return null;
 
     // Resolve frame URLs if frames exist
-    let frameUrls: {
+    const frameUrls: {
       border?: string | null;
       fullCard?: string | null;
     } = {};

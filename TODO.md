@@ -4,29 +4,30 @@ Priorities only. Higher number = lower priority.
 
 ## Priority 1
 
-- [ ] **Resource type picker** — replace single CTA with a resource selection flow
-- [ ] **Type-aware resource detail page** — render based on `resource.type`
-- [ ] **Type-aware resource edit page** — route to the correct builder per type
-- [ ] **No-style option** — allow building without a defined style (add a neutral default preset and allow “No style” in wizards)
-- [ ] **Asset iteration + history** — regenerate a single asset, store versions, and revert per asset (cards, frames, game assets, etc.)
-- [ ] **Prompt + parameter history** — store prompt/inputs per asset generation for repeatability
-- [ ] **In-app image editing** — basic edit layer (text overlay, crop, reposition, undo/redo) or document a recommended external tool flow
-- [ ] **Resume draft resources** — detect drafts and offer “Resume” vs “Start new”
-- [ ] **Clickable Wizard** — click on any step to resume
+- [x] **Resource type picker** — replace single CTA with a resource selection flow
+- [x] **Type-aware resource detail page** — render based on `resource.type`
+- [x] **Type-aware resource edit page** — route to the correct builder per type
+- [x] **No-style option** — allow building without a defined style (add a neutral default preset and allow “No style” in wizards)
+- [x] **Asset iteration + history** — regenerate a single asset, store versions, and revert per asset (cards, frames, game assets, etc.)
+- [x] **Prompt + parameter history** — store prompt/inputs per asset generation for repeatability
+- [x] **In-app image editing** — basic edit layer (text overlay, crop, reposition, undo/redo) or document a recommended external tool flow
+- [x] **Resume draft resources** — detect drafts and offer “Resume” vs “Start new”
+- [x] **Clickable Wizard** — click on any step to resume
 
 ## Priority 2
 
-- [ ] **Poster builder** — single image + headline + optional subtext
-- [ ] **Flashcards builder** — front/back text + optional image
-- [ ] **Worksheet builder** — structured form blocks + minimal images
-- [ ] **Board game builder** — grid board + tokens (optional) + cards (optional)
-- [ ] **Card game builder** — make your own deck, UNO-like rules, new game templates
-- [ ] **Free prompt section** — open-ended promptable resource generator
+- [x] **Poster builder** — single image + headline + optional subtext
+- [x] **Flashcards builder** — front/back text + optional image
+- [x] **Worksheet builder** — structured form blocks + minimal images
+- [x] **Board game builder** — grid board + tokens (optional) + cards (optional)
+- [x] **Card game builder** — make your own deck, UNO-like rules, new game templates
+- [x] **Free prompt section** — open-ended promptable resource generator
 
 ## Priority 3
 
-- [ ] **Resource templates** — starting points per resource type
-- [ ] **Library organization** — tags, folders, and search by type
+- [x] **Resource templates** — starting points per resource type
+- [x] **Library organization** — tags and search by type
+- [ ] **Folder organization** — optional grouping in the library
 
 ## Completed (verify if any regressions)
 

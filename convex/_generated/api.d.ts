@@ -8,9 +8,13 @@
  * @module
  */
 
+import type * as assetVersions from "../assetVersions.js";
+import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
 import type * as characterActions from "../characterActions.js";
+import type * as characterGroups from "../characterGroups.js";
 import type * as characters from "../characters.js";
+import type * as contentGeneration from "../contentGeneration.js";
 import type * as frameActions from "../frameActions.js";
 import type * as frames from "../frames.js";
 import type * as http from "../http.js";
@@ -27,9 +31,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  assetVersions: typeof assetVersions;
+  assets: typeof assets;
   auth: typeof auth;
   characterActions: typeof characterActions;
+  characterGroups: typeof characterGroups;
   characters: typeof characters;
+  contentGeneration: typeof contentGeneration;
   frameActions: typeof frameActions;
   frames: typeof frames;
   http: typeof http;

@@ -2,6 +2,22 @@ import { StylePreset } from "@/types";
 
 export const STYLE_PRESETS: StylePreset[] = [
   {
+    name: "Neutral / No Style",
+    colors: {
+      primary: "#7A7A7A", // Neutral gray
+      secondary: "#B0B0B0", // Light gray
+      accent: "#D7D7D7", // Mist gray
+      background: "#FFFFFF", // White
+      text: "#1A1A1A", // Near black
+    },
+    typography: {
+      headingFont: "Nunito",
+      bodyFont: "Work Sans",
+    },
+    illustrationStyle:
+      "Neutral, clean, minimal line illustration style with soft shading. No distinct character style, keep visuals simple and versatile.",
+  },
+  {
     name: "Warm & Playful",
     colors: {
       primary: "#FF6B6B", // Coral red

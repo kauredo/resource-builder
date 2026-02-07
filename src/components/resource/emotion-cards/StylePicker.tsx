@@ -23,6 +23,8 @@ function StyleOption({
   isSelected,
   onSelect,
   accentColor = "coral",
+  displayName,
+  badge,
 }: {
   style: {
     _id: Id<"styles">;
@@ -44,6 +46,8 @@ function StyleOption({
   isSelected: boolean;
   onSelect: () => void;
   accentColor?: "coral" | "teal";
+  displayName?: string;
+  badge?: string;
 }) {
   return (
     <button
@@ -51,16 +55,15 @@ function StyleOption({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={cn(
-        "group block text-left rounded-lg cursor-pointer",
-        "transition-shadow duration-150 motion-reduce:transition-none",
-        "transition-colors duration-150",
+        "group block text-left rounded-lg cursor-pointer border border-transparent",
+        "transition-colors duration-150 motion-reduce:transition-none",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         accentColor === "coral" ? "focus-visible:ring-coral" : "focus-visible:ring-teal",
         isSelected
           ? accentColor === "coral"
             ? "ring-2 ring-coral ring-offset-2"
             : "ring-2 ring-teal ring-offset-2"
-          : "hover:shadow-md"
+          : "hover:border-foreground/15 hover:bg-muted/20"
       )}
     >
       {/* Color bar - the palette at a glance */}
@@ -104,9 +107,20 @@ function StyleOption({
             className="text-sm font-medium"
             style={{ color: style.colors.text }}
           >
-            {style.name}
+            {displayName ?? style.name}
           </span>
           <div className="flex items-center gap-2">
+            {badge && (
+              <span
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                style={{
+                  backgroundColor: `color-mix(in oklch, ${style.colors.text} 8%, transparent)`,
+                  color: style.colors.text,
+                }}
+              >
+                {badge}
+              </span>
+            )}
             {style.isPreset && (
               <Lock
                 className="size-3.5 opacity-50"
@@ -143,6 +157,13 @@ export function StylePicker({
   // Split into presets and custom styles
   const presetStyles = userStyles?.filter((s) => s.isPreset) ?? [];
   const customStyles = userStyles?.filter((s) => !s.isPreset) ?? [];
+  const sortedPresets = [...presetStyles].sort((a, b) => {
+    const aIsNeutral = a.name.toLowerCase().includes("neutral");
+    const bIsNeutral = b.name.toLowerCase().includes("neutral");
+    if (aIsNeutral && !bIsNeutral) return -1;
+    if (!aIsNeutral && bIsNeutral) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   // Loading state
   if (userStyles === undefined) {
@@ -172,11 +193,21 @@ export function StylePicker({
             Preset Styles
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {presetStyles.map((style) => (
+            {sortedPresets.map((style) => (
               <StyleOption
                 key={style._id}
                 style={style}
                 isSelected={selectedStyleId === style._id}
+                displayName={
+                  style.name.toLowerCase().includes("neutral")
+                    ? "No style"
+                    : undefined
+                }
+                badge={
+                  style.name.toLowerCase().includes("neutral")
+                    ? "Neutral"
+                    : undefined
+                }
                 onSelect={() =>
                   onSelect(style._id, {
                     name: style.name,

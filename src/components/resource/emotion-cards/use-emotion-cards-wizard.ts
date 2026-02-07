@@ -9,7 +9,6 @@ import type {
   EmotionCardContent,
   EmotionCardLayout,
   StylePreset,
-  StyleFrames,
 } from "@/types";
 
 // Wizard state types
@@ -106,6 +105,10 @@ export function useEmotionCardsWizard({
     api.characters.getUserCharacters,
     user?._id ? { userId: user._id } : "skip",
   );
+  const draftResources = useQuery(
+    api.resources.getResourcesByType,
+    user?._id ? { userId: user._id, type: "emotion_cards" } : "skip",
+  );
 
   // Query existing resource for edit mode
   const existingResource = useQuery(
@@ -134,8 +137,13 @@ export function useEmotionCardsWizard({
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [resumeDraftId, setResumeDraftId] = useState<Id<"resources"> | null>(
+    null,
+  );
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
   const hasInitializedEditMode = useRef(false);
   const hasInitializedFromUrl = useRef(false);
+  const hasPromptedResume = useRef(false);
   // Track which styleId we've inherited defaultUseFrames from
   const lastInheritedStyleId = useRef<Id<"styles"> | null>(null);
 
@@ -170,6 +178,22 @@ export function useEmotionCardsWizard({
       }));
     }
   }, [initialStyleId, initialStyle, editResourceId, state.styleId]);
+
+  // Offer to resume draft if one exists (only for new resources)
+  useEffect(() => {
+    if (!user?._id) return;
+    if (editResourceId || state.resourceId) return;
+    if (draftResources === undefined) return;
+    if (hasPromptedResume.current) return;
+
+    const drafts = draftResources.filter((r) => r.status === "draft");
+    if (drafts.length === 0) return;
+
+    const latest = drafts.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    setResumeDraftId(latest._id);
+    setShowResumeDialog(true);
+    hasPromptedResume.current = true;
+  }, [user?._id, editResourceId, state.resourceId, draftResources]);
 
   // Initialize state from existing resource in edit mode
   useEffect(() => {
@@ -340,6 +364,26 @@ export function useEmotionCardsWizard({
     }
   };
 
+  const isStepComplete = (step: number): boolean => {
+    switch (step) {
+      case 0:
+        return (
+          state.name.trim().length > 0 &&
+          (state.styleId !== null || state.stylePreset !== null)
+        );
+      case 1:
+        return state.selectedEmotions.length > 0;
+      case 2:
+        return true;
+      case 3:
+        return state.generationStatus === "complete";
+      case 4:
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const handleNext = async () => {
     if (isNavigating) return;
     setIsNavigating(true);
@@ -376,6 +420,21 @@ export function useEmotionCardsWizard({
     }
   };
 
+  const handleResumeDraft = () => {
+    if (!resumeDraftId) return;
+    setShowResumeDialog(false);
+    router.push(`/dashboard/resources/${resumeDraftId}/edit`);
+  };
+
+  const handleStartFresh = () => {
+    setShowResumeDialog(false);
+    setResumeDraftId(null);
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+  };
+
   // Compute emotions that already have generated images (for edit mode)
   const emotionsWithImages =
     existingResource?.images.map(img => img.description).filter(Boolean) ?? [];
@@ -397,9 +456,7 @@ export function useEmotionCardsWizard({
   const previewStyle = styleWithFrames || state.stylePreset;
   const previewColors = previewStyle?.colors;
   const previewTypography = previewStyle?.typography;
-  const previewFrameUrls = styleWithFrames?.frameUrls as
-    | StyleFrames
-    | undefined;
+  const previewFrameUrls = styleWithFrames?.frameUrls;
   const previewCardLayout = styleWithFrames?.cardLayout;
 
   // Show loading state while user or edit mode data is loading
@@ -416,9 +473,16 @@ export function useEmotionCardsWizard({
     currentStep,
     isNavigating,
     canGoNext,
+    isStepComplete,
+    goToStep,
     handleNext,
     handleBack,
     handleCancel,
+    resumeDialog: {
+      open: showResumeDialog,
+      onResume: handleResumeDraft,
+      onStartFresh: handleStartFresh,
+    },
     emotionsWithImages,
     showPreviewSidebar,
     preview: {

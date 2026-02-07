@@ -321,7 +321,7 @@ const PDF_FONT_CONFIG: Record<
   }
 > =
   Object.keys(GENERATED_PDF_FONT_CONFIG).length > 0
-    ? (GENERATED_PDF_FONT_CONFIG as Record<
+    ? (GENERATED_PDF_FONT_CONFIG as unknown as Record<
         string,
         {
           family: string;

@@ -91,7 +91,7 @@ export default function DashboardPage() {
                   Create Emotion Cards
                 </h2>
                 <p className="text-muted-foreground max-w-md mb-6">
-                  Generate a beautiful deck of emotion cards for your therapy sessions.
+                  Create print-ready therapy resources for your sessions.
                   AI illustrations that match your style.
                 </p>
                 <span className="inline-flex items-center gap-2 text-coral font-medium group-hover:gap-3 transition-all duration-200 ease-out motion-reduce:group-hover:gap-2 motion-reduce:transition-none">
@@ -184,16 +184,15 @@ export default function DashboardPage() {
                   <FileStack className="size-6 text-coral/70" aria-hidden="true" />
                 </div>
                 <h3 className="font-medium text-foreground mb-1">
-                  Ready to create your first deck?
+                  Ready to create your first resource?
                 </h3>
                 <p className="text-sm text-muted-foreground mb-5 max-w-sm leading-relaxed">
-                  Choose a style, pick emotions, and AI generates matching
-                  illustrations — all in a few minutes.
+                  Pick a style and build print-ready materials in minutes.
                 </p>
                 <Button asChild className="btn-coral gap-2">
-                  <Link href="/dashboard/resources/new/emotion-cards">
+                  <Link href="/dashboard/resources/new">
                     <Plus className="size-4" aria-hidden="true" />
-                    Create Emotion Cards
+                    Create Resource
                   </Link>
                 </Button>
               </div>
@@ -210,7 +209,7 @@ export default function DashboardPage() {
                     name={resource.name}
                     type={resource.type}
                     status={resource.status}
-                    cardCount={resource.images.length}
+                    itemCount={resource.assetCount ?? resource.images.length}
                     updatedAt={resource.updatedAt}
                     thumbnailUrl={resource.thumbnailUrl}
                   />

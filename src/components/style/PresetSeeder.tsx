@@ -6,7 +6,7 @@ import { api } from "../../../convex/_generated/api";
 
 /**
  * Automatically seeds style presets for users and cleans up duplicates.
- * This ensures all users have exactly 5 default presets with no duplicates.
+ * This ensures all users have exactly 6 default presets with no duplicates.
  * Renders nothing - just handles the seeding logic.
  */
 export function PresetSeeder() {
@@ -23,11 +23,11 @@ export function PresetSeeder() {
     if (!user?._id || userStyles === undefined || hasSeeded.current) return;
 
     // Check if user needs seeding:
-    // - Missing presets (< 5)
+    // - Missing presets (< 6)
     // - Or has duplicates (more presets than unique names)
     const presets = userStyles.filter((s) => s.isPreset);
     const uniqueNames = new Set(presets.map((s) => s.name));
-    const needsSeeding = presets.length !== 5 || uniqueNames.size !== presets.length;
+    const needsSeeding = presets.length !== 6 || uniqueNames.size !== presets.length;
 
     if (needsSeeding) {
       hasSeeded.current = true;

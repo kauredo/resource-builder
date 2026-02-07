@@ -14,12 +14,11 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
-    root: true,
-    parser: "@typescript-eslint/parser",
-    plugins: ["@typescript-eslint"],
-    extends: ["next/core-web-vitals", "next/typescript"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 ]);

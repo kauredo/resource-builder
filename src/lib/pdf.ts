@@ -13,6 +13,7 @@ import {
   pdf,
   Svg,
   Rect,
+  StyleSheet,
 } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
@@ -197,7 +198,7 @@ const createStyles = (
 
   // Overlap is already accounted for in calculateCardLayout
 
-  const styles = {
+  const styles = StyleSheet.create({
     page: {
       padding: dimensions.margin,
       backgroundColor: "#FFFFFF",
@@ -212,7 +213,7 @@ const createStyles = (
       width: dimensions.cardWidth,
       height: dimensions.cardHeight,
       position: "relative",
-      overflow: "visible",
+      overflow: "visible" as any,
     },
     card: {
       width: dimensions.cardWidth,
@@ -323,7 +324,7 @@ const createStyles = (
       height: "100%",
       // No objectFit - stretch to fill card (matches web previews)
     },
-  };
+  });
 
   return {
     styles,

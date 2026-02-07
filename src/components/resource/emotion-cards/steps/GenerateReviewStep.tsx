@@ -509,6 +509,16 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               showDescription={state.layout.showDescriptions}
               description={getEmotionDescription(emotion)}
               cardsPerPage={state.layout.cardsPerPage}
+              assetRef={
+                state.resourceId
+                  ? {
+                      ownerType: "resource",
+                      ownerId: state.resourceId,
+                      assetType: "emotion_card_image",
+                      assetKey: `emotion:${emotion}`,
+                    }
+                  : undefined
+              }
               style={
                 state.stylePreset
                   ? {

@@ -305,6 +305,28 @@ export const generateFrame = action({
     const blob = new Blob([uint8Array], { type: "image/png" });
     const storageId = await ctx.storage.store(blob);
 
+    // Store as asset version for history/revert
+    await ctx.runMutation(api.assetVersions.createFromGeneration, {
+      ownerType: "style",
+      ownerId: args.styleId,
+      assetType: args.frameType === "border" ? "frame_border" : "frame_full_card",
+      assetKey: args.frameType,
+      storageId,
+      prompt,
+      params: {
+        model: MODEL,
+        style: {
+          colors: args.colors,
+          illustrationStyle: args.illustrationStyle,
+        },
+        layout: {
+          frameType: args.frameType,
+          promptSuffix: args.promptSuffix,
+        },
+      },
+      source: "generated",
+    });
+
     // Update the style with the new frame
     await ctx.runMutation(api.frames.updateStyleFrame, {
       styleId: args.styleId,

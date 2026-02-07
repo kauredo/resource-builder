@@ -154,6 +154,26 @@ export const generateEmotionCard = action({
     // Upload to Convex storage
     const storageId = await ctx.storage.store(blob);
 
+    // Store as asset version for history/revert
+    await ctx.runMutation(api.assetVersions.createFromGeneration, {
+      ownerType: "resource",
+      ownerId: args.resourceId,
+      assetType: "emotion_card_image",
+      assetKey: `emotion:${args.emotion}`,
+      storageId,
+      prompt,
+      params: {
+        model: MODEL,
+        style: {
+          colors: styleData.colors,
+          illustrationStyle: styleData.illustrationStyle,
+        },
+        characterId: args.characterId,
+        includeText: args.includeText ?? false,
+      },
+      source: "generated",
+    });
+
     // Add image to resource
     await ctx.runMutation(api.resources.addImageToResource, {
       resourceId: args.resourceId,
@@ -166,6 +186,156 @@ export const generateEmotionCard = action({
       success: true,
       storageId,
       emotion: args.emotion,
+    };
+  },
+});
+
+// Generate a styled image for any resource type
+export const generateStyledImage = action({
+  args: {
+    ownerType: v.union(v.literal("resource"), v.literal("style")),
+    ownerId: v.union(v.id("resources"), v.id("styles")),
+    assetType: v.string(),
+    assetKey: v.string(),
+    prompt: v.string(),
+    styleId: v.optional(v.id("styles")),
+    style: v.optional(styleDataValidator),
+    characterId: v.optional(v.id("characters")),
+    includeText: v.optional(v.boolean()),
+    aspect: v.optional(v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3"))),
+  },
+  handler: async (ctx, args) => {
+    let styleData: {
+      colors: { primary: string; secondary: string; accent: string };
+      illustrationStyle: string;
+    };
+
+    if (args.style) {
+      styleData = args.style;
+    } else if (args.styleId) {
+      const style = await ctx.runQuery(api.styles.getStyle, {
+        styleId: args.styleId,
+      });
+      if (!style) throw new Error("Style not found");
+      styleData = {
+        colors: style.colors,
+        illustrationStyle: style.illustrationStyle,
+      };
+    } else {
+      throw new Error("Either styleId or style data must be provided");
+    }
+
+    let characterContext: { promptFragment?: string; description?: string } = {};
+    if (args.characterId) {
+      const character = await ctx.runQuery(api.characters.getCharacter, {
+        characterId: args.characterId,
+      });
+      if (character) {
+        characterContext = {
+          promptFragment: character.promptFragment || undefined,
+          description: character.description || undefined,
+        };
+      }
+    }
+
+    const prompt = buildGenericPrompt({
+      prompt: args.prompt,
+      style: styleData,
+      characterContext,
+      includeText: args.includeText ?? false,
+      aspect: args.aspect ?? "1:1",
+    });
+
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GOOGLE_AI_API_KEY not configured");
+    }
+
+    const response = await fetch(
+      `${GEMINI_API_BASE}/${MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseModalities: ["image", "text"],
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || "Failed to generate image");
+    }
+
+    const data = await response.json();
+    const candidates = data.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error("No image generated");
+    }
+
+    const parts = candidates[0].content?.parts;
+    if (!parts) {
+      throw new Error("Invalid response format");
+    }
+
+    const imagePart = parts.find(
+      (part: { inlineData?: { data: string; mimeType: string } }) =>
+        part.inlineData,
+    );
+    if (!imagePart?.inlineData) {
+      throw new Error("No image in response");
+    }
+
+    const imageData = imagePart.inlineData.data;
+    const mimeType = imagePart.inlineData.mimeType || "image/png";
+
+    const binaryString = atob(imageData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mimeType });
+    const storageId = await ctx.storage.store(blob);
+
+    await ctx.runMutation(api.assetVersions.createFromGeneration, {
+      ownerType: args.ownerType,
+      ownerId: args.ownerId,
+      assetType: args.assetType,
+      assetKey: args.assetKey,
+      storageId,
+      prompt,
+      params: {
+        model: MODEL,
+        style: {
+          colors: styleData.colors,
+          illustrationStyle: styleData.illustrationStyle,
+        },
+        characterId: args.characterId,
+        includeText: args.includeText ?? false,
+        layout: {
+          aspect: args.aspect ?? "1:1",
+        },
+      },
+      source: "generated",
+    });
+
+    return {
+      success: true,
+      storageId,
+      assetKey: args.assetKey,
     };
   },
 });
@@ -322,4 +492,131 @@ function buildEmotionCardPrompt({
   );
 
   return parts.join(". ");
+}
+
+// Batch generate images for any resource type with concurrency limit
+export const generateImageBatch = action({
+  args: {
+    resourceId: v.id("resources"),
+    items: v.array(
+      v.object({
+        assetKey: v.string(),
+        assetType: v.string(),
+        prompt: v.string(),
+        characterId: v.optional(v.id("characters")),
+        includeText: v.optional(v.boolean()),
+        aspect: v.optional(
+          v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3")),
+        ),
+      }),
+    ),
+    styleId: v.optional(v.id("styles")),
+    style: v.optional(styleDataValidator),
+  },
+  handler: async (ctx, args) => {
+    const results: Array<{
+      assetKey: string;
+      success: boolean;
+      storageId?: Id<"_storage">;
+      error?: string;
+    }> = [];
+
+    const BATCH_SIZE = 3;
+
+    for (let i = 0; i < args.items.length; i += BATCH_SIZE) {
+      const batch = args.items.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.allSettled(
+        batch.map(async (item) => {
+          try {
+            const result = await ctx.runAction(
+              api.images.generateStyledImage,
+              {
+                ownerType: "resource",
+                ownerId: args.resourceId,
+                assetType: item.assetType,
+                assetKey: item.assetKey,
+                prompt: item.prompt,
+                styleId: args.styleId,
+                style: args.style,
+                characterId: item.characterId,
+                includeText: item.includeText ?? true,
+                aspect: item.aspect ?? "1:1",
+              },
+            );
+            return {
+              assetKey: item.assetKey,
+              success: true,
+              storageId: result.storageId as Id<"_storage">,
+            };
+          } catch (error) {
+            return {
+              assetKey: item.assetKey,
+              success: false,
+              error:
+                error instanceof Error ? error.message : "Unknown error",
+            };
+          }
+        }),
+      );
+
+      for (const result of batchResults) {
+        if (result.status === "fulfilled") {
+          results.push(result.value);
+        } else {
+          results.push({
+            assetKey: "unknown",
+            success: false,
+            error: result.reason?.message || "Unknown error",
+          });
+        }
+      }
+    }
+
+    return results;
+  },
+});
+
+function buildGenericPrompt({
+  prompt,
+  style,
+  characterContext,
+  includeText,
+  aspect,
+}: {
+  prompt: string;
+  style: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
+  characterContext?: { promptFragment?: string; description?: string };
+  includeText: boolean;
+  aspect: "1:1" | "3:4" | "4:3";
+}) {
+  const parts: string[] = [];
+  if (characterContext?.promptFragment) {
+    parts.push(characterContext.promptFragment);
+  }
+  if (characterContext?.description) {
+    parts.push(`Character appearance: ${characterContext.description}`);
+  }
+
+  parts.push(prompt);
+
+  parts.push(
+    "IMPORTANT: follow the illustration style guidance EXACTLY: ",
+    style.illustrationStyle,
+  );
+  parts.push(
+    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+  );
+
+  if (includeText) {
+    parts.push("Include the specified text clearly in the image.");
+  } else {
+    parts.push("Do NOT include any text in the image.");
+  }
+
+  parts.push(
+    `Create a single cohesive illustration with a clean white background and an aspect ratio of ${aspect}. Keep the subject centered and print-friendly.`,
+  );
+
+  return parts.join(" ");
 }

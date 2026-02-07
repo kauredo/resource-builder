@@ -113,11 +113,11 @@ export function LayoutOptionsStep({
               <label
                 key={option.value}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-all",
-                  "hover:border-coral/40",
+                  "relative flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-[border-color,background-color] duration-150",
+                  "hover:border-coral/40 hover:bg-muted/40",
                   "focus-within:ring-2 focus-within:ring-coral focus-within:ring-offset-2",
                   isSelected
-                    ? "border-coral bg-coral/5"
+                    ? "border-coral bg-[color-mix(in_oklch,var(--coral)_10%,transparent)]"
                     : "border-border bg-card"
                 )}
               >
