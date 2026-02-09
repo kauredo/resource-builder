@@ -256,6 +256,64 @@ export const getStyleWithFrameUrls = query({
   },
 });
 
+// Get style with counts for listing page
+export const getStyleSummary = query({
+  args: { styleId: v.id("styles") },
+  handler: async (ctx, args) => {
+    const style = await ctx.db.get(args.styleId);
+    if (!style) return null;
+
+    const characters = await ctx.db
+      .query("characters")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+
+    const resources = await ctx.db
+      .query("resources")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+
+    return {
+      characterCount: characters.length,
+      resourceCount: resources.length,
+    };
+  },
+});
+
+// Get summaries for all styles belonging to a user (batch query for listing page)
+export const getUserStyleSummaries = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const styles = await ctx.db
+      .query("styles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const styleIds = styles.map((s) => s._id);
+
+    // Batch fetch all characters and resources for this user's styles
+    const allCharacters = await ctx.db
+      .query("characters")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const allResources = await ctx.db
+      .query("resources")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const summaries: Record<string, { characterCount: number; resourceCount: number }> = {};
+    for (const styleId of styleIds) {
+      summaries[styleId] = {
+        characterCount: allCharacters.filter((c) => c.styleId === styleId).length,
+        resourceCount: allResources.filter((r) => r.styleId === styleId).length,
+      };
+    }
+
+    return summaries;
+  },
+});
+
 // Duplicate a style for customization
 export const duplicateStyle = mutation({
   args: {

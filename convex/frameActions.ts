@@ -16,7 +16,7 @@ const CHROMA_TOLERANCE = 50;
  * This ensures frame borders and edges are not cropped off.
  * If the scaled image doesn't exactly match target, pads with green.
  */
-async function scaleToTargetDimensions(
+export async function scaleToTargetDimensions(
   imageBuffer: Buffer,
   targetWidth: number,
   targetHeight: number,
@@ -64,7 +64,7 @@ async function scaleToTargetDimensions(
  * Convert chroma key green pixels to transparent.
  * Uses a tolerance-based approach to handle compression artifacts and anti-aliasing.
  */
-async function applyChromaKey(imageBuffer: Buffer): Promise<Buffer> {
+export async function applyChromaKey(imageBuffer: Buffer): Promise<Buffer> {
   // Get raw pixel data with alpha channel
   const { data, info } = await sharp(imageBuffer)
     .ensureAlpha()

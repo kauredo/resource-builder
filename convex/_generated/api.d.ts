@@ -11,6 +11,7 @@
 import type * as assetVersions from "../assetVersions.js";
 import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
+import type * as cardGameImages from "../cardGameImages.js";
 import type * as characterActions from "../characterActions.js";
 import type * as characterGroups from "../characterGroups.js";
 import type * as characters from "../characters.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   assetVersions: typeof assetVersions;
   assets: typeof assets;
   auth: typeof auth;
+  cardGameImages: typeof cardGameImages;
   characterActions: typeof characterActions;
   characterGroups: typeof characterGroups;
   characters: typeof characters;

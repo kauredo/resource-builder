@@ -1,33 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
-import Link from "next/link";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortDropdown } from "@/components/ui/sort-dropdown";
 import { StyleCard } from "@/components/style/StyleCard";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { useListFilters } from "@/hooks/use-list-filters";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Palette, Search, X } from "lucide-react";
 import type { StyleFrames } from "@/types";
 
@@ -49,14 +31,11 @@ export default function StylesPage() {
     api.styles.getUserStyles,
     user?._id ? { userId: user._id } : "skip",
   );
-  const characters = useQuery(
-    api.characters.getUserCharactersWithThumbnails,
+  const styleSummaries = useQuery(
+    api.styles.getUserStyleSummaries,
     user?._id ? { userId: user._id } : "skip",
   );
   const createStyle = useMutation(api.styles.createStyle);
-  const createStyleFromCharacter = useAction(
-    api.styleActions.createStyleFromCharacter,
-  );
 
   const {
     search,
@@ -77,19 +56,6 @@ export default function StylesPage() {
     defaultSort: "newest",
   });
   const [isCreating, setIsCreating] = useState(false);
-  const [isCreatingFromCharacter, setIsCreatingFromCharacter] = useState(false);
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedCharacterId, setSelectedCharacterId] =
-    useState<Id<"characters"> | null>(null);
-  const [selectedImageIds, setSelectedImageIds] = useState<Id<"_storage">[]>(
-    [],
-  );
-  const [createError, setCreateError] = useState<string | null>(null);
-
-  const selectedCharacter = useQuery(
-    api.characters.getCharacterWithImageUrls,
-    selectedCharacterId ? { characterId: selectedCharacterId } : "skip",
-  );
 
   // Count styles by type
   const typeCounts = useMemo(() => {
@@ -157,9 +123,7 @@ export default function StylesPage() {
     if (!user?._id) return;
 
     setIsCreating(true);
-    setCreateError(null);
     try {
-      // Create from first preset as base
       const basePreset = STYLE_PRESETS[0];
       const newStyleId = await createStyle({
         userId: user._id,
@@ -169,45 +133,12 @@ export default function StylesPage() {
         typography: basePreset.typography,
         illustrationStyle: basePreset.illustrationStyle,
       });
-      setCreateDialogOpen(false);
       router.push(`/dashboard/styles/${newStyleId}`);
     } catch (error) {
       console.error("Failed to create style:", error);
       setIsCreating(false);
     }
   };
-
-  const handleCreateFromCharacter = async () => {
-    if (!user?._id || !selectedCharacterId) return;
-
-    setIsCreatingFromCharacter(true);
-    setCreateError(null);
-    try {
-      const result = await createStyleFromCharacter({
-        userId: user._id,
-        characterId: selectedCharacterId,
-        storageIds: selectedImageIds.length > 0 ? selectedImageIds : undefined,
-      });
-      setCreateDialogOpen(false);
-      router.push(`/dashboard/styles/${result.styleId}`);
-    } catch (error) {
-      console.error("Failed to create style from character:", error);
-      setCreateError("Could not build a style from that character.");
-    } finally {
-      setIsCreatingFromCharacter(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!selectedCharacter) return;
-    const primaryId =
-      selectedCharacter.primaryImageId ?? selectedCharacter.referenceImages[0];
-    if (primaryId) {
-      setSelectedImageIds([primaryId]);
-    } else {
-      setSelectedImageIds([]);
-    }
-  }, [selectedCharacter?._id]);
 
   // Loading state
   if (styles === undefined) {
@@ -272,12 +203,12 @@ export default function StylesPage() {
           Styles
         </h1>
         <Button
-          onClick={() => setCreateDialogOpen(true)}
-          disabled={isCreating || isCreatingFromCharacter}
+          onClick={handleCreateStyle}
+          disabled={isCreating}
           className="btn-coral gap-2"
         >
           <Plus className="size-4" aria-hidden="true" />
-          Create Style
+          {isCreating ? "Creating..." : "Create Style"}
         </Button>
       </div>
 
@@ -384,12 +315,12 @@ export default function StylesPage() {
               therapy resources uniquely yours.
             </p>
             <Button
-              onClick={() => setCreateDialogOpen(true)}
-              disabled={isCreating || isCreatingFromCharacter}
+              onClick={handleCreateStyle}
+              disabled={isCreating}
               className="btn-coral gap-2"
             >
               <Plus className="size-4" aria-hidden="true" />
-              Create Your First Style
+              {isCreating ? "Creating..." : "Create Your First Style"}
             </Button>
           </div>
         </div>
@@ -421,215 +352,28 @@ export default function StylesPage() {
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredStyles.map(style => (
-              <StyleCard
-                key={style._id}
-                id={style._id}
-                name={style.name}
-                isPreset={style.isPreset}
-                colors={style.colors}
-                typography={style.typography}
-                illustrationStyle={style.illustrationStyle}
-                frames={style.frames as StyleFrames | undefined}
-                updatedAt={style.updatedAt ?? style.createdAt}
-              />
-            ))}
+            {filteredStyles.map(style => {
+              const summary = styleSummaries?.[style._id];
+              return (
+                <StyleCard
+                  key={style._id}
+                  id={style._id}
+                  name={style.name}
+                  isPreset={style.isPreset}
+                  colors={style.colors}
+                  typography={style.typography}
+                  illustrationStyle={style.illustrationStyle}
+                  frames={style.frames as StyleFrames | undefined}
+                  updatedAt={style.updatedAt ?? style.createdAt}
+                  characterCount={summary?.characterCount}
+                  resourceCount={summary?.resourceCount}
+                />
+              );
+            })}
           </div>
         </>
       )}
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create a Style</DialogTitle>
-            <DialogDescription>
-              Start from a preset or build a palette from a character.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-              <div className="text-sm font-medium text-foreground">
-                Build from Character
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Uses your character&apos;s reference image to extract a palette.
-              </p>
-              {characters === undefined ? (
-                <p className="text-sm text-muted-foreground">
-                  Loading characters...
-                </p>
-              ) : characters.length > 0 ? (
-                <>
-                  <Select
-                    value={selectedCharacterId ?? ""}
-                    onValueChange={value =>
-                      setSelectedCharacterId(value as Id<"characters">)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a character" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {characters.map(character => (
-                        <SelectItem key={character._id} value={character._id}>
-                          {character.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCharacterId && selectedCharacter && (
-                    <div className="flex items-center gap-3 rounded-md border border-border/60 bg-background p-3">
-                      {(() => {
-                        const selected = characters?.find(
-                          c => c._id === selectedCharacterId,
-                        );
-                        if (!selected) return null;
-                        return (
-                          <>
-                            <div className="size-10 rounded-md overflow-hidden bg-muted/40 border border-border/50">
-                              {selected.thumbnailUrl ? (
-                                <img
-                                  src={selected.thumbnailUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                                  No image
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {selected.name}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {selected.referenceImages.length} reference
-                                image
-                                {selected.referenceImages.length !== 1
-                                  ? "s"
-                                  : ""}
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-                  {selectedCharacter &&
-                    selectedCharacter.referenceImages.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2">
-                        {selectedCharacter.referenceImages.map(storageId => {
-                          const url =
-                            selectedCharacter.imageUrls?.[storageId] ?? null;
-                          const isSelected = selectedImageIds.includes(
-                            storageId as Id<"_storage">,
-                          );
-                          const isPrimary =
-                            storageId === selectedCharacter.primaryImageId;
-                          return (
-                            <button
-                              key={storageId}
-                              type="button"
-                              onClick={() => {
-                                setSelectedImageIds(prev => {
-                                  const has = prev.includes(
-                                    storageId as Id<"_storage">,
-                                  );
-                                  if (has) {
-                                    const next = prev.filter(
-                                      id => id !== storageId,
-                                    );
-                                    return next.length === 0 && isPrimary
-                                      ? prev
-                                      : next;
-                                  }
-                                  return [...prev, storageId as Id<"_storage">];
-                                });
-                              }}
-                              className={`relative aspect-[3/4] rounded-md overflow-hidden border cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 ${
-                                isSelected
-                                  ? "border-teal ring-2 ring-teal/30"
-                                  : "border-border/60 hover:border-teal/40"
-                              }`}
-                              aria-pressed={isSelected}
-                            >
-                              {url ? (
-                                <img
-                                  src={url}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground bg-muted/30">
-                                  No image
-                                </div>
-                              )}
-                              {isPrimary && (
-                                <span className="absolute bottom-1 left-1 text-[9px] font-medium px-1.5 py-0.5 rounded bg-black/60 text-white">
-                                  Primary
-                                </span>
-                              )}
-                              {isSelected && (
-                                <span className="absolute top-1 right-1 size-4 rounded-full bg-teal text-white text-[10px] flex items-center justify-center">
-                                  ✓
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Create a character first to build a style from it.
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-2">
-              <div className="text-sm font-medium text-foreground">
-                Start from Preset
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Uses a balanced default palette you can customize.
-              </p>
-            </div>
-
-            {createError && (
-              <p className="text-sm text-destructive">{createError}</p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="outline"
-              onClick={handleCreateStyle}
-              disabled={isCreating || isCreatingFromCharacter}
-            >
-              {isCreating ? "Creating..." : "Start from Preset"}
-            </Button>
-            <Button
-              className="btn-coral"
-              onClick={handleCreateFromCharacter}
-              disabled={
-                isCreating ||
-                isCreatingFromCharacter ||
-                !selectedCharacterId ||
-                !characters ||
-                characters.length === 0
-              }
-            >
-              {isCreatingFromCharacter ? "Building..." : "Build from Character"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

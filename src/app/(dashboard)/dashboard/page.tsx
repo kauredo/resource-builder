@@ -6,17 +6,22 @@ import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { ResourceCard } from "@/components/resource/ResourceCard";
+import { StyleCard } from "@/components/style/StyleCard";
 import {
   Plus,
   Palette,
-  Users,
   FileStack,
   Clock,
   ArrowRight,
 } from "lucide-react";
+import type { StyleFrames } from "@/types";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.currentUser);
+  const styles = useQuery(
+    api.styles.getUserStyles,
+    user?._id ? { userId: user._id } : "skip",
+  );
   const resources = useQuery(
     api.resources.getUserResources,
     user?._id ? { userId: user._id } : "skip"
@@ -32,6 +37,8 @@ export default function DashboardPage() {
 
   const isResourcesLoading = resources === undefined;
   const hasResources = (resources?.length ?? 0) > 0;
+  const hasStyles = (styles?.length ?? 0) > 0;
+  const customStyles = styles?.filter((s) => !s.isPreset) ?? [];
 
   return (
     <>
@@ -59,7 +66,7 @@ export default function DashboardPage() {
               <span className="mx-1.5" aria-hidden="true">·</span>
               <Link
                 href="/dashboard/settings/billing"
-                className="text-coral hover:underline underline-offset-4 transition-colors duration-150"
+                className="text-coral hover:underline underline-offset-4 transition-colors duration-150 motion-reduce:transition-none"
               >
                 Upgrade
               </Link>
@@ -67,82 +74,83 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Hero Action - Create Emotion Cards */}
+        {/* Your Styles — primary workspace */}
         <section className="mb-12">
-          <Link
-            href="/dashboard/resources/new/emotion-cards"
-            className="block group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-          >
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/10 to-teal/5 border border-coral/20 p-8 sm:p-10 transition-all duration-200 ease-out hover:border-coral/40 hover:shadow-lg motion-reduce:transition-none">
-              {/* Decorative cards in background */}
-              <div className="absolute -right-8 -top-8 sm:right-4 sm:top-4 opacity-20 group-hover:opacity-30 transition-opacity duration-200 motion-reduce:transition-none" aria-hidden="true">
-                <div className="flex gap-2 rotate-12">
-                  <div className="w-16 h-20 sm:w-20 sm:h-28 rounded-xl bg-coral/40" />
-                  <div className="w-16 h-20 sm:w-20 sm:h-28 rounded-xl bg-teal/40 -mt-4" />
-                  <div className="w-16 h-20 sm:w-20 sm:h-28 rounded-xl bg-primary/20 mt-2" />
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-coral/20 flex items-center justify-center mb-5 group-hover:bg-coral/30 group-hover:scale-105 transition-all duration-200 ease-out motion-reduce:group-hover:scale-100 motion-reduce:transition-none">
-                  <Plus className="size-7 text-coral" aria-hidden="true" />
-                </div>
-                <h2 className="font-serif text-2xl sm:text-3xl font-medium mb-2">
-                  Create Emotion Cards
-                </h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Create print-ready therapy resources for your sessions.
-                  AI illustrations that match your style.
-                </p>
-                <span className="inline-flex items-center gap-2 text-coral font-medium group-hover:gap-3 transition-all duration-200 ease-out motion-reduce:group-hover:gap-2 motion-reduce:transition-none">
-                  Start creating
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </span>
-              </div>
-            </div>
-          </Link>
-        </section>
-
-        {/* Secondary Actions */}
-        <section className="mb-12">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Also available
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Your styles
+            </h2>
             <Link
               href="/dashboard/styles"
-              className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
-              <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-teal/40 hover:bg-teal/5 transition-colors duration-150 motion-reduce:transition-none">
-                <div className="size-12 rounded-xl bg-teal/10 flex items-center justify-center shrink-0 group-hover:bg-teal/20 transition-colors duration-150 motion-reduce:transition-none">
-                  <Palette className="size-5 text-teal" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-medium group-hover:text-teal transition-colors duration-150">Manage Styles</h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    Colors, fonts, illustration styles
-                  </p>
-                </div>
-              </div>
-            </Link>
-
-            <Link
-              href="/dashboard/characters"
-              className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors duration-150 motion-reduce:transition-none">
-                <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-150 motion-reduce:transition-none">
-                  <Users className="size-5 text-primary" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-medium group-hover:text-primary transition-colors duration-150">Create Characters</h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    Consistent characters for materials
-                  </p>
-                </div>
-              </div>
+              View all
+              <ArrowRight className="size-3.5" aria-hidden="true" />
             </Link>
           </div>
+
+          {styles === undefined ? (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              aria-hidden="true"
+            >
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-lg overflow-hidden">
+                  <div className="h-3 bg-muted animate-pulse motion-reduce:animate-none" />
+                  <div className="px-4 py-5 border border-t-0 border-border/50 rounded-b-lg bg-card">
+                    <div className="h-5 w-28 bg-muted rounded animate-pulse motion-reduce:animate-none mb-2" />
+                    <div className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-8" />
+                    <div className="flex gap-2">
+                      <div className="h-4 w-14 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+                      <div className="h-4 w-16 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !hasStyles ? (
+            <Link
+              href="/dashboard/styles"
+              className="block group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+            >
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/10 to-teal/5 border border-coral/20 p-8 sm:p-10 transition-[border-color,box-shadow] duration-200 ease-out hover:border-coral/40 hover:shadow-lg motion-reduce:transition-none">
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-2xl bg-coral/20 flex items-center justify-center mb-5 group-hover:bg-coral/30 group-hover:scale-105 transition-[background-color,transform] duration-200 ease-out motion-reduce:group-hover:scale-100 motion-reduce:transition-none">
+                    <Palette className="size-7 text-coral" aria-hidden="true" />
+                  </div>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-medium mb-2">
+                    Create your first style
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mb-6">
+                    Define colors, typography, and illustration style. Then create characters and resources that all share a consistent look.
+                  </p>
+                  <span className="inline-flex items-center gap-2 text-coral font-medium group-hover:gap-3 transition-[gap] duration-200 ease-out motion-reduce:group-hover:gap-2 motion-reduce:transition-none">
+                    Get started
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(customStyles.length > 0 ? customStyles : styles)
+                .sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
+                .slice(0, 6)
+                .map((style) => (
+                  <StyleCard
+                    key={style._id}
+                    id={style._id}
+                    name={style.name}
+                    isPreset={style.isPreset}
+                    colors={style.colors}
+                    typography={style.typography}
+                    illustrationStyle={style.illustrationStyle}
+                    frames={style.frames as StyleFrames | undefined}
+                    updatedAt={style.updatedAt ?? style.createdAt}
+                  />
+                ))}
+            </div>
+          )}
         </section>
 
         {/* Recent Resources */}
@@ -153,7 +161,7 @@ export default function DashboardPage() {
             </h2>
             <Link
               href="/dashboard/resources"
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               View all
               <ArrowRight className="size-3.5" aria-hidden="true" />

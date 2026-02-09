@@ -34,6 +34,41 @@ export const getUserCharactersWithThumbnails = query({
   },
 });
 
+// Get characters by style with thumbnails (for style detail page)
+export const getCharactersByStyle = query({
+  args: { styleId: v.id("styles") },
+  handler: async (ctx, args) => {
+    const characters = await ctx.db
+      .query("characters")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+
+    return await Promise.all(
+      characters.map(async (character) => {
+        let thumbnailUrl: string | null = null;
+        const primaryId =
+          character.primaryImageId ?? character.referenceImages[0];
+        if (primaryId) {
+          thumbnailUrl = await ctx.storage.getUrl(primaryId);
+        }
+        return { ...character, thumbnailUrl };
+      })
+    );
+  },
+});
+
+// Count characters for a style (for badge display)
+export const getCharacterCountByStyle = query({
+  args: { styleId: v.id("styles") },
+  handler: async (ctx, args) => {
+    const characters = await ctx.db
+      .query("characters")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+    return characters.length;
+  },
+});
+
 export const getCharacter = query({
   args: { characterId: v.id("characters") },
   handler: async (ctx, args) => {
@@ -61,12 +96,14 @@ export const createCharacter = mutation({
   args: {
     userId: v.id("users"),
     name: v.string(),
+    styleId: v.optional(v.id("styles")),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert("characters", {
       userId: args.userId,
       name: args.name,
+      styleId: args.styleId,
       description: "",
       personality: "",
       referenceImages: [],

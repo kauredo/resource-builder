@@ -47,10 +47,18 @@ export const getUserResources = query({
         let thumbnailUrl: string | null = null;
         const assetCount = assets.length;
 
-        const assetWithCurrent = assets.find((a) => a.currentVersionId);
-        if (assetWithCurrent?.currentVersionId) {
+        // Sort by most recently updated so we pick current-gen assets
+        const versioned = assets
+          .filter((a) => a.currentVersionId)
+          .sort((a, b) => b.updatedAt - a.updatedAt);
+        // For card games, prefer the newest background asset
+        const thumbAsset =
+          (resource.type === "card_game"
+            ? versioned.find((a) => a.assetType === "card_bg")
+            : undefined) ?? versioned[0];
+        if (thumbAsset?.currentVersionId) {
           const currentVersion = await ctx.db.get(
-            assetWithCurrent.currentVersionId,
+            thumbAsset.currentVersionId,
           );
           if (currentVersion) {
             thumbnailUrl = await ctx.storage.getUrl(currentVersion.storageId);
@@ -87,6 +95,48 @@ export const getResourcesByType = query({
       .withIndex("by_type", (q) => q.eq("type", args.type))
       .filter((q) => q.eq(q.field("userId"), args.userId))
       .collect();
+  },
+});
+
+// Get resources by style with thumbnails (for style detail page)
+export const getResourcesByStyle = query({
+  args: { styleId: v.id("styles") },
+  handler: async (ctx, args) => {
+    const resources = await ctx.db
+      .query("resources")
+      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+      .collect();
+
+    return await Promise.all(
+      resources.map(async (resource) => {
+        const assets = await ctx.db
+          .query("assets")
+          .withIndex("by_owner", (q) =>
+            q.eq("ownerType", "resource").eq("ownerId", resource._id),
+          )
+          .collect();
+
+        let thumbnailUrl: string | null = null;
+        const assetCount = assets.length;
+
+        const versioned = assets
+          .filter((a) => a.currentVersionId)
+          .sort((a, b) => b.updatedAt - a.updatedAt);
+        const thumbAsset =
+          (resource.type === "card_game"
+            ? versioned.find((a) => a.assetType === "card_bg")
+            : undefined) ?? versioned[0];
+        if (thumbAsset?.currentVersionId) {
+          const currentVersion = await ctx.db.get(
+            thumbAsset.currentVersionId,
+          );
+          if (currentVersion) {
+            thumbnailUrl = await ctx.storage.getUrl(currentVersion.storageId);
+          }
+        }
+        return { ...resource, thumbnailUrl, assetCount };
+      })
+    );
   },
 });
 

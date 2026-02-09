@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useEffect, use, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { StyleCharacters } from "@/components/style/StyleCharacters";
+import { StyleResources } from "@/components/style/StyleResources";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,8 @@ import {
   Type,
   Paintbrush,
   Layers,
+  Users,
+  FileStack,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { calculateCardLayout } from "@/lib/card-layout";
@@ -81,6 +85,9 @@ const BODY_FONTS = [
 export default function StyleDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get("tab") ?? "overview") as "overview" | "characters" | "resources";
+  const user = useQuery(api.users.currentUser);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [duplicateName, setDuplicateName] = useState("");
@@ -98,6 +105,7 @@ export default function StyleDetailPage({ params }: PageProps) {
 
   const styleId = resolvedParams.id as Id<"styles">;
   const style = useQuery(api.styles.getStyleWithFrameUrls, { styleId });
+  const styleSummary = useQuery(api.styles.getStyleSummary, { styleId });
   const updateStyle = useMutation(api.styles.updateStyle);
   const duplicateStyle = useMutation(api.styles.duplicateStyle);
   const deleteStyle = useMutation(api.styles.deleteStyle);
@@ -267,7 +275,7 @@ export default function StyleDetailPage({ params }: PageProps) {
   ).length;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={cn("mx-auto px-4 sm:px-6 lg:px-8 py-8", activeTab === "overview" ? "max-w-3xl" : "max-w-5xl")}>
       {/* Back link */}
       <Link
         href="/dashboard/styles"
@@ -332,10 +340,10 @@ export default function StyleDetailPage({ params }: PageProps) {
           </Button>
           <Button asChild size="sm" className="btn-coral gap-1.5">
             <Link
-              href={`/dashboard/resources/new/emotion-cards?styleId=${styleId}`}
+              href={`/dashboard/resources/new?styleId=${styleId}`}
             >
               <Plus className="size-3.5" aria-hidden="true" />
-              Use Style
+              Create Resource
             </Link>
           </Button>
           {!style.isPreset && (
@@ -399,6 +407,46 @@ export default function StyleDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      {/* Tab Navigation */}
+      <nav className="flex gap-1 mb-8 border-b border-border/50" aria-label="Style sections">
+        {([
+          { key: "overview" as const, label: "Overview", icon: Palette, count: undefined as number | undefined },
+          { key: "characters" as const, label: "Characters", icon: Users, count: styleSummary?.characterCount },
+          { key: "resources" as const, label: "Resources", icon: FileStack, count: styleSummary?.resourceCount },
+        ]).map(({ key, label, icon: Icon, count }) => (
+          <Link
+            key={key}
+            href={`/dashboard/styles/${styleId}${key === "overview" ? "" : `?tab=${key}`}`}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium -mb-px border-b-2 transition-colors duration-150 motion-reduce:transition-none rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2",
+              activeTab === key
+                ? "border-coral text-coral"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+            )}
+            aria-current={activeTab === key ? "page" : undefined}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {label}
+            {count !== undefined && count > 0 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted tabular-nums">
+                {count}
+              </span>
+            )}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Tab Content */}
+      {activeTab === "characters" && user?._id && (
+        <StyleCharacters styleId={styleId} userId={user._id} />
+      )}
+
+      {activeTab === "resources" && (
+        <StyleResources styleId={styleId} />
+      )}
+
+      {activeTab === "overview" && (
+      <>
       {/* Live Preview - Hero position */}
       <section className="mb-10">
         <StylePreview
@@ -619,6 +667,8 @@ export default function StyleDetailPage({ params }: PageProps) {
           </section>
         )}
       </div>
+      </>
+      )}
 
       {/* Duplicate Dialog */}
       <AlertDialog

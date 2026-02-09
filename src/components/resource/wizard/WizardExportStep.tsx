@@ -6,7 +6,9 @@ import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Download, Check, Loader2 } from "lucide-react";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
+import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import type { AIWizardState } from "./use-ai-wizard";
+import type { CardGameContent } from "@/types";
 
 interface WizardExportStepProps {
   state: AIWizardState;
@@ -41,39 +43,62 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
     setIsExporting(true);
 
     try {
-      // Collect image URLs, expanding card_game cards by their count
-      const imageUrls: string[] = [];
-      if (state.resourceType === "card_game" && state.generatedContent) {
-        const cards = (state.generatedContent.cards as Array<{ count?: number }>) ?? [];
-        for (const item of state.imageItems) {
-          const asset = assets.find((a) => a.assetKey === item.assetKey);
-          if (!asset?.currentVersion?.url) continue;
-          const cardIndex = parseInt(item.assetKey.replace("card_", ""), 10);
-          const count = (!isNaN(cardIndex) && cards[cardIndex]?.count) || 1;
-          for (let c = 0; c < count; c++) {
-            imageUrls.push(asset.currentVersion.url);
+      let blob: Blob;
+
+      if (
+        state.resourceType === "card_game" &&
+        state.generatedContent &&
+        "backgrounds" in state.generatedContent
+      ) {
+        // Template-based card game: use composition PDF
+        const assetMap = new Map<string, string>();
+        for (const asset of assets) {
+          if (asset.currentVersion?.url) {
+            assetMap.set(asset.assetKey, asset.currentVersion.url);
           }
         }
+
+        blob = await generateCardGamePDF({
+          content: state.generatedContent as unknown as CardGameContent,
+          assetMap,
+          cardsPerPage: 9,
+          includeCardBacks: !!(state.generatedContent as Record<string, unknown>).cardBack,
+        });
       } else {
-        for (const item of state.imageItems) {
-          const asset = assets.find((a) => a.assetKey === item.assetKey);
-          if (asset?.currentVersion?.url) {
-            imageUrls.push(asset.currentVersion.url);
+        // Legacy card game or other resource types
+        const imageUrls: string[] = [];
+        if (state.resourceType === "card_game" && state.generatedContent) {
+          const cards = (state.generatedContent.cards as Array<{ count?: number }>) ?? [];
+          for (const item of state.imageItems) {
+            const asset = assets.find((a) => a.assetKey === item.assetKey);
+            if (!asset?.currentVersion?.url) continue;
+            const cardIndex = parseInt(item.assetKey.replace("card_", ""), 10);
+            const count = (!isNaN(cardIndex) && cards[cardIndex]?.count) || 1;
+            for (let c = 0; c < count; c++) {
+              imageUrls.push(asset.currentVersion.url);
+            }
+          }
+        } else {
+          for (const item of state.imageItems) {
+            const asset = assets.find((a) => a.assetKey === item.assetKey);
+            if (asset?.currentVersion?.url) {
+              imageUrls.push(asset.currentVersion.url);
+            }
           }
         }
+
+        if (imageUrls.length === 0) {
+          throw new Error("No images available for export");
+        }
+
+        const layout = getLayoutMode(state.resourceType);
+
+        blob = await generateImagePagesPDF({
+          images: imageUrls,
+          layout,
+          cardsPerPage: layout === "grid" ? 9 : undefined,
+        });
       }
-
-      if (imageUrls.length === 0) {
-        throw new Error("No images available for export");
-      }
-
-      const layout = getLayoutMode(state.resourceType);
-
-      const blob = await generateImagePagesPDF({
-        images: imageUrls,
-        layout,
-        cardsPerPage: layout === "grid" ? 6 : undefined,
-      });
 
       // Download the PDF
       const url = URL.createObjectURL(blob);

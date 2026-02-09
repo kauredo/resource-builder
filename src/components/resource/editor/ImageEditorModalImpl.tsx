@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Plus, RotateCcw, RotateCw, Save } from "lucide-react";
+import { Loader2, Plus, RotateCcw, RotateCw, Save, Trash2 } from "lucide-react";
 import type { AssetRef } from "@/types";
 
 interface EditorText {
@@ -28,15 +28,6 @@ interface EditorText {
   color: string;
   rotation: number;
   width?: number;
-}
-
-interface EditorState {
-  image: {
-    x: number;
-    y: number;
-    scale: number;
-  };
-  texts: EditorText[];
 }
 
 export interface ImageEditorModalProps {
@@ -73,15 +64,16 @@ export function ImageEditorModalImpl({
   const transformerRef = useRef<any>(null);
   const [stageSize, setStageSize] = useState({ width: 560, height: 560 });
 
-  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
-    null,
-  );
-  const [imageState, setImageState] = useState({ x: 0, y: 0, scale: 1 });
+  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+  const [imageFit, setImageFit] = useState({ x: 0, y: 0, scale: 1 });
   const [texts, setTexts] = useState<EditorText[]>([]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
-  const [history, setHistory] = useState<EditorState[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Undo/redo for text layers only
+  const [history, setHistory] = useState<EditorText[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const historyRef = useRef<EditorState[]>([]);
+  const historyRef = useRef<EditorText[][]>([[]]);
   const historyIndexRef = useRef(0);
 
   const asset = useQuery(api.assets.getAsset, {
@@ -95,6 +87,7 @@ export function ImageEditorModalImpl({
 
   const currentPrompt = asset?.currentVersion?.prompt ?? "Edited asset";
 
+  // Load image
   useEffect(() => {
     if (!imageUrl) return;
     const img = new Image();
@@ -103,41 +96,58 @@ export function ImageEditorModalImpl({
     img.src = imageUrl;
   }, [imageUrl]);
 
+  // Calculate fit whenever image or stage size changes
   useEffect(() => {
-    if (!containerRef.current) return;
-    const { width } = containerRef.current.getBoundingClientRect();
-    const targetWidth = Math.min(640, Math.max(320, width));
-    setStageSize({
-      width: targetWidth,
-      height: Math.round(targetWidth / aspectRatio),
+    if (!imageElement) return;
+    const fitScale = Math.min(
+      stageSize.width / imageElement.naturalWidth,
+      stageSize.height / imageElement.naturalHeight,
+    );
+    const scale = Math.min(fitScale, 1);
+    setImageFit({
+      x: (stageSize.width - imageElement.naturalWidth * scale) / 2,
+      y: (stageSize.height - imageElement.naturalHeight * scale) / 2,
+      scale,
     });
+  }, [imageElement, stageSize]);
+
+  // Measure container for stage sizing
+  useEffect(() => {
+    if (!containerRef.current || !open) return;
+    const measure = () => {
+      if (!containerRef.current) return;
+      const { width } = containerRef.current.getBoundingClientRect();
+      const available = width - 24; // p-3 padding
+      const maxHeight = window.innerHeight * 0.55;
+      let targetWidth = Math.max(280, available);
+      let targetHeight = Math.round(targetWidth / aspectRatio);
+      if (targetHeight > maxHeight) {
+        targetHeight = Math.round(maxHeight);
+        targetWidth = Math.round(targetHeight * aspectRatio);
+      }
+      setStageSize({ width: targetWidth, height: targetHeight });
+    };
+    measure();
+    const timer = setTimeout(measure, 250);
+    return () => clearTimeout(timer);
   }, [aspectRatio, open]);
 
-  const pushHistory = (state: EditorState) => {
-    const trimmed = historyRef.current.slice(0, historyIndexRef.current + 1);
-    const nextHistory = [...trimmed, state];
-    historyRef.current = nextHistory;
-    historyIndexRef.current = nextHistory.length - 1;
-    setHistory(nextHistory);
-    setHistoryIndex(nextHistory.length - 1);
-  };
-
+  // Reset state when modal opens
   useEffect(() => {
     if (!open) return;
-    const initialState: EditorState = {
-      image: { x: 0, y: 0, scale: 1 },
-      texts: [],
-    };
-    setImageState(initialState.image);
-    setTexts(initialState.texts);
-    pushHistory(initialState);
+    setTexts([]);
+    setSelectedTextId(null);
+    historyRef.current = [[]];
+    historyIndexRef.current = 0;
+    setHistory([[]]);
+    setHistoryIndex(0);
   }, [open]);
 
+  // Sync transformer to selected text node
   useEffect(() => {
     const transformer = transformerRef.current;
     const stage = stageRef.current;
     if (!transformer || !stage) return;
-
     const selectedNode = stage.findOne(`#text-${selectedTextId}`);
     if (selectedNode) {
       transformer.nodes([selectedNode]);
@@ -147,28 +157,32 @@ export function ImageEditorModalImpl({
     }
   }, [selectedTextId, texts]);
 
+  const pushHistory = (nextTexts: EditorText[]) => {
+    const trimmed = historyRef.current.slice(0, historyIndexRef.current + 1);
+    const next = [...trimmed, nextTexts];
+    historyRef.current = next;
+    historyIndexRef.current = next.length - 1;
+    setHistory(next);
+    setHistoryIndex(next.length - 1);
+  };
+
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  const applyHistoryState = (state: EditorState) => {
-    setImageState(state.image);
-    setTexts(state.texts);
-  };
-
   const handleUndo = () => {
     if (!canUndo) return;
-    const nextIndex = historyIndex - 1;
-    historyIndexRef.current = nextIndex;
-    setHistoryIndex(nextIndex);
-    applyHistoryState(historyRef.current[nextIndex]);
+    const idx = historyIndex - 1;
+    historyIndexRef.current = idx;
+    setHistoryIndex(idx);
+    setTexts(historyRef.current[idx]);
   };
 
   const handleRedo = () => {
     if (!canRedo) return;
-    const nextIndex = historyIndex + 1;
-    historyIndexRef.current = nextIndex;
-    setHistoryIndex(nextIndex);
-    applyHistoryState(historyRef.current[nextIndex]);
+    const idx = historyIndex + 1;
+    historyIndexRef.current = idx;
+    setHistoryIndex(idx);
+    setTexts(historyRef.current[idx]);
   };
 
   const handleAddText = () => {
@@ -185,7 +199,7 @@ export function ImageEditorModalImpl({
     const nextTexts = [...texts, newText];
     setTexts(nextTexts);
     setSelectedTextId(newText.id);
-    pushHistory({ image: imageState, texts: nextTexts });
+    pushHistory(nextTexts);
   };
 
   const selectedText = texts.find((t) => t.id === selectedTextId) ?? null;
@@ -196,70 +210,75 @@ export function ImageEditorModalImpl({
       text.id === selectedText.id ? { ...text, ...updates } : text,
     );
     setTexts(nextTexts);
-    pushHistory({ image: imageState, texts: nextTexts });
+    pushHistory(nextTexts);
   };
 
-  const handleImageDragEnd = (evt: any) => {
-    const next = { ...imageState, x: evt.target.x(), y: evt.target.y() };
-    setImageState(next);
-    pushHistory({ image: next, texts });
-  };
-
-  const handleImageScaleChange = (value: number[]) => {
-    const next = { ...imageState, scale: value[0] };
-    setImageState(next);
-    pushHistory({ image: next, texts });
+  const handleDeleteSelected = () => {
+    if (!selectedText) return;
+    const nextTexts = texts.filter((t) => t.id !== selectedText.id);
+    setTexts(nextTexts);
+    setSelectedTextId(null);
+    pushHistory(nextTexts);
   };
 
   const handleSave = async () => {
     if (!stageRef.current) return;
+    setIsSaving(true);
 
-    const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
-    const blob = dataUrlToBlob(dataUrl);
-    const uploadUrl = await generateUploadUrl();
+    try {
+      // Deselect to hide transformer handles from export
+      setSelectedTextId(null);
+      // Wait a frame for transformer to clear
+      await new Promise((r) => requestAnimationFrame(r));
 
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      headers: { "Content-Type": "image/png" },
-      body: blob,
-    });
-    const { storageId } = await response.json();
+      const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
+      const blob = dataUrlToBlob(dataUrl);
+      const uploadUrl = await generateUploadUrl();
 
-    await createFromEdit({
-      ownerType: assetRef.ownerType,
-      ownerId: assetRef.ownerId as any,
-      assetType: assetRef.assetType,
-      assetKey: assetRef.assetKey,
-      storageId,
-      prompt: currentPrompt,
-      params: {
-        editState: {
-          image: imageState,
-          texts,
-          aspectRatio,
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: blob,
+      });
+      const { storageId } = await response.json();
+
+      await createFromEdit({
+        ownerType: assetRef.ownerType,
+        ownerId: assetRef.ownerId as any,
+        assetType: assetRef.assetType,
+        assetKey: assetRef.assetKey,
+        storageId,
+        prompt: currentPrompt,
+        params: {
+          editState: { texts, aspectRatio },
         },
-      },
-      sourceVersionId: asset?.currentVersionId,
-    });
+        sourceVersionId: asset?.currentVersionId,
+      });
 
-    onOpenChange(false);
+      onOpenChange(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const hasChanges = texts.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="sm:max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Add text, reposition the image, and save a new version.
+            Add text overlays and save a new version.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-6">
+          {/* Canvas */}
+          <div className="space-y-3 min-w-0">
             <div
               ref={containerRef}
-              className="rounded-xl border bg-muted/20 p-3"
+              className="rounded-xl border bg-muted/20 p-3 overflow-hidden"
             >
               <Stage
                 width={stageSize.width}
@@ -276,12 +295,10 @@ export function ImageEditorModalImpl({
                   {imageElement && (
                     <KonvaImage
                       image={imageElement}
-                      x={imageState.x}
-                      y={imageState.y}
-                      scaleX={imageState.scale}
-                      scaleY={imageState.scale}
-                      draggable
-                      onDragEnd={handleImageDragEnd}
+                      x={imageFit.x}
+                      y={imageFit.y}
+                      scaleX={imageFit.scale}
+                      scaleY={imageFit.scale}
                     />
                   )}
                   {texts.map((text) => (
@@ -305,7 +322,7 @@ export function ImageEditorModalImpl({
                             : t,
                         );
                         setTexts(nextTexts);
-                        pushHistory({ image: imageState, texts: nextTexts });
+                        pushHistory(nextTexts);
                       }}
                       onTransformEnd={(e) => {
                         const node = e.target;
@@ -324,7 +341,7 @@ export function ImageEditorModalImpl({
                         node.scaleX(1);
                         node.scaleY(1);
                         setTexts(nextTexts);
-                        pushHistory({ image: imageState, texts: nextTexts });
+                        pushHistory(nextTexts);
                       }}
                     />
                   ))}
@@ -341,7 +358,7 @@ export function ImageEditorModalImpl({
                 disabled={!canUndo}
                 className="gap-1.5"
               >
-                <RotateCcw className="size-4" aria-hidden="true" />
+                <RotateCcw className="size-3.5" aria-hidden="true" />
                 Undo
               </Button>
               <Button
@@ -351,105 +368,125 @@ export function ImageEditorModalImpl({
                 disabled={!canRedo}
                 className="gap-1.5"
               >
-                <RotateCw className="size-4" aria-hidden="true" />
+                <RotateCw className="size-3.5" aria-hidden="true" />
                 Redo
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddText}
-                className="gap-1.5"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Add text
               </Button>
             </div>
           </div>
 
+          {/* Sidebar */}
           <div className="space-y-4">
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Image scale
-                </Label>
-                <Slider
-                  value={[imageState.scale]}
-                  min={0.4}
-                  max={2.5}
-                  step={0.05}
-                  onValueChange={handleImageScaleChange}
-                />
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddText}
+              className="w-full gap-1.5"
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+              Add text
+            </Button>
 
-            <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Text</p>
-                {selectedText && (
-                  <span className="text-xs text-muted-foreground">
-                    Selected
-                  </span>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Input
-                  value={selectedText?.text ?? ""}
-                  onChange={(e) => updateSelectedText({ text: e.target.value })}
-                  placeholder="Select a text layer"
-                  disabled={!selectedText}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Size</Label>
-                  <Input
-                    type="number"
-                    min={10}
-                    max={96}
-                    value={selectedText?.fontSize ?? 24}
-                    onChange={(e) =>
-                      updateSelectedText({ fontSize: Number(e.target.value) })
-                    }
-                    disabled={!selectedText}
-                  />
+            {selectedText ? (
+              <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Text properties</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-muted-foreground hover:text-destructive"
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 className="size-3.5" aria-hidden="true" />
+                    <span className="sr-only">Delete text</span>
+                  </Button>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Color</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Content
+                  </Label>
                   <Input
-                    type="color"
-                    value={selectedText?.color ?? "#1A1A1A"}
+                    value={selectedText.text}
                     onChange={(e) =>
-                      updateSelectedText({ color: e.target.value })
+                      updateSelectedText({ text: e.target.value })
                     }
-                    disabled={!selectedText}
-                    className="h-10"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Size
+                    </Label>
+                    <Input
+                      type="number"
+                      min={10}
+                      max={96}
+                      value={selectedText.fontSize}
+                      onChange={(e) =>
+                        updateSelectedText({
+                          fontSize: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Color
+                    </Label>
+                    <Input
+                      type="color"
+                      value={selectedText.color}
+                      onChange={(e) =>
+                        updateSelectedText({ color: e.target.value })
+                      }
+                      className="h-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Rotation
+                  </Label>
+                  <Slider
+                    value={[selectedText.rotation]}
+                    min={-180}
+                    max={180}
+                    step={1}
+                    onValueChange={([rotation]) =>
+                      updateSelectedText({ rotation })
+                    }
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Rotation</Label>
-                <Slider
-                  value={[selectedText?.rotation ?? 0]}
-                  min={-180}
-                  max={180}
-                  step={1}
-                  onValueChange={([rotation]) => updateSelectedText({ rotation })}
-                  disabled={!selectedText}
-                />
-              </div>
-            </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                {texts.length === 0
+                  ? "Add a text layer to get started"
+                  : "Click a text layer to edit it"}
+              </p>
+            )}
 
-            <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex items-center gap-2 pt-2 border-t border-border/40">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
-                className={cn("btn-coral gap-2", !imageElement && "opacity-70")}
-                disabled={!imageElement}
+                className={cn("btn-coral gap-2 flex-1")}
+                disabled={!imageElement || !hasChanges || isSaving}
               >
-                <Save className="size-4" aria-hidden="true" />
-                Save version
+                {isSaving ? (
+                  <Loader2
+                    className="size-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Save className="size-4" aria-hidden="true" />
+                )}
+                Save
               </Button>
             </div>
           </div>

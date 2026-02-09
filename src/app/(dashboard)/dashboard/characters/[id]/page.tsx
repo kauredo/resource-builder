@@ -195,8 +195,13 @@ export default function CharacterDetailPage({ params }: PageProps) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
+      const styleId = character?.styleId;
       await deleteCharacter({ characterId });
-      router.push("/dashboard/characters");
+      router.push(
+        styleId
+          ? `/dashboard/styles/${styleId}?tab=characters`
+          : "/dashboard/styles"
+      );
     } catch (error) {
       console.error("Failed to delete character:", error);
       setIsDeleting(false);
@@ -404,13 +409,17 @@ export default function CharacterDetailPage({ params }: PageProps) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back link */}
+      {/* Back link — navigate to parent style when possible */}
       <Link
-        href="/dashboard/characters"
+        href={
+          character.styleId
+            ? `/dashboard/styles/${character.styleId}?tab=characters`
+            : "/dashboard/styles"
+        }
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
       >
         <ArrowLeft className="size-3.5" aria-hidden="true" />
-        Characters
+        {character.styleId ? "Back to Style" : "Styles"}
       </Link>
 
       {/* Hero: Portrait anchors the character's identity */}

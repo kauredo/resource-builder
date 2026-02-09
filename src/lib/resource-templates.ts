@@ -1,6 +1,9 @@
 import type {
   BoardGameContent,
   CardGameContent,
+  CardGameBackground,
+  CardGameIcon,
+  CardGameCardEntry,
   FlashcardContentItem,
   WorksheetBlock,
 } from "@/types";
@@ -103,44 +106,102 @@ export function createBoardGameTemplate() {
 
 export function createCardGameTemplate(): {
   name: string;
+  deckName: string;
   rules: string;
-  cards: CardGameContent["cards"];
+  backgrounds: CardGameBackground[];
+  icons: CardGameIcon[];
+  textSettings: CardGameContent["textSettings"];
+  cards: CardGameCardEntry[];
 } {
-  const baseCards = [
+  const redId = makeId();
+  const blueId = makeId();
+  const skipId = makeId();
+  const reverseId = makeId();
+
+  const backgrounds: CardGameBackground[] = [
     {
-      title: "Skip",
-      text: "Next player loses their turn.",
-      count: 4,
-      imagePrompt: "skip symbol on a bold card",
+      id: redId,
+      label: "Red",
+      color: "#FF6B6B",
+      imagePrompt: "warm red watercolor card background with soft texture",
+      imageAssetKey: makeAssetKey("card_bg", redId),
     },
     {
-      title: "Reverse",
-      text: "Reverse the direction of play.",
-      count: 4,
-      imagePrompt: "reverse arrows icon",
+      id: blueId,
+      label: "Blue",
+      color: "#4ECDC4",
+      imagePrompt: "calming blue watercolor card background with soft texture",
+      imageAssetKey: makeAssetKey("card_bg", blueId),
+    },
+  ];
+
+  const icons: CardGameIcon[] = [
+    {
+      id: skipId,
+      label: "Skip",
+      imagePrompt: "a friendly skip/jump forward arrow icon, simple and bold",
+      imageAssetKey: makeAssetKey("card_icon", skipId),
     },
     {
-      title: "Draw Two",
-      text: "Next player draws two cards.",
-      count: 4,
-      imagePrompt: "two cards stacked",
+      id: reverseId,
+      label: "Reverse",
+      imagePrompt: "two curved arrows forming a circle, reverse direction icon",
+      imageAssetKey: makeAssetKey("card_icon", reverseId),
+    },
+  ];
+
+  const cards: CardGameCardEntry[] = [
+    // Red number cards
+    ...Array.from({ length: 3 }, (_, i) => ({
+      id: makeId(),
+      title: `Red ${i + 1}`,
+      count: 2,
+      backgroundId: redId,
+      primaryText: { content: String(i + 1) },
+    })),
+    // Blue number cards
+    ...Array.from({ length: 3 }, (_, i) => ({
+      id: makeId(),
+      title: `Blue ${i + 1}`,
+      count: 2,
+      backgroundId: blueId,
+      primaryText: { content: String(i + 1) },
+    })),
+    // Special cards
+    {
+      id: makeId(),
+      title: "Skip Red",
+      count: 2,
+      backgroundId: redId,
+      iconId: skipId,
+      primaryText: { content: "SKIP", fontSize: 36, vAlign: "bottom" as const },
+    },
+    {
+      id: makeId(),
+      title: "Reverse Blue",
+      count: 2,
+      backgroundId: blueId,
+      iconId: reverseId,
+      primaryText: { content: "REVERSE", fontSize: 32, vAlign: "bottom" as const },
     },
   ];
 
   return {
     name: "Feelings UNO",
+    deckName: "Feelings Deck",
     rules:
       "Match colors or symbols. Special cards change the turn order. First player to empty their hand wins.",
-    cards: baseCards.map((card) => {
-      const id = makeId();
-      return {
-        id,
-        title: card.title,
-        text: card.text,
-        count: card.count,
-        imagePrompt: card.imagePrompt,
-        imageAssetKey: makeAssetKey("card", id),
-      };
-    }),
+    backgrounds,
+    icons,
+    textSettings: {
+      fontFamily: "Fredoka",
+      defaultFontSize: 48,
+      defaultColor: "#FFFFFF",
+      defaultOutlineWidth: 3,
+      defaultOutlineColor: "#333333",
+      defaultHAlign: "center",
+      defaultVAlign: "center",
+    },
+    cards,
   };
 }

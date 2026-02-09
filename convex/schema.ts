@@ -102,7 +102,9 @@ export default defineSchema({
     promptFragmentUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_style", ["styleId"]),
 
   resources: defineTable({
     userId: v.id("users"),

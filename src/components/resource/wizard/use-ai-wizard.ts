@@ -14,6 +14,11 @@ export interface ImageItem {
   characterId?: Id<"characters">;
   includeText: boolean;
   aspect: "1:1" | "3:4" | "4:3";
+  greenScreen?: boolean;
+  /** Human-readable name for display */
+  label?: string;
+  /** Label for grouping in the generate step UI */
+  group?: string;
   status: "pending" | "generating" | "complete" | "error";
   error?: string;
 }
@@ -135,6 +140,9 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
       !hasInitializedEditMode.current
     ) {
       hasInitializedEditMode.current = true;
+      const content = existingResource.content as Record<string, unknown>;
+      const charSel = (content.characters as CharacterSelection) || null;
+      const imageItems = extractImageItems(resourceType, content, charSel);
       setState((prev) => ({
         ...prev,
         name: existingResource.name,
@@ -147,17 +155,21 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
           illustrationStyle: existingStyle.illustrationStyle,
         },
         resourceId: existingResource._id,
-        generatedContent: existingResource.content as Record<string, unknown>,
+        generatedContent: content,
         contentStatus: "ready",
         isEditMode: true,
+        characterSelection: charSel,
+        imageItems,
       }));
     }
-  }, [editResourceId, existingResource, existingStyle]);
+  }, [editResourceId, existingResource, existingStyle, resourceType]);
 
-  // Draft resume prompt
+  // Draft resume prompt — only show before the user has started working
   useEffect(() => {
     if (!user?._id || editResourceId || state.resourceId) return;
     if (draftResources === undefined || hasPromptedResume.current) return;
+    // Don't interrupt if the user has already progressed past step 0 or generated content
+    if (currentStep > 0 || state.contentStatus !== "idle") return;
 
     const drafts = draftResources.filter((r) => r.status === "draft");
     if (drafts.length === 0) return;
@@ -166,7 +178,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     setResumeDraftId(latest._id);
     setShowResumeDialog(true);
     hasPromptedResume.current = true;
-  }, [user?._id, editResourceId, state.resourceId, draftResources]);
+  }, [user?._id, editResourceId, state.resourceId, draftResources, currentStep, state.contentStatus]);
 
   const updateState = useCallback((updatesOrFn: StateUpdater) => {
     setState((prev) => {
@@ -206,7 +218,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
         (content.name as string) || state.name || state.description.slice(0, 50);
 
       // Extract image prompts into imageItems
-      const imageItems = extractImageItems(resourceType, content);
+      const imageItems = extractImageItems(resourceType, content, state.characterSelection);
 
       updateState({
         generatedContent: content,
@@ -403,7 +415,13 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 function extractImageItems(
   resourceType: ResourceType,
   content: Record<string, unknown>,
+  characterSelection?: CharacterSelection | null,
 ): ImageItem[] {
+  // For "resource" mode, apply same character to all items
+  const resourceCharacterId =
+    characterSelection?.mode === "resource" && characterSelection.characterIds.length > 0
+      ? (characterSelection.characterIds[0] as Id<"characters">)
+      : undefined;
   const items: ImageItem[] = [];
 
   switch (resourceType) {
@@ -413,6 +431,7 @@ function extractImageItems(
         assetKey: "poster_main",
         assetType: "poster_image",
         prompt: `Poster illustration: ${prompt}`,
+        characterId: resourceCharacterId,
         includeText: true,
         aspect: "3:4",
         status: "pending",
@@ -439,20 +458,80 @@ function extractImageItems(
     }
 
     case "card_game": {
-      const cards = (content.cards as Array<Record<string, unknown>>) || [];
-      cards.forEach((card, i) => {
-        const prompt =
-          (card.imagePrompt as string) || `Card game card: ${card.title as string}`;
+      // Template-based: generate backgrounds, icons, and optional card back
+      const backgrounds = (content.backgrounds as Array<Record<string, unknown>>) || [];
+      const icons = (content.icons as Array<Record<string, unknown>>) || [];
+      const cardBack = content.cardBack as Record<string, unknown> | undefined;
+
+      // Respect characterPlacement setting
+      const rawPlacement = (content.characterPlacement as string) || "";
+      const placement = ["backgrounds", "icons", "both", "none"].includes(rawPlacement)
+        ? rawPlacement
+        : "backgrounds";
+      const charForBg =
+        placement === "backgrounds" || placement === "both"
+          ? resourceCharacterId
+          : undefined;
+      const charForIcon =
+        placement === "icons" || placement === "both"
+          ? resourceCharacterId
+          : undefined;
+
+      // One ImageItem per background
+      backgrounds.forEach((bg) => {
+        const id = bg.id as string;
+        const bgPrompt = (bg.imagePrompt as string) || `Card background for ${bg.label as string}`;
         items.push({
-          assetKey: `card_${i}`,
-          assetType: "card_image",
-          prompt,
-          characterId: card.characterId as Id<"characters"> | undefined,
-          includeText: true,
+          assetKey: (bg.imageAssetKey as string) || `card_bg:${id}`,
+          assetType: "card_bg",
+          prompt:
+            `CARD BACKGROUND for a printable card game. ${bgPrompt}. ` +
+            "This image is ONLY the card itself — fill the entire image edge-to-edge with the design, no borders, margins, padding, or surrounding space. " +
+            "Keep the center area relatively clear and simple so that icons and text can be overlaid on top. " +
+            (charForBg ? "If a character is included, place them along the edges or corners of the card — NOT in the center. The center must stay clear for overlay elements. " : "") +
+            "Do NOT use a white background — the image IS the full card background. Use a 3:4 portrait aspect ratio.",
+          label: (bg.label as string) || "Background",
+          characterId: charForBg,
+          includeText: false,
           aspect: "3:4",
+          group: "Backgrounds",
           status: "pending",
         });
       });
+
+      // One ImageItem per icon (green screen)
+      icons.forEach((icon) => {
+        const id = icon.id as string;
+        items.push({
+          assetKey: (icon.imageAssetKey as string) || `card_icon:${id}`,
+          assetType: "card_icon",
+          prompt: (icon.imagePrompt as string) || `Card icon: ${icon.label as string}`,
+          label: (icon.label as string) || "Icon",
+          characterId: charForIcon,
+          includeText: false,
+          aspect: "1:1",
+          greenScreen: true,
+          group: "Icons",
+          status: "pending",
+        });
+      });
+
+      // Optional card back (never gets character)
+      if (cardBack?.imagePrompt) {
+        items.push({
+          assetKey: (cardBack.imageAssetKey as string) || "card_back",
+          assetType: "card_back",
+          prompt:
+            `CARD BACK design for a printable card game. ${cardBack.imagePrompt as string}. ` +
+            "Fill the entire image edge-to-edge with the design, no borders, margins, or surrounding space. " +
+            "This is the back face of a playing card. Use a 3:4 portrait aspect ratio.",
+          label: "Card Back",
+          includeText: false,
+          aspect: "3:4",
+          group: "Card Back",
+          status: "pending",
+        });
+      }
       break;
     }
 
@@ -463,6 +542,7 @@ function extractImageItems(
         assetKey: "board_main",
         assetType: "board_image",
         prompt: `Board game illustration: ${boardPrompt}`,
+        characterId: resourceCharacterId,
         includeText: true,
         aspect: "1:1",
         status: "pending",

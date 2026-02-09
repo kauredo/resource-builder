@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ interface FreePromptWizardProps {
 
 export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStyleId = searchParams.get("styleId") as Id<"styles"> | null;
   const user = useQuery(api.users.currentUser);
   const draftResources = useQuery(
     api.resources.getResourcesByType,
@@ -40,6 +42,10 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
   const existingStyle = useQuery(
     api.styles.getStyle,
     existingResource?.styleId ? { styleId: existingResource.styleId } : "skip",
+  );
+  const initialStyle = useQuery(
+    api.styles.getStyle,
+    initialStyleId ? { styleId: initialStyleId } : "skip",
   );
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -97,6 +103,30 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
       isEditMode: true,
     });
   }, [editResourceId, existingResource, existingStyle]);
+
+  // Initialize from URL styleId param (e.g., from style detail page "Create Resource")
+  const hasInitializedFromUrl = useRef(false);
+  useEffect(() => {
+    if (
+      initialStyleId &&
+      initialStyle &&
+      !editResourceId &&
+      !hasInitializedFromUrl.current &&
+      !state.styleId
+    ) {
+      hasInitializedFromUrl.current = true;
+      setState((prev) => ({
+        ...prev,
+        styleId: initialStyleId,
+        stylePreset: {
+          name: initialStyle.name,
+          colors: initialStyle.colors,
+          typography: initialStyle.typography,
+          illustrationStyle: initialStyle.illustrationStyle,
+        },
+      }));
+    }
+  }, [initialStyleId, initialStyle, editResourceId, state.styleId]);
 
   useEffect(() => {
     if (!user?._id || editResourceId || state.resourceId) return;

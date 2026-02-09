@@ -20,8 +20,13 @@ import {
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
+import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
-import type { CardGameContent } from "@/types";
+import type {
+  AssetType,
+  CardGameContent,
+  LegacyCardGameContent,
+} from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 
 interface CardGameDetailProps {
@@ -42,31 +47,60 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
 
+  // Detect whether this is the new template format or legacy
+  const isLegacy = useMemo(() => {
+    if (!resource) return true;
+    const content = resource.content as Record<string, unknown>;
+    return !("backgrounds" in content);
+  }, [resource]);
+
   const assetMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!assets) return map;
     for (const asset of assets) {
-      if (asset.assetType !== "card_image") continue;
-      if (asset.currentVersion?.url) map.set(asset.assetKey, asset.currentVersion.url);
+      if (asset.currentVersion?.url) {
+        map.set(asset.assetKey, asset.currentVersion.url);
+      }
     }
     return map;
   }, [assets]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
-    const content = resource.content as CardGameContent;
-    const imageUrls = content.cards.flatMap((card) => {
-      const cardUrl = card.imageAssetKey ? assetMap.get(card.imageAssetKey) : undefined;
-      return cardUrl ? Array.from({ length: card.count }, () => cardUrl) : [];
-    });
-    if (imageUrls.length === 0) return;
     setIsGeneratingPDF(true);
+
     try {
-      const blob = await generateImagePagesPDF({
-        images: imageUrls,
-        layout: "grid",
-        cardsPerPage: 6,
-      });
+      let blob: Blob;
+
+      if (!isLegacy) {
+        // Template-based composition
+        const content = resource.content as unknown as CardGameContent;
+        blob = await generateCardGamePDF({
+          content,
+          assetMap,
+          cardsPerPage: 9,
+          includeCardBacks: !!content.cardBack,
+        });
+      } else {
+        // Legacy: image-per-card
+        const content = resource.content as LegacyCardGameContent;
+        const imageUrls = content.cards.flatMap((card) => {
+          const cardUrl = card.imageAssetKey
+            ? assetMap.get(card.imageAssetKey)
+            : undefined;
+          return cardUrl
+            ? Array.from({ length: card.count }, () => cardUrl)
+            : [];
+        });
+        if (imageUrls.length === 0) return;
+
+        blob = await generateImagePagesPDF({
+          images: imageUrls,
+          layout: "grid",
+          cardsPerPage: 9,
+        });
+      }
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -77,12 +111,15 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
       URL.revokeObjectURL(url);
 
       if (resource.status === "draft") {
-        await updateResource({ resourceId: resource._id, status: "complete" });
+        await updateResource({
+          resourceId: resource._id,
+          status: "complete",
+        });
       }
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, assetMap, updateResource]);
+  }, [resource, assetMap, isLegacy, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -96,7 +133,16 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   };
 
   if (!resource) return null;
-  const content = resource.content as CardGameContent;
+
+  const editingAssetType: AssetType = editingKey
+    ? editingKey.startsWith("card_bg:")
+      ? "card_bg"
+      : editingKey.startsWith("card_icon:")
+        ? "card_icon"
+        : editingKey === "card_back"
+          ? "card_back"
+          : "card_image"
+    : "card_image";
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -123,7 +169,10 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
               disabled={isGeneratingPDF}
             >
               {isGeneratingPDF ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <Loader2
+                  className="size-4 animate-spin"
+                  aria-hidden="true"
+                />
               ) : (
                 <Download className="size-4" aria-hidden="true" />
               )}
@@ -137,7 +186,11 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive"
+                >
                   <Trash2 className="size-4" aria-hidden="true" />
                   <span className="sr-only">Delete</span>
                 </Button>
@@ -157,7 +210,10 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     {isDeleting && (
-                      <Loader2 className="size-4 animate-spin mr-2" aria-hidden="true" />
+                      <Loader2
+                        className="size-4 animate-spin mr-2"
+                        aria-hidden="true"
+                      />
                     )}
                     Delete
                   </AlertDialogAction>
@@ -169,52 +225,27 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
       </div>
 
       <div className="mb-6">
-        <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
+        <ResourceTagsEditor
+          resourceId={resourceId}
+          tags={resource.tags ?? []}
+        />
       </div>
 
-      <div className="space-y-4">
-        {content.cards.map((card) => {
-          const imageUrl = card.imageAssetKey ? assetMap.get(card.imageAssetKey) : undefined;
-          return (
-            <div key={card.id ?? card.title} className="rounded-xl border border-border/60 p-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
-              <div className="h-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
-                {imageUrl ? (
-                  <img src={imageUrl} alt="Card image" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium">{card.title}</p>
-                    <p className="text-xs text-muted-foreground">Count: {card.count}</p>
-                  </div>
-                  {card.imageAssetKey && (
-                    <div className="flex items-center gap-2">
-                      <AssetHistoryDialog
-                        assetRef={{
-                          ownerType: "resource",
-                          ownerId: resourceId,
-                          assetType: "card_image",
-                          assetKey: card.imageAssetKey,
-                        }}
-                        triggerLabel="History"
-                      />
-                      {imageUrl && (
-                        <Button variant="outline" size="sm" onClick={() => setEditingKey(card.imageAssetKey!)}>
-                          Edit
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{card.text}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {isLegacy ? (
+        <LegacyCardList
+          content={resource.content as LegacyCardGameContent}
+          assetMap={assetMap}
+          resourceId={resourceId}
+          onEditKey={setEditingKey}
+        />
+      ) : (
+        <TemplateCardDetail
+          content={resource.content as unknown as CardGameContent}
+          assetMap={assetMap}
+          resourceId={resourceId}
+          onEditKey={setEditingKey}
+        />
+      )}
 
       {editingKey && (
         <ImageEditorModal
@@ -223,13 +254,350 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           assetRef={{
             ownerType: "resource",
             ownerId: resourceId,
-            assetType: "card_image",
+            assetType: editingAssetType,
             assetKey: editingKey,
           }}
           imageUrl={assetMap.get(editingKey) as string}
           title="Edit card image"
         />
       )}
+    </div>
+  );
+}
+
+// --- Legacy format ---
+
+function LegacyCardList({
+  content,
+  assetMap,
+  resourceId,
+  onEditKey,
+}: {
+  content: LegacyCardGameContent;
+  assetMap: Map<string, string>;
+  resourceId: Id<"resources">;
+  onEditKey: (key: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {content.cards.map((card) => {
+        const imageUrl = card.imageAssetKey
+          ? assetMap.get(card.imageAssetKey)
+          : undefined;
+        return (
+          <div
+            key={card.id ?? card.title}
+            className="rounded-xl border border-border/60 p-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4"
+          >
+            <div className="h-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt="Card image"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                  No image
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium">{card.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Count: {card.count}
+                  </p>
+                </div>
+                {card.imageAssetKey && (
+                  <div className="flex items-center gap-2">
+                    <AssetHistoryDialog
+                      assetRef={{
+                        ownerType: "resource",
+                        ownerId: resourceId,
+                        assetType: "card_image",
+                        assetKey: card.imageAssetKey,
+                      }}
+                      triggerLabel="History"
+                    />
+                    {imageUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEditKey(card.imageAssetKey!)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{card.text}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Template format ---
+
+function TemplateCardDetail({
+  content,
+  assetMap,
+  resourceId,
+  onEditKey,
+}: {
+  content: CardGameContent;
+  assetMap: Map<string, string>;
+  resourceId: Id<"resources">;
+  onEditKey: (key: string) => void;
+}) {
+  const totalCards = content.cards.reduce((sum, c) => sum + c.count, 0);
+
+  return (
+    <div className="space-y-8">
+      {/* Game info */}
+      <section>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          Game Info
+        </h2>
+        <dl className="space-y-1.5 text-sm max-w-md">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Deck</dt>
+            <dd className="font-medium">{content.deckName}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Total Cards</dt>
+            <dd className="font-medium tabular-nums">{totalCards}</dd>
+          </div>
+        </dl>
+        {content.rules && (
+          <p className="text-sm text-muted-foreground mt-2 max-w-lg">
+            {content.rules}
+          </p>
+        )}
+      </section>
+
+      {/* Backgrounds */}
+      <section>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          Backgrounds ({content.backgrounds.length})
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {content.backgrounds.map((bg) => {
+            const url = assetMap.get(bg.imageAssetKey);
+            return (
+              <AssetCard
+                key={bg.id}
+                label={bg.label}
+                imageUrl={url}
+                assetKey={bg.imageAssetKey}
+                assetType="card_bg"
+                resourceId={resourceId}
+                color={bg.color}
+                onEdit={() => url && onEditKey(bg.imageAssetKey)}
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Icons */}
+      {content.icons.length > 0 && (
+        <section>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Icons ({content.icons.length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {content.icons.map((icon) => {
+              const url = assetMap.get(icon.imageAssetKey);
+              return (
+                <AssetCard
+                  key={icon.id}
+                  label={icon.label}
+                  imageUrl={url}
+                  assetKey={icon.imageAssetKey}
+                  assetType="card_icon"
+                  resourceId={resourceId}
+                  isTransparent
+                  onEdit={() => url && onEditKey(icon.imageAssetKey)}
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Card Back */}
+      {content.cardBack && (
+        <section>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Card Back
+          </h2>
+          <div className="max-w-[200px]">
+            <AssetCard
+              label="Card Back"
+              imageUrl={assetMap.get(content.cardBack.imageAssetKey)}
+              assetKey={content.cardBack.imageAssetKey}
+              assetType="card_back"
+              resourceId={resourceId}
+              onEdit={() => {
+                const url = assetMap.get(content.cardBack!.imageAssetKey);
+                if (url) onEditKey(content.cardBack!.imageAssetKey);
+              }}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Card manifest */}
+      <section>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          Card Types ({content.cards.length})
+        </h2>
+        <div className="rounded-xl border border-border/60 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border/40 bg-muted/30">
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Title
+                </th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Text
+                </th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Background
+                </th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Icon
+                </th>
+                <th className="text-right px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Count
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {content.cards.map((card) => {
+                const bg = content.backgrounds.find(
+                  (b) => b.id === card.backgroundId,
+                );
+                const icon = card.iconId
+                  ? content.icons.find((ic) => ic.id === card.iconId)
+                  : null;
+                return (
+                  <tr
+                    key={card.id}
+                    className="border-b border-border/20 last:border-b-0"
+                  >
+                    <td className="px-3 py-2 font-medium">{card.title}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {card.primaryText.content}
+                    </td>
+                    <td className="px-3 py-2">
+                      {bg && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="size-3 rounded-sm border border-border/60"
+                            style={{ backgroundColor: bg.color }}
+                          />
+                          {bg.label}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {icon?.label || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {card.count}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AssetCard({
+  label,
+  imageUrl,
+  assetKey,
+  assetType,
+  resourceId,
+  color,
+  isTransparent,
+  onEdit,
+}: {
+  label: string;
+  imageUrl?: string;
+  assetKey: string;
+  assetType: AssetType;
+  resourceId: Id<"resources">;
+  color?: string;
+  isTransparent?: boolean;
+  onEdit: () => void;
+}) {
+  const checkerboardStyle = isTransparent
+    ? {
+        backgroundImage:
+          "linear-gradient(45deg, #e0e0e0 25%, transparent 25%), " +
+          "linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), " +
+          "linear-gradient(45deg, transparent 75%, #e0e0e0 75%), " +
+          "linear-gradient(-45deg, transparent 75%, #e0e0e0 75%)",
+        backgroundSize: "12px 12px",
+        backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0px",
+      }
+    : undefined;
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+      <div
+        className="aspect-[3/4] relative bg-muted/20"
+        style={checkerboardStyle}
+      >
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={label}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+            No image
+          </div>
+        )}
+      </div>
+      <div className="px-3 py-2 flex items-center gap-2">
+        {color && (
+          <span
+            className="size-3 rounded-sm border border-border/60 shrink-0"
+            style={{ backgroundColor: color }}
+          />
+        )}
+        <span className="text-xs font-medium truncate">{label}</span>
+        <div className="ml-auto flex items-center gap-1">
+          <AssetHistoryDialog
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType,
+              assetKey,
+            }}
+            triggerLabel="History"
+          />
+          {imageUrl && (
+            <Button variant="outline" size="sm" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

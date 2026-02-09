@@ -12,9 +12,8 @@ import { LogOut, Loader2, Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", exact: true },
-  { href: "/dashboard/resources", label: "Resources" },
+  { href: "/dashboard/resources", label: "Library" },
   { href: "/dashboard/styles", label: "Styles" },
-  { href: "/dashboard/characters", label: "Characters" },
 ];
 
 export default function DashboardLayout({
@@ -91,7 +90,7 @@ export default function DashboardLayout({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 motion-reduce:transition-none ${
                     isActive(link.href, link.exact)
                       ? "bg-coral/10 text-coral"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -139,7 +138,7 @@ export default function DashboardLayout({
         {/* Mobile Navigation */}
         <nav
           id="mobile-menu"
-          className={`md:hidden border-t border-border bg-card/95 backdrop-blur-sm overflow-hidden transition-all duration-200 ease-out ${
+          className={`md:hidden border-t border-border bg-card/95 backdrop-blur-sm overflow-hidden transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none ${
             mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 border-t-0"
           }`}
           aria-label="Mobile navigation"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export function WizardGenerateStep({
 }: WizardGenerateStepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const generateImage = useAction(api.images.generateStyledImage);
+  const generateIconImage = useAction(api.cardGameImages.generateIconImage);
 
   // Query assets to restore previously generated images
   const assets = useQuery(
@@ -70,24 +71,39 @@ export function WizardGenerateStep({
             // Read immutable item data (prompt, assetKey, etc.) from closure
             const item = state.imageItems[idx];
             try {
-              await generateImage({
-                ownerType: "resource",
-                ownerId: state.resourceId!,
-                assetType: item.assetType,
-                assetKey: item.assetKey,
-                prompt: item.prompt,
-                style: {
-                  colors: {
-                    primary: state.stylePreset!.colors.primary,
-                    secondary: state.stylePreset!.colors.secondary,
-                    accent: state.stylePreset!.colors.accent,
-                  },
-                  illustrationStyle: state.stylePreset!.illustrationStyle,
+              const styleArg = {
+                colors: {
+                  primary: state.stylePreset!.colors.primary,
+                  secondary: state.stylePreset!.colors.secondary,
+                  accent: state.stylePreset!.colors.accent,
                 },
-                characterId: item.characterId,
-                includeText: item.includeText,
-                aspect: item.aspect,
-              });
+                illustrationStyle: state.stylePreset!.illustrationStyle,
+              };
+
+              if (item.greenScreen) {
+                // Route to green screen icon generation
+                await generateIconImage({
+                  ownerType: "resource",
+                  ownerId: state.resourceId!,
+                  assetType: item.assetType,
+                  assetKey: item.assetKey,
+                  prompt: item.prompt,
+                  style: styleArg,
+                  characterId: item.characterId,
+                });
+              } else {
+                await generateImage({
+                  ownerType: "resource",
+                  ownerId: state.resourceId!,
+                  assetType: item.assetType,
+                  assetKey: item.assetKey,
+                  prompt: item.prompt,
+                  style: styleArg,
+                  characterId: item.characterId,
+                  includeText: item.includeText,
+                  aspect: item.aspect,
+                });
+              }
 
               onUpdate((prev) => ({
                 imageItems: prev.imageItems.map((it, i) =>
@@ -116,7 +132,7 @@ export function WizardGenerateStep({
         );
       }
     },
-    [state.imageItems, state.resourceId, state.stylePreset, generateImage, onUpdate],
+    [state.imageItems, state.resourceId, state.stylePreset, generateImage, generateIconImage, onUpdate],
   );
 
   const generateSingle = useCallback(
@@ -162,6 +178,25 @@ export function WizardGenerateStep({
   const totalCount = state.imageItems.length;
   const hasStarted = state.imageItems.some((i) => i.status !== "pending");
 
+  // Group items for display
+  const groups = useMemo(() => {
+    const grouped: { label: string; items: { item: ImageItem; index: number }[] }[] = [];
+    const seen = new Set<string>();
+
+    state.imageItems.forEach((item, index) => {
+      const label = item.group || "Images";
+      if (!seen.has(label)) {
+        seen.add(label);
+        grouped.push({ label, items: [] });
+      }
+      grouped.find((g) => g.label === label)!.items.push({ item, index });
+    });
+
+    return grouped;
+  }, [state.imageItems]);
+
+  const hasGroups = groups.length > 1 || (groups.length === 1 && groups[0].label !== "Images");
+
   // Pre-generation view
   if (!hasStarted) {
     return (
@@ -181,8 +216,7 @@ export function WizardGenerateStep({
               Ready to generate images
             </h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              AI will create {totalCount} illustration{totalCount !== 1 ? "s" : ""} with
-              text baked into each image, styled to match your selection.
+              AI will create {totalCount} image{totalCount !== 1 ? "s" : ""} styled to match your selection.
             </p>
 
             <Button
@@ -197,24 +231,32 @@ export function WizardGenerateStep({
         </div>
 
         {/* Preview of what will be generated */}
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-            Images to generate
-          </h4>
-          <div className="space-y-2">
-            {state.imageItems.map((item) => (
-              <div
-                key={item.assetKey}
-                className="px-3 py-2 rounded-lg bg-muted/50 text-sm text-foreground/80"
-              >
-                <span className="font-medium capitalize">{item.assetKey.replaceAll("_", " ")}</span>
-                <span className="text-muted-foreground ml-2">
-                  — {item.prompt.slice(0, 80)}
-                  {item.prompt.length > 80 ? "..." : ""}
-                </span>
+        <div className="space-y-4">
+          {hasGroups ? (
+            groups.map((group) => (
+              <div key={group.label}>
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                  {group.label}
+                </h4>
+                <div className="space-y-2">
+                  {group.items.map(({ item }) => (
+                    <ItemPreviewRow key={item.assetKey} item={item} />
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Images to generate
+              </h4>
+              <div className="space-y-2">
+                {state.imageItems.map((item) => (
+                  <ItemPreviewRow key={item.assetKey} item={item} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -268,23 +310,70 @@ export function WizardGenerateStep({
         </div>
       )}
 
-      {/* Image grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {state.imageItems.map((item, index) => {
-          const asset = assets?.find((a) => a.assetKey === item.assetKey);
-          const imageUrl = asset?.currentVersion?.url ?? null;
+      {/* Image grid — grouped if groups exist */}
+      {hasGroups ? (
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <div key={group.label}>
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                {group.label}
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {group.items.map(({ item, index }) => {
+                  const asset = assets?.find((a) => a.assetKey === item.assetKey);
+                  const imageUrl = asset?.currentVersion?.url ?? null;
 
-          return (
-            <ImageItemCard
-              key={item.assetKey}
-              item={item}
-              imageUrl={imageUrl}
-              isGeneratingAll={isGenerating}
-              onRegenerate={() => generateSingle(index)}
-            />
-          );
-        })}
-      </div>
+                  return (
+                    <ImageItemCard
+                      key={item.assetKey}
+                      item={item}
+                      imageUrl={imageUrl}
+                      isGeneratingAll={isGenerating}
+                      onRegenerate={() => generateSingle(index)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {state.imageItems.map((item, index) => {
+            const asset = assets?.find((a) => a.assetKey === item.assetKey);
+            const imageUrl = asset?.currentVersion?.url ?? null;
+
+            return (
+              <ImageItemCard
+                key={item.assetKey}
+                item={item}
+                imageUrl={imageUrl}
+                isGeneratingAll={isGenerating}
+                onRegenerate={() => generateSingle(index)}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemPreviewRow({ item }: { item: ImageItem }) {
+  return (
+    <div className="px-3 py-2 rounded-lg bg-muted/50 text-sm text-foreground/80 flex items-center gap-2">
+      {item.greenScreen && (
+        <span className="text-[10px] font-medium uppercase tracking-wider text-teal bg-teal/10 px-1.5 py-0.5 rounded">
+          Icon
+        </span>
+      )}
+      <span className="font-medium capitalize">
+        {item.label || item.assetKey.replaceAll("_", " ")}
+      </span>
+      <span className="text-muted-foreground ml-auto text-xs truncate max-w-[50%]">
+        {item.prompt.slice(0, 80)}
+        {item.prompt.length > 80 ? "..." : ""}
+      </span>
     </div>
   );
 }
@@ -300,13 +389,29 @@ function ImageItemCard({
   isGeneratingAll: boolean;
   onRegenerate: () => void;
 }) {
+  // Checkerboard background for transparent icons
+  const bgStyle = item.greenScreen
+    ? {
+        backgroundImage:
+          "linear-gradient(45deg, #e0e0e0 25%, transparent 25%), " +
+          "linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), " +
+          "linear-gradient(45deg, transparent 75%, #e0e0e0 75%), " +
+          "linear-gradient(-45deg, transparent 75%, #e0e0e0 75%)",
+        backgroundSize: "16px 16px",
+        backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+      }
+    : undefined;
+
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      <div className="aspect-square relative bg-muted/30">
+      <div
+        className={`relative bg-muted/30 ${item.aspect === "1:1" ? "aspect-square" : "aspect-[3/4]"}`}
+        style={bgStyle}
+      >
         {item.status === "complete" && imageUrl && (
           <img
             src={imageUrl}
-            alt={item.assetKey}
+            alt={item.label || item.assetKey}
             className="w-full h-full object-cover"
           />
         )}
@@ -360,7 +465,7 @@ function ImageItemCard({
           <Check className="size-3.5 text-teal shrink-0" aria-hidden="true" />
         )}
         <span className="text-xs text-muted-foreground truncate capitalize">
-          {item.assetKey.replaceAll("_", " ")}
+          {item.label || item.assetKey.replaceAll("_", " ")}
         </span>
         {item.status === "error" && !isGeneratingAll && (
           <button

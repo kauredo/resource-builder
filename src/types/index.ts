@@ -132,6 +132,9 @@ export type AssetType =
   | "board_image"
   | "token_image"
   | "card_image"
+  | "card_bg"
+  | "card_icon"
+  | "card_back"
   | "free_prompt_image"
   | "frame_border"
   | "frame_full_card";
@@ -255,7 +258,77 @@ export interface BoardGameContent {
   characters?: CharacterSelection;
 }
 
+// Card game text alignment
+export type CardTextHAlign = "left" | "center" | "right";
+export type CardTextVAlign = "top" | "center" | "bottom";
+
+export interface CardTextStyle {
+  content: string;
+  fontSize?: number;
+  color?: string;
+  outlineWidth?: number;
+  outlineColor?: string;
+  hAlign?: CardTextHAlign;
+  vAlign?: CardTextVAlign;
+}
+
+export interface CardGameBackground {
+  id: string;
+  label: string;
+  color: string;
+  imagePrompt: string;
+  imageAssetKey: AssetKey;
+}
+
+export interface CardGameIcon {
+  id: string;
+  label: string;
+  imagePrompt: string;
+  imageAssetKey: AssetKey;
+}
+
+export interface CardGameTextSettings {
+  fontFamily: string;
+  defaultFontSize: number;
+  defaultColor: string;
+  defaultOutlineWidth: number;
+  defaultOutlineColor: string;
+  defaultHAlign: CardTextHAlign;
+  defaultVAlign: CardTextVAlign;
+}
+
+export interface CardGameCardEntry {
+  id: string;
+  title: string;
+  count: number;
+  backgroundId: string;
+  iconId?: string;
+  primaryText: CardTextStyle;
+  secondaryText?: CardTextStyle;
+  iconScale?: number;
+}
+
+export type CharacterPlacement = "backgrounds" | "icons" | "both" | "none";
+export type ShowTextMode = "all" | "numbers_only" | "none";
+
 export interface CardGameContent {
+  deckName: string;
+  rules: string;
+  backgrounds: CardGameBackground[];
+  icons: CardGameIcon[];
+  cardBack?: {
+    imagePrompt: string;
+    imageAssetKey: AssetKey;
+  };
+  textSettings: CardGameTextSettings;
+  cards: CardGameCardEntry[];
+  characters?: CharacterSelection;
+  characterPlacement?: CharacterPlacement;
+  showText?: ShowTextMode;
+}
+
+/** Legacy card game content (pre-template system) */
+export interface LegacyCardGameContent {
   deckName: string;
   rules: string;
   cards: {
@@ -268,6 +341,13 @@ export interface CardGameContent {
     characterId?: string;
   }[];
   characters?: CharacterSelection;
+}
+
+/** Type guard: returns true if content uses the old per-card-image format */
+export function isLegacyCardGameContent(
+  content: CardGameContent | LegacyCardGameContent,
+): content is LegacyCardGameContent {
+  return !("backgrounds" in content);
 }
 
 export interface FreePromptContent {
