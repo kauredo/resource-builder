@@ -24,7 +24,7 @@ export default function DashboardPage() {
   );
   const resources = useQuery(
     api.resources.getUserResources,
-    user?._id ? { userId: user._id } : "skip"
+    user?._id ? { userId: user._id, limit: 6 } : "skip"
   );
 
   // Calculate trial days remaining
@@ -207,10 +207,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {resources
-                .sort((a, b) => b.updatedAt - a.updatedAt)
-                .slice(0, 6)
-                .map((resource) => (
+              {resources.map((resource) => (
                   <ResourceCard
                     key={resource._id}
                     id={resource._id}

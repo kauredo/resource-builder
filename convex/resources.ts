@@ -17,6 +17,7 @@ export const getUserResources = query({
       ),
     ),
     tag: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let resources = await ctx.db
@@ -34,45 +35,48 @@ export const getUserResources = query({
       );
     }
 
-    // Get thumbnail URL for first asset (fallback to legacy images)
-    const resourcesWithThumbnails = await Promise.all(
-      resources.map(async (resource) => {
-        const assets = await ctx.db
+    // Apply limit if specified (e.g., dashboard only needs 6)
+    if (args.limit) {
+      resources.sort((a, b) => b.updatedAt - a.updatedAt);
+      resources = resources.slice(0, args.limit);
+    }
+
+    // Batch: fetch all assets for all resources in parallel
+    const allAssetsPerResource = await Promise.all(
+      resources.map((resource) =>
+        ctx.db
           .query("assets")
           .withIndex("by_owner", (q) =>
             q.eq("ownerType", "resource").eq("ownerId", resource._id),
           )
-          .collect();
+          .collect()
+      )
+    );
 
-        let thumbnailUrl: string | null = null;
-        const assetCount = assets.length;
-
-        // Sort by most recently updated so we pick current-gen assets
+    // Batch: resolve thumbnail version + URL in parallel
+    const thumbnails = await Promise.all(
+      resources.map(async (resource, i) => {
+        const assets = allAssetsPerResource[i];
         const versioned = assets
           .filter((a) => a.currentVersionId)
           .sort((a, b) => b.updatedAt - a.updatedAt);
-        // For card games, prefer the newest background asset
         const thumbAsset =
           (resource.type === "card_game"
             ? versioned.find((a) => a.assetType === "card_bg")
             : undefined) ?? versioned[0];
-        if (thumbAsset?.currentVersionId) {
-          const currentVersion = await ctx.db.get(
-            thumbAsset.currentVersionId,
-          );
-          if (currentVersion) {
-            thumbnailUrl = await ctx.storage.getUrl(currentVersion.storageId);
-          }
-        }
-        return {
-          ...resource,
-          thumbnailUrl,
-          assetCount,
-        };
+
+        if (!thumbAsset?.currentVersionId) return { url: null, count: assets.length };
+        const version = await ctx.db.get(thumbAsset.currentVersionId);
+        const url = version ? await ctx.storage.getUrl(version.storageId) : null;
+        return { url, count: assets.length };
       })
     );
 
-    return resourcesWithThumbnails;
+    return resources.map((resource, i) => ({
+      ...resource,
+      thumbnailUrl: thumbnails[i].url,
+      assetCount: thumbnails[i].count,
+    }));
   },
 });
 
@@ -107,18 +111,22 @@ export const getResourcesByStyle = query({
       .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
       .collect();
 
-    return await Promise.all(
-      resources.map(async (resource) => {
-        const assets = await ctx.db
+    // Batch: fetch all assets for all resources in parallel
+    const allAssetsPerResource = await Promise.all(
+      resources.map((resource) =>
+        ctx.db
           .query("assets")
           .withIndex("by_owner", (q) =>
             q.eq("ownerType", "resource").eq("ownerId", resource._id),
           )
-          .collect();
+          .collect()
+      )
+    );
 
-        let thumbnailUrl: string | null = null;
-        const assetCount = assets.length;
-
+    // Batch: resolve thumbnail version + URL in parallel
+    const thumbnails = await Promise.all(
+      resources.map(async (resource, i) => {
+        const assets = allAssetsPerResource[i];
         const versioned = assets
           .filter((a) => a.currentVersionId)
           .sort((a, b) => b.updatedAt - a.updatedAt);
@@ -126,17 +134,19 @@ export const getResourcesByStyle = query({
           (resource.type === "card_game"
             ? versioned.find((a) => a.assetType === "card_bg")
             : undefined) ?? versioned[0];
-        if (thumbAsset?.currentVersionId) {
-          const currentVersion = await ctx.db.get(
-            thumbAsset.currentVersionId,
-          );
-          if (currentVersion) {
-            thumbnailUrl = await ctx.storage.getUrl(currentVersion.storageId);
-          }
-        }
-        return { ...resource, thumbnailUrl, assetCount };
+
+        if (!thumbAsset?.currentVersionId) return { url: null, count: assets.length };
+        const version = await ctx.db.get(thumbAsset.currentVersionId);
+        const url = version ? await ctx.storage.getUrl(version.storageId) : null;
+        return { url, count: assets.length };
       })
     );
+
+    return resources.map((resource, i) => ({
+      ...resource,
+      thumbnailUrl: thumbnails[i].url,
+      assetCount: thumbnails[i].count,
+    }));
   },
 });
 
@@ -328,52 +338,54 @@ export const getResourceWithImages = query({
 export const getSampleImageForStyle = query({
   args: { styleId: v.id("styles") },
   handler: async (ctx, args) => {
-    // Find resources using this style that have images
     const resources = await ctx.db
       .query("resources")
       .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
       .collect();
 
-    // Look for a "Happy" image first, then fall back to any image
-    for (const resource of resources) {
-      const assets = await ctx.db
-        .query("assets")
-        .withIndex("by_owner", (q) =>
-          q.eq("ownerType", "resource").eq("ownerId", resource._id),
-        )
-        .collect();
+    if (resources.length === 0) return null;
 
-      const happyAsset = assets.find(
-        (asset) => asset.assetKey.toLowerCase() === "emotion:happy",
-      );
-      if (happyAsset?.currentVersionId) {
-        const version = await ctx.db.get(happyAsset.currentVersionId);
-        if (version) {
-          const url = await ctx.storage.getUrl(version.storageId);
-          if (url) return { url, emotion: "Happy" };
+    // Batch: fetch all assets for all resources in parallel (single pass)
+    const allAssetsPerResource = await Promise.all(
+      resources.map((resource) =>
+        ctx.db
+          .query("assets")
+          .withIndex("by_owner", (q) =>
+            q.eq("ownerType", "resource").eq("ownerId", resource._id),
+          )
+          .collect()
+      )
+    );
+
+    // Flatten and search in-memory: prefer "Happy", then any versioned asset
+    let happyAsset: (typeof allAssetsPerResource)[0][0] | null = null;
+    let fallbackAsset: (typeof allAssetsPerResource)[0][0] | null = null;
+
+    for (const assets of allAssetsPerResource) {
+      for (const asset of assets) {
+        if (!asset.currentVersionId) continue;
+        if (!fallbackAsset) fallbackAsset = asset;
+        if (asset.assetKey.toLowerCase() === "emotion:happy") {
+          happyAsset = asset;
+          break;
         }
       }
+      if (happyAsset) break;
     }
 
-    // Second pass: return first available image
-    for (const resource of resources) {
-      const assets = await ctx.db
-        .query("assets")
-        .withIndex("by_owner", (q) =>
-          q.eq("ownerType", "resource").eq("ownerId", resource._id),
-        )
-        .collect();
+    const chosen = happyAsset ?? fallbackAsset;
+    if (!chosen?.currentVersionId) return null;
 
-      const assetWithCurrent = assets.find((a) => a.currentVersionId);
-      if (assetWithCurrent?.currentVersionId) {
-        const version = await ctx.db.get(assetWithCurrent.currentVersionId);
-        if (version) {
-          const url = await ctx.storage.getUrl(version.storageId);
-          if (url) return { url, emotion: assetWithCurrent.assetKey };
-        }
-      }
-    }
+    const version = await ctx.db.get(chosen.currentVersionId);
+    if (!version) return null;
+    const url = await ctx.storage.getUrl(version.storageId);
+    if (!url) return null;
 
-    return null;
+    return {
+      url,
+      emotion: chosen.assetKey.startsWith("emotion:")
+        ? chosen.assetKey.replace("emotion:", "")
+        : chosen.assetKey,
+    };
   },
 });

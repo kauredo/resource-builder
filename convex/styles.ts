@@ -280,37 +280,40 @@ export const getStyleSummary = query({
   },
 });
 
-// Get summaries for all styles belonging to a user (batch query for listing page)
-export const getUserStyleSummaries = query({
+// Get all styles with character/resource counts (single query for listing page)
+export const getUserStylesWithSummaries = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const styles = await ctx.db
-      .query("styles")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
+    const [styles, allCharacters, allResources] = await Promise.all([
+      ctx.db
+        .query("styles")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("characters")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("resources")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect(),
+    ]);
 
-    const styleIds = styles.map((s) => s._id);
-
-    // Batch fetch all characters and resources for this user's styles
-    const allCharacters = await ctx.db
-      .query("characters")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const allResources = await ctx.db
-      .query("resources")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const summaries: Record<string, { characterCount: number; resourceCount: number }> = {};
-    for (const styleId of styleIds) {
-      summaries[styleId] = {
-        characterCount: allCharacters.filter((c) => c.styleId === styleId).length,
-        resourceCount: allResources.filter((r) => r.styleId === styleId).length,
-      };
+    // Single-pass counting via Maps
+    const charCounts = new Map<string, number>();
+    for (const c of allCharacters) {
+      if (c.styleId) charCounts.set(c.styleId, (charCounts.get(c.styleId) ?? 0) + 1);
+    }
+    const resCounts = new Map<string, number>();
+    for (const r of allResources) {
+      if (r.styleId) resCounts.set(r.styleId, (resCounts.get(r.styleId) ?? 0) + 1);
     }
 
-    return summaries;
+    return styles.map((style) => ({
+      ...style,
+      characterCount: charCounts.get(style._id) ?? 0,
+      resourceCount: resCounts.get(style._id) ?? 0,
+    }));
   },
 });
 

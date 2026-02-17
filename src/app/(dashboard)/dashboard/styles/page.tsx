@@ -27,14 +27,11 @@ const SORT_OPTIONS: SortOption[] = [
 export default function StylesPage() {
   const router = useRouter();
   const user = useQuery(api.users.currentUser);
-  const styles = useQuery(
-    api.styles.getUserStyles,
+  const stylesWithSummaries = useQuery(
+    api.styles.getUserStylesWithSummaries,
     user?._id ? { userId: user._id } : "skip",
   );
-  const styleSummaries = useQuery(
-    api.styles.getUserStyleSummaries,
-    user?._id ? { userId: user._id } : "skip",
-  );
+  const styles = stylesWithSummaries;
   const createStyle = useMutation(api.styles.createStyle);
 
   const {
@@ -352,9 +349,7 @@ export default function StylesPage() {
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredStyles.map(style => {
-              const summary = styleSummaries?.[style._id];
-              return (
+            {filteredStyles.map(style => (
                 <StyleCard
                   key={style._id}
                   id={style._id}
@@ -365,11 +360,10 @@ export default function StylesPage() {
                   illustrationStyle={style.illustrationStyle}
                   frames={style.frames as StyleFrames | undefined}
                   updatedAt={style.updatedAt ?? style.createdAt}
-                  characterCount={summary?.characterCount}
-                  resourceCount={summary?.resourceCount}
+                  characterCount={style.characterCount}
+                  resourceCount={style.resourceCount}
                 />
-              );
-            })}
+              ))}
           </div>
         </>
       )}

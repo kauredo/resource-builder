@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 export const getUserGroups = query({
   args: { userId: v.id("users") },
@@ -19,21 +20,37 @@ export const getUserGroupsWithThumbnails = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
-    return await Promise.all(
-      groups.map(async (group) => {
-        // Resolve first few character thumbnails for preview
-        const thumbnails: Array<{ id: string; url: string | null }> = [];
-        for (const charId of group.characterIds.slice(0, 4)) {
-          const character = await ctx.db.get(charId);
-          if (!character) continue;
-          const primaryId =
-            character.primaryImageId ?? character.referenceImages[0];
-          const url = primaryId ? await ctx.storage.getUrl(primaryId) : null;
-          thumbnails.push({ id: charId, url });
+    // Collect all unique character IDs needed (max 4 per group)
+    const allCharIds: Id<"characters">[] = [];
+    const seen = new Set<string>();
+    for (const group of groups) {
+      for (const charId of group.characterIds.slice(0, 4)) {
+        if (!seen.has(charId)) {
+          seen.add(charId);
+          allCharIds.push(charId);
         }
-        return { ...group, thumbnails };
-      }),
+      }
+    }
+
+    // Batch fetch all characters + resolve URLs in parallel
+    const charWithUrls = await Promise.all(
+      allCharIds.map(async (charId) => {
+        const character = await ctx.db.get(charId);
+        if (!character) return { charId, url: null };
+        const primaryId = character.primaryImageId ?? character.referenceImages[0];
+        const url = primaryId ? await ctx.storage.getUrl(primaryId) : null;
+        return { charId, url };
+      })
     );
+    const urlMap = new Map(charWithUrls.map(({ charId, url }) => [charId as string, url]));
+
+    return groups.map((group) => ({
+      ...group,
+      thumbnails: group.characterIds.slice(0, 4).map((charId) => ({
+        id: charId,
+        url: urlMap.get(charId) ?? null,
+      })),
+    }));
   },
 });
 
@@ -50,9 +67,14 @@ export const getGroupWithCharacters = query({
     const group = await ctx.db.get(args.groupId);
     if (!group) return null;
 
+    // Batch fetch all characters in parallel
+    const charResults = await Promise.all(
+      group.characterIds.map((charId) => ctx.db.get(charId)),
+    );
+
+    // Batch resolve all thumbnail URLs in parallel
     const characters = await Promise.all(
-      group.characterIds.map(async (charId) => {
-        const character = await ctx.db.get(charId);
+      charResults.map(async (character) => {
         if (!character) return null;
         const primaryId =
           character.primaryImageId ?? character.referenceImages[0];

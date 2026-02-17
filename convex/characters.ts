@@ -83,10 +83,13 @@ export const getCharacterWithImageUrls = query({
     const character = await ctx.db.get(args.characterId);
     if (!character) return null;
 
-    const imageUrls: Record<string, string | null> = {};
-    for (const storageId of character.referenceImages) {
-      imageUrls[storageId] = await ctx.storage.getUrl(storageId);
-    }
+    const urlEntries = await Promise.all(
+      character.referenceImages.map(async (storageId) => [
+        storageId,
+        await ctx.storage.getUrl(storageId),
+      ] as const)
+    );
+    const imageUrls: Record<string, string | null> = Object.fromEntries(urlEntries);
 
     return { ...character, imageUrls };
   },
