@@ -18,6 +18,9 @@ export default defineSchema({
     // Onboarding tracking
     onboardingCompleted: v.optional(v.boolean()),
     firstResourceCreatedAt: v.optional(v.number()),
+    // Avatar: character-based or uploaded image
+    avatarCharacterId: v.optional(v.id("characters")),
+    avatarImageStorageId: v.optional(v.id("_storage")),
   }).index("by_email", ["email"]),
 
   styles: defineTable({

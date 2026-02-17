@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
 import { PresetSeeder } from "@/components/style/PresetSeeder";
+import { UserDropdown } from "@/components/layout/UserDropdown";
 import { LogOut, Loader2, Menu, X } from "lucide-react";
 
 const navLinks = [
@@ -104,16 +105,10 @@ export default function DashboardLayout({
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Sign Out - Desktop */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="size-4" aria-hidden="true" />
-                <span>Sign out</span>
-              </Button>
+              {/* User Dropdown - Desktop */}
+              <div className="hidden sm:block">
+                <UserDropdown />
+              </div>
 
               {/* Mobile menu button */}
               <Button
@@ -160,6 +155,16 @@ export default function DashboardLayout({
                 </Link>
               ))}
               <hr className="my-2 border-border" />
+              <Link
+                href="/dashboard/settings"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 motion-reduce:transition-none ${
+                  pathname.startsWith("/dashboard/settings")
+                    ? "bg-coral/10 text-coral"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                Settings
+              </Link>
               <button
                 onClick={() => signOut()}
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"

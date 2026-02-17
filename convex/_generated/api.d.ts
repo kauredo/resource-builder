@@ -23,6 +23,7 @@ import type * as images from "../images.js";
 import type * as resources from "../resources.js";
 import type * as styleActions from "../styleActions.js";
 import type * as styles from "../styles.js";
+import type * as userActions from "../userActions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   resources: typeof resources;
   styleActions: typeof styleActions;
   styles: typeof styles;
+  userActions: typeof userActions;
   users: typeof users;
 }>;
 
