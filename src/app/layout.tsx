@@ -15,10 +15,28 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const siteUrl = "https://resource-builder-tawny.vercel.app";
+
 export const metadata: Metadata = {
   title: "Resource Builder | Therapy Materials Made Beautiful",
   description:
     "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: "Resource Builder | Therapy Materials Made Beautiful",
+    description:
+      "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+    url: siteUrl,
+    siteName: "Resource Builder",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resource Builder | Therapy Materials Made Beautiful",
+    description:
+      "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+  },
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },

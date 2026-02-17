@@ -109,7 +109,7 @@ export default function Error({
         <p className="text-sm text-muted-foreground">
           Problem persists?{" "}
           <a
-            href="mailto:support@resourcebuilder.app"
+            href="mailto:support@basketballstatsapp.com"
             className="text-foreground underline underline-offset-4 hover:text-coral transition-colors"
           >
             Contact support

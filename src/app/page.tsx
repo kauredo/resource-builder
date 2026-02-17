@@ -141,70 +141,33 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
   );
 }
 
-// Testimonial component with visual variety
-function Testimonial({
-  quote,
-  author,
-  role,
-  accentColor = "#FF6B6B",
-  featured = false,
+// Resource type card for "What you can create"
+function ResourceTypeCard({
+  title,
+  description,
+  color,
+  icon,
 }: {
-  quote: string;
-  author: string;
-  role: string;
-  accentColor?: string;
-  featured?: boolean;
+  title: string;
+  description: string;
+  color: string;
+  icon: React.ReactNode;
 }) {
   return (
-    <figure
-      className={`flex flex-col relative ${
-        featured
-          ? "bg-card rounded-2xl p-8 shadow-sm border border-border/50"
-          : ""
-      }`}
-    >
-      {/* Decorative quote mark */}
-      <span
-        className={`font-serif select-none absolute ${
-          featured
-            ? "-top-2 -left-1 text-7xl opacity-20"
-            : "-top-3 -left-1 text-5xl opacity-15"
-        }`}
-        style={{ color: accentColor }}
-        aria-hidden="true"
+    <div className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 flex flex-col gap-4">
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center"
+        style={{ backgroundColor: `color-mix(in oklch, ${color}, transparent 85%)` }}
       >
-        &ldquo;
-      </span>
-      <blockquote
-        className={`leading-relaxed text-foreground/90 mb-6 relative z-10 ${
-          featured ? "text-xl" : "text-lg"
-        }`}
-      >
-        {quote}
-      </blockquote>
-      <figcaption className="flex items-center gap-3 mt-auto">
-        <div
-          className="w-11 h-11 rounded-full flex items-center justify-center shadow-sm"
-          style={{ backgroundColor: `${accentColor}20` }}
-        >
-          <span
-            className="text-sm font-semibold"
-            style={{ color: accentColor }}
-          >
-            {author
-              .split(" ")
-              .map(n => n[0])
-              .join("")}
-          </span>
-        </div>
-        <div>
-          <p className={`font-medium ${featured ? "text-base" : "text-sm"}`}>
-            {author}
-          </p>
-          <p className="text-sm text-muted-foreground">{role}</p>
-        </div>
-      </figcaption>
-    </figure>
+        <div style={{ color }}>{icon}</div>
+      </div>
+      <div>
+        <h3 className="text-base font-semibold mb-1.5">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -483,48 +446,83 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Social Proof */}
-        <section className="py-24 px-6" aria-labelledby="testimonials-heading">
+        {/* What you can create */}
+        <section className="py-24 px-6" aria-labelledby="resources-heading">
           <div className="max-w-6xl mx-auto">
-            <p className="text-center text-sm font-medium text-coral mb-3 tracking-wide">
-              Trusted by therapists
-            </p>
-            <h2 id="testimonials-heading" className="text-center mb-16">
-              Join 500+ mental health professionals
-            </h2>
+            <div className="max-w-2xl mx-auto text-center mb-16">
+              <p className="text-sm font-medium text-coral mb-3 tracking-wide">
+                More than emotion cards
+              </p>
+              <h2 id="resources-heading">
+                Everything you need for creative therapy
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                From feelings check-ins to full board games — all matching your
+                visual style, ready to print.
+              </p>
+            </div>
 
-            {/* Featured testimonial layout: 1 large center, 2 smaller sides */}
-            <div className="grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              {/* Left testimonial */}
-              <div className="lg:col-span-4 lg:pt-12">
-                <Testimonial
-                  quote="Finally, emotion cards that don't look like clip art from 2005. My kids actually want to use these."
-                  author="Dr. Sarah Chen"
-                  role="Child Psychologist"
-                  accentColor="#FF6B6B"
-                />
-              </div>
-
-              {/* Featured center testimonial */}
-              <div className="lg:col-span-4">
-                <Testimonial
-                  quote="The consistency is everything. Same character, same style, across worksheets and cards. It builds trust with anxious kids."
-                  author="Maria Rodriguez"
-                  role="Play Therapist"
-                  accentColor="#6B9080"
-                  featured
-                />
-              </div>
-
-              {/* Right testimonial */}
-              <div className="lg:col-span-4 lg:pt-12">
-                <Testimonial
-                  quote="I used to spend hours in Canva. Now I have custom materials in minutes that actually look professional."
-                  author="James Thompson"
-                  role="School Counselor"
-                  accentColor="#7400B8"
-                />
-              </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <ResourceTypeCard
+                title="Emotion Cards"
+                description="Beautiful illustrated cards for feelings identification. Print, cut, and use in sessions."
+                color="#FF6B6B"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Board Games"
+                description="Therapeutic board games with custom tokens, cards, and game boards. Complete print-and-play sets."
+                color="#6B9080"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.627 48.627 0 01-4.098-.265c-1.068-.14-1.975-.85-2.166-1.91a7.66 7.66 0 01-.108-.942 2.25 2.25 0 012.178-2.344c.278-.012.554.039.808.145a2.993 2.993 0 002.517-.306A3 3 0 0012.75 3a3 3 0 00-2.524.822 2.993 2.993 0 002.517.306c.254-.106.53-.157.808-.145a2.25 2.25 0 012.178 2.344 7.66 7.66 0 01-.108.942c-.191 1.06-1.098 1.77-2.166 1.91a48.627 48.627 0 01-4.098.265.64.64 0 01-.657-.643v0M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Flashcards"
+                description="Double-sided flashcards for CBT exercises, coping strategies, and psychoeducation."
+                color="#5390D9"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Worksheets"
+                description="Structured therapy worksheets with your illustrations. Great for homework assignments."
+                color="#C77DFF"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Posters"
+                description="Wall posters for therapy rooms — feelings wheels, coping toolkits, and regulation guides."
+                color="#DDA15E"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Card Games"
+                description="Complete therapeutic card games with custom icons, labels, and game rules. Print-and-play ready."
+                color="#606C38"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                  </svg>
+                }
+              />
             </div>
           </div>
         </section>
@@ -575,10 +573,10 @@ export default function Home() {
               </li>
               <li>
                 <Link
-                  href="mailto:hello@resourcebuilder.app"
+                  href="mailto:support@basketballstatsapp.com"
                   className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block"
                 >
-                  Contact
+                  Support
                 </Link>
               </li>
             </ul>
