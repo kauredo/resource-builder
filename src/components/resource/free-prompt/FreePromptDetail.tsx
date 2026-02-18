@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
+import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { FreePromptContent } from "@/types";
@@ -32,6 +33,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const asset = useQuery(api.assets.getAsset, {
@@ -43,6 +45,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateStyledImage = useAction(api.images.generateStyledImage);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource || !asset?.currentVersion?.url) return;
@@ -168,8 +171,33 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
           </div>
         )}
         <div>
-          <p className="text-sm font-medium text-foreground">Prompt</p>
-          <p className="text-sm text-muted-foreground mt-2">{content.prompt}</p>
+          <p className="text-sm font-medium text-foreground mb-2">Prompt</p>
+          <PromptEditor
+            prompt={content.prompt}
+            onPromptChange={async (newPrompt) => {
+              await updateResource({
+                resourceId: resource._id,
+                content: { ...content, prompt: newPrompt },
+              });
+            }}
+            onRegenerate={async () => {
+              setIsRegenerating(true);
+              try {
+                await generateStyledImage({
+                  ownerType: "resource",
+                  ownerId: resource._id,
+                  assetType: "free_prompt_image",
+                  assetKey: content.imageAssetKey ?? "prompt_main",
+                  prompt: content.prompt,
+                  styleId: resource.styleId as Id<"styles"> | undefined,
+                  aspect: content.output.aspect,
+                });
+              } finally {
+                setIsRegenerating(false);
+              }
+            }}
+            isGenerating={isRegenerating}
+          />
         </div>
       </div>
 
@@ -201,6 +229,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
             assetKey: "prompt_main",
           }}
           imageUrl={imageUrl}
+          aspectRatio={content.output.aspect === "3:4" ? 3/4 : content.output.aspect === "4:3" ? 4/3 : 1}
           title="Edit image"
         />
       )}

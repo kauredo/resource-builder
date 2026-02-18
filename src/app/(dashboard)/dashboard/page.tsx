@@ -74,101 +74,29 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Your Styles — primary workspace */}
+        {/* Recent Resources — primary workspace */}
         <section className="mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Your styles
-            </h2>
-            <Link
-              href="/dashboard/styles"
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-            >
-              View all
-              <ArrowRight className="size-3.5" aria-hidden="true" />
-            </Link>
-          </div>
-
-          {styles === undefined ? (
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-              aria-hidden="true"
-            >
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="rounded-lg overflow-hidden">
-                  <div className="h-3 bg-muted animate-pulse motion-reduce:animate-none" />
-                  <div className="px-4 py-5 border border-t-0 border-border/50 rounded-b-lg bg-card">
-                    <div className="h-5 w-28 bg-muted rounded animate-pulse motion-reduce:animate-none mb-2" />
-                    <div className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-8" />
-                    <div className="flex gap-2">
-                      <div className="h-4 w-14 bg-muted rounded animate-pulse motion-reduce:animate-none" />
-                      <div className="h-4 w-16 bg-muted rounded animate-pulse motion-reduce:animate-none" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : !hasStyles ? (
-            <Link
-              href="/dashboard/styles"
-              className="block group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-            >
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/10 to-teal/5 border border-coral/20 p-8 sm:p-10 transition-[border-color,box-shadow] duration-200 ease-out hover:border-coral/40 hover:shadow-lg motion-reduce:transition-none">
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-coral/20 flex items-center justify-center mb-5 group-hover:bg-coral/30 group-hover:scale-105 transition-[background-color,transform] duration-200 ease-out motion-reduce:group-hover:scale-100 motion-reduce:transition-none">
-                    <Palette className="size-7 text-coral" aria-hidden="true" />
-                  </div>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-medium mb-2">
-                    Create your first style
-                  </h2>
-                  <p className="text-muted-foreground max-w-md mb-6">
-                    Define colors, typography, and illustration style. Then create characters and resources that all share a consistent look.
-                  </p>
-                  <span className="inline-flex items-center gap-2 text-coral font-medium group-hover:gap-3 transition-[gap] duration-200 ease-out motion-reduce:group-hover:gap-2 motion-reduce:transition-none">
-                    Get started
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(customStyles.length > 0 ? customStyles : styles)
-                .sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
-                .slice(0, 6)
-                .map((style) => (
-                  <StyleCard
-                    key={style._id}
-                    id={style._id}
-                    name={style.name}
-                    isPreset={style.isPreset}
-                    colors={style.colors}
-                    typography={style.typography}
-                    illustrationStyle={style.illustrationStyle}
-                    frames={style.frames as StyleFrames | undefined}
-                    updatedAt={style.updatedAt ?? style.createdAt}
-                  />
-                ))}
-            </div>
-          )}
-        </section>
-
-        {/* Recent Resources */}
-        <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Recent resources
             </h2>
-            <Link
-              href="/dashboard/resources"
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-            >
-              View all
-              <ArrowRight className="size-3.5" aria-hidden="true" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Button asChild size="sm" className="btn-coral gap-1.5">
+                <Link href="/dashboard/resources/new">
+                  <Plus className="size-3.5" aria-hidden="true" />
+                  Create Resource
+                </Link>
+              </Button>
+              <Link
+                href="/dashboard/resources"
+                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+              >
+                View all
+                <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            </div>
           </div>
 
-          {/* Empty State */}
           {isResourcesLoading ? (
             <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
@@ -217,6 +145,78 @@ export default function DashboardPage() {
                     itemCount={resource.assetCount ?? resource.images.length}
                     updatedAt={resource.updatedAt}
                     thumbnailUrl={resource.thumbnailUrl}
+                  />
+                ))}
+            </div>
+          )}
+        </section>
+
+        {/* Your Styles */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Your styles
+            </h2>
+            <Link
+              href="/dashboard/styles"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors duration-150 motion-reduce:transition-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+            >
+              View all
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+
+          {styles === undefined ? (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              aria-hidden="true"
+            >
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-lg overflow-hidden">
+                  <div className="h-3 bg-muted animate-pulse motion-reduce:animate-none" />
+                  <div className="px-4 py-5 border border-t-0 border-border/50 rounded-b-lg bg-card">
+                    <div className="h-5 w-28 bg-muted rounded animate-pulse motion-reduce:animate-none mb-2" />
+                    <div className="h-4 w-40 bg-muted rounded animate-pulse motion-reduce:animate-none mb-8" />
+                    <div className="flex gap-2">
+                      <div className="h-4 w-14 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+                      <div className="h-4 w-16 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !hasStyles ? (
+            <Link
+              href="/dashboard/styles"
+              className="block group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+            >
+              <div className="flex items-center gap-4 rounded-xl border border-coral/20 bg-coral/5 px-5 py-4 transition-[border-color] duration-200 ease-out hover:border-coral/40 motion-reduce:transition-none">
+                <div className="size-10 rounded-xl bg-coral/15 flex items-center justify-center shrink-0">
+                  <Palette className="size-5 text-coral" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground">Create your first style</p>
+                  <p className="text-sm text-muted-foreground">Define colors, typography, and illustration style for consistent resources.</p>
+                </div>
+                <ArrowRight className="size-4 text-coral shrink-0" aria-hidden="true" />
+              </div>
+            </Link>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(customStyles.length > 0 ? customStyles : styles)
+                .sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
+                .slice(0, 6)
+                .map((style) => (
+                  <StyleCard
+                    key={style._id}
+                    id={style._id}
+                    name={style.name}
+                    isPreset={style.isPreset}
+                    colors={style.colors}
+                    typography={style.typography}
+                    illustrationStyle={style.illustrationStyle}
+                    frames={style.frames as StyleFrames | undefined}
+                    updatedAt={style.updatedAt ?? style.createdAt}
                   />
                 ))}
             </div>

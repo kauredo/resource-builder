@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
+import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { BoardGameContent } from "@/types";
@@ -32,6 +33,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const boardAsset = useQuery(api.assets.getAsset, {
@@ -43,6 +45,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateStyledImage = useAction(api.images.generateStyledImage);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource || !boardAsset?.currentVersion?.url) return;
@@ -165,6 +168,34 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
             className="w-full rounded-xl border border-border/60"
           />
         )}
+        {content.boardImagePrompt && (
+          <PromptEditor
+            prompt={content.boardImagePrompt}
+            onPromptChange={async (newPrompt) => {
+              await updateResource({
+                resourceId: resource._id,
+                content: { ...content, boardImagePrompt: newPrompt },
+              });
+            }}
+            onRegenerate={async () => {
+              setIsRegenerating(true);
+              try {
+                await generateStyledImage({
+                  ownerType: "resource",
+                  ownerId: resource._id,
+                  assetType: "board_image",
+                  assetKey: content.boardImageAssetKey ?? "board_main",
+                  prompt: content.boardImagePrompt!,
+                  styleId: resource.styleId as Id<"styles"> | undefined,
+                  aspect: "1:1",
+                });
+              } finally {
+                setIsRegenerating(false);
+              }
+            }}
+            isGenerating={isRegenerating}
+          />
+        )}
         <div className="grid" style={{ gridTemplateColumns: `repeat(${content.grid.cols}, minmax(0, 1fr))`, gap: 6 }}>
           {content.grid.cells.map((cell, index) => (
             <div key={index} className="border border-border/60 rounded-md p-2 text-xs text-muted-foreground text-center">
@@ -202,6 +233,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
             assetKey: "board_main",
           }}
           imageUrl={boardAsset.currentVersion.url}
+          aspectRatio={1}
           title="Edit board background"
         />
       )}

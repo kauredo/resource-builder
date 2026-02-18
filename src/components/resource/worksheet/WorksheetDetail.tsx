@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
+import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateWorksheetPDF } from "@/lib/pdf-worksheet";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { WorksheetContent } from "@/types";
@@ -32,6 +33,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -47,6 +49,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateStyledImage = useAction(api.images.generateStyledImage);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource || !style) return;
@@ -172,6 +175,34 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
             src={asset.currentVersion.url}
             alt="Worksheet header"
             className="w-full rounded-xl border border-border/60"
+          />
+        )}
+        {content.headerImagePrompt && (
+          <PromptEditor
+            prompt={content.headerImagePrompt}
+            onPromptChange={async (newPrompt) => {
+              await updateResource({
+                resourceId: resource._id,
+                content: { ...content, headerImagePrompt: newPrompt },
+              });
+            }}
+            onRegenerate={async () => {
+              setIsRegenerating(true);
+              try {
+                await generateStyledImage({
+                  ownerType: "resource",
+                  ownerId: resource._id,
+                  assetType: "worksheet_image",
+                  assetKey: content.headerImageAssetKey ?? "worksheet_header",
+                  prompt: content.headerImagePrompt!,
+                  styleId: resource.styleId as Id<"styles"> | undefined,
+                  aspect: "4:3",
+                });
+              } finally {
+                setIsRegenerating(false);
+              }
+            }}
+            isGenerating={isRegenerating}
           />
         )}
         <h2 className="font-serif text-2xl font-medium text-foreground">

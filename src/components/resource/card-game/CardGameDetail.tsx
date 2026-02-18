@@ -258,6 +258,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
             assetKey: editingKey,
           }}
           imageUrl={assetMap.get(editingKey) as string}
+          aspectRatio={3 / 4}
           title="Edit card image"
         />
       )}

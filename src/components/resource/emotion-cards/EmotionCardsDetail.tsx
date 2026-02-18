@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "../../../../convex/_generated/api";
@@ -53,6 +53,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [regeneratingEmotions, setRegeneratingEmotions] = useState<Set<string>>(new Set());
 
   const resource = useQuery(api.resources.getResourceWithImages, {
     resourceId,
@@ -67,6 +68,33 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   );
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateEmotionCard = useAction(api.images.generateEmotionCard);
+
+  const handleRegenerate = useCallback(
+    async (emotion: string) => {
+      if (!resource) return;
+      const content = resource.content as EmotionCardContent;
+      const card = content.cards.find((c) => c.emotion === emotion);
+      setRegeneratingEmotions((prev) => new Set(prev).add(emotion));
+      try {
+        await generateEmotionCard({
+          resourceId: resource._id,
+          emotion,
+          description: card?.description,
+          styleId: resource.styleId as Id<"styles"> | undefined,
+          characterId: card?.characterId as Id<"characters"> | undefined,
+          includeText: content.layout.showLabels,
+        });
+      } finally {
+        setRegeneratingEmotions((prev) => {
+          const next = new Set(prev);
+          next.delete(emotion);
+          return next;
+        });
+      }
+    },
+    [resource, generateEmotionCard],
+  );
 
   const assetImageMap = useMemo(() => {
     if (!assets) return new Map<string, string>();
@@ -438,6 +466,8 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
             resourceId={resource._id}
             layout={content.layout}
             style={style}
+            onRegenerate={handleRegenerate}
+            regeneratingEmotions={regeneratingEmotions}
           />
         )}
       </div>
@@ -696,6 +726,8 @@ interface StyledCardGridProps {
   assetImageMap: Map<string, string>;
   resourceId: Id<"resources">;
   layout: EmotionCardContent["layout"];
+  onRegenerate: (emotion: string) => void;
+  regeneratingEmotions: Set<string>;
   style?: {
     colors: {
       primary: string;
@@ -726,6 +758,8 @@ function StyledCardGrid({
   assetImageMap,
   resourceId,
   layout,
+  onRegenerate,
+  regeneratingEmotions,
   style,
 }: StyledCardGridProps) {
   return (
@@ -738,8 +772,9 @@ function StyledCardGrid({
             key={card.emotion}
             emotion={card.emotion}
             imageUrl={assetUrl ?? image?.url ?? null}
-            isGenerating={false}
+            isGenerating={regeneratingEmotions.has(card.emotion)}
             hasError={false}
+            onRegenerate={() => onRegenerate(card.emotion)}
             showLabel={layout.showLabels}
             showDescription={layout.showDescriptions}
             description={card.description}

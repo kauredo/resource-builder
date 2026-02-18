@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useAction, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import type { PosterContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 
@@ -32,6 +32,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -47,6 +48,26 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateStyledImage = useAction(api.images.generateStyledImage);
+
+  const handleRegenerate = useCallback(async () => {
+    if (!resource) return;
+    const content = resource.content as PosterContent;
+    setIsRegenerating(true);
+    try {
+      await generateStyledImage({
+        ownerType: "resource",
+        ownerId: resource._id,
+        assetType: "poster_image",
+        assetKey: content.imageAssetKey ?? "poster_main",
+        prompt: content.headline + (content.subtext ? ` — ${content.subtext}` : ""),
+        styleId: resource.styleId as Id<"styles"> | undefined,
+        aspect: "3:4",
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [resource, generateStyledImage]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!resource || !asset?.currentVersion?.url) return;
@@ -188,6 +209,19 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
             <p className="text-sm font-medium">Asset controls</p>
             <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="gap-1.5"
+              >
+                {isRegenerating ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                )}
+                Regenerate
+              </Button>
               {imageUrl && (
                 <Button variant="outline" onClick={() => setIsEditorOpen(true)}>
                   Edit image

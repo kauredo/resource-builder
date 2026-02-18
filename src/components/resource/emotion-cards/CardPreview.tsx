@@ -333,6 +333,7 @@ export function CardPreview({
           onOpenChange={setIsEditorOpen}
           assetRef={assetRef}
           imageUrl={imageUrl}
+          aspectRatio={cardAspectRatio}
           title={`Edit ${emotion}`}
         />
       )}

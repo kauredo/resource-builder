@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import Image from "next/image";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
-import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
+import { PromptEditor } from "@/components/resource/PromptEditor";
+import { generateFlashcardsPDF } from "@/lib/pdf-flashcards";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { FlashcardsContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
@@ -32,15 +34,22 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [regeneratingCards, setRegeneratingCards] = useState<Set<string>>(new Set());
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
     ownerType: "resource",
     ownerId: resourceId,
   });
+  const style = useQuery(
+    api.styles.getStyleWithFrameUrls,
+    resource?.styleId ? { styleId: resource.styleId as Id<"styles"> } : "skip",
+  );
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
+  const generateStyledImage = useAction(api.images.generateStyledImage);
 
   const assetMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -55,17 +64,18 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
     const content = resource.content as FlashcardsContent;
-    const imageUrls = content.cards
-      .map((card) => card.frontImageAssetKey ? assetMap.get(card.frontImageAssetKey) : undefined)
-      .filter((url): url is string => !!url);
-    if (imageUrls.length === 0) return;
     setIsGeneratingPDF(true);
     try {
-      const blob = await generateImagePagesPDF({
-        images: imageUrls,
-        layout: "grid",
-        cardsPerPage: 6,
-        interleaveBackPages: true,
+      const cards = content.cards.map((card) => ({
+        frontText: card.frontText,
+        backText: card.backText,
+        imageUrl: card.frontImageAssetKey ? assetMap.get(card.frontImageAssetKey) : undefined,
+      }));
+      const blob = await generateFlashcardsPDF({
+        cards,
+        cardsPerPage: content.layout?.cardsPerPage ?? 6,
+        bodyFont: style?.typography?.bodyFont,
+        headingFont: style?.typography?.headingFont,
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -82,7 +92,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, assetMap, updateResource]);
+  }, [resource, assetMap, updateResource, style]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -95,11 +105,56 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
     }
   };
 
+  const handlePromptChange = useCallback(
+    async (cardId: string, newPrompt: string) => {
+      if (!resource) return;
+      const content = resource.content as FlashcardsContent;
+      const updatedCards = content.cards.map((c) =>
+        (c.id ?? c.frontText) === cardId ? { ...c, imagePrompt: newPrompt } : c,
+      );
+      await updateResource({
+        resourceId: resource._id,
+        content: { ...content, cards: updatedCards },
+      });
+    },
+    [resource, updateResource],
+  );
+
+  const handleRegenerate = useCallback(
+    async (cardId: string) => {
+      if (!resource) return;
+      const content = resource.content as FlashcardsContent;
+      const card = content.cards.find((c) => (c.id ?? c.frontText) === cardId);
+      if (!card?.frontImageAssetKey) return;
+
+      setRegeneratingCards((prev) => new Set(prev).add(cardId));
+      try {
+        await generateStyledImage({
+          ownerType: "resource",
+          ownerId: resource._id,
+          assetType: "flashcard_front_image",
+          assetKey: card.frontImageAssetKey,
+          prompt: card.imagePrompt ?? card.frontText,
+          styleId: resource.styleId as Id<"styles"> | undefined,
+          characterId: card.characterId as Id<"characters"> | undefined,
+          aspect: "1:1",
+        });
+      } finally {
+        setRegeneratingCards((prev) => {
+          const next = new Set(prev);
+          next.delete(cardId);
+          return next;
+        });
+      }
+    },
+    [resource, generateStyledImage],
+  );
+
   if (!resource) return null;
   const content = resource.content as FlashcardsContent;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <Link
           href="/dashboard/resources"
@@ -114,7 +169,9 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
             <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
               {resource.name}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Flashcards</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Flashcards &middot; {content.cards.length} cards
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -172,48 +229,89 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
       </div>
 
-      <div className="space-y-4">
+      {/* Visual card grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
         {content.cards.map((card) => {
+          const cardId = card.id ?? card.frontText;
           const imageUrl = card.frontImageAssetKey ? assetMap.get(card.frontImageAssetKey) : undefined;
+          const isRegenerating = regeneratingCards.has(cardId);
+          const isHovered = hoveredCard === cardId;
+
           return (
-            <div key={card.id ?? card.frontText} className="rounded-xl border border-border/60 p-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
-              <div className="h-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
-                {imageUrl ? (
-                  <img src={imageUrl} alt="Flashcard image" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
-                )}
-              </div>
-              <div className="flex-1 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium">Front</p>
-                    <p className="text-sm text-muted-foreground">{card.frontText}</p>
-                  </div>
-                  {card.frontImageAssetKey && (
-                    <div className="flex items-center gap-2">
-                      <AssetHistoryDialog
-                        assetRef={{
-                          ownerType: "resource",
-                          ownerId: resourceId,
-                          assetType: "flashcard_front_image",
-                          assetKey: card.frontImageAssetKey,
-                        }}
-                        triggerLabel="History"
-                      />
-                      {imageUrl && (
-                        <Button variant="outline" size="sm" onClick={() => setEditingKey(card.frontImageAssetKey!)}>
-                          Edit
-                        </Button>
+            <div key={cardId} className="space-y-2">
+              {/* Card */}
+              <div
+                className="rounded-xl border border-border/60 overflow-hidden bg-card"
+                onMouseEnter={() => setHoveredCard(cardId)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                {/* Image area */}
+                <div className="relative aspect-square bg-muted/20">
+                  {isRegenerating ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" role="status">
+                      <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                      <span className="text-sm text-muted-foreground">Generating...</span>
+                    </div>
+                  ) : imageUrl ? (
+                    <>
+                      <Image src={imageUrl} alt={card.frontText} fill className="object-cover" />
+                      {/* Hover overlay */}
+                      {card.frontImageAssetKey && (
+                        <div
+                          className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200 motion-reduce:transition-none ${
+                            isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                          }`}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setEditingKey(card.frontImageAssetKey!)}
+                              className="gap-1.5"
+                            >
+                              <Pencil className="size-3.5" aria-hidden="true" />
+                              Edit
+                            </Button>
+                            <AssetHistoryDialog
+                              assetRef={{
+                                ownerType: "resource",
+                                ownerId: resourceId,
+                                assetType: "flashcard_front_image",
+                                assetKey: card.frontImageAssetKey!,
+                              }}
+                              triggerLabel="History"
+                            />
+                          </div>
+                        </div>
                       )}
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm text-muted-foreground">No image</span>
                     </div>
                   )}
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Back</p>
-                  <p className="text-sm text-muted-foreground">{card.backText}</p>
+
+                {/* Front text */}
+                <div className="px-3 py-2.5 text-center border-t border-border/40">
+                  <p className="text-sm font-medium leading-tight">{card.frontText}</p>
                 </div>
               </div>
+
+              {/* Back text label */}
+              <p className="text-xs text-muted-foreground text-center leading-tight px-1">
+                {card.backText}
+              </p>
+
+              {/* Prompt editor */}
+              {card.frontImageAssetKey && (
+                <PromptEditor
+                  prompt={card.imagePrompt ?? card.frontText}
+                  onPromptChange={(newPrompt) => handlePromptChange(cardId, newPrompt)}
+                  onRegenerate={() => handleRegenerate(cardId)}
+                  isGenerating={isRegenerating}
+                />
+              )}
             </div>
           );
         })}
