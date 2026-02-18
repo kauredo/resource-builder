@@ -114,15 +114,14 @@ Adding a new type to the shared wizard: add to `use-ai-wizard.ts` validTypes, ad
 
 ### Custom Book Wizard (`resource/book/`)
 
-5-step flow: **Setup → Content → Review → Generate → Export**
+4-step flow: **Setup → Content → Generate → Export**
 
 Custom because books need two creation modes (AI-generated vs therapist-written) and a multi-page editor with reorder/add/remove — neither fits the shared wizard.
 
-- `BookWizard.tsx` — 5-step orchestrator
+- `BookWizard.tsx` — 4-step orchestrator
 - `use-book-wizard.ts` — state hook: pages, cover, layout, creation mode, imageItems
 - `BookSetupStep.tsx` — layout choice (picture_book / illustrated_text), cover toggle, style/character
-- `BookContentStep.tsx` — AI mode (describe + generate) or manual mode (write pages directly)
-- `BookReviewStep.tsx` — multi-page editor with `BookPageEditor` per page
+- `BookContentStep.tsx` — AI mode (describe + generate + edit inline) or manual mode (write pages), includes cover editor, page editors with reorder/add/remove
 - `BookGenerateStep.tsx` — batch image generation with progress
 - `BookExportStep.tsx` — PDF download
 - `BookDetail.tsx` — detail page: cover + page list with per-image PromptEditor, Edit, History

@@ -5,7 +5,6 @@ import { WizardLayout } from "@/components/resource/wizard/WizardLayout";
 import { DraftResumeDialog } from "@/components/resource/DraftResumeDialog";
 import { BookSetupStep } from "./BookSetupStep";
 import { BookContentStep } from "./BookContentStep";
-import { BookReviewStep } from "./BookReviewStep";
 import { BookGenerateStep } from "./BookGenerateStep";
 import { BookExportStep } from "./BookExportStep";
 import {
@@ -16,7 +15,6 @@ import {
 
 const NEXT_LABELS = [
   "Create Content",
-  "Review Pages",
   "Generate Images",
   "Export",
   undefined,
@@ -36,7 +34,7 @@ export function BookWizard({ resourceId }: BookWizardProps) {
         role="status"
         aria-label="Loading"
       >
-        <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+        <div className="size-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -81,14 +79,8 @@ export function BookWizard({ resourceId }: BookWizardProps) {
           state={wizard.state}
           onUpdate={wizard.updateState}
           onGenerateContent={wizard.handleGenerateContent}
-          addPage={wizard.addPage}
-        />
-      )}
-
-      {wizard.currentStep === 2 && (
-        <BookReviewStep
-          state={wizard.state}
-          onUpdate={wizard.updateState}
+          onUpdateCharacterPrompt={wizard.handleUpdateCharacterPrompt}
+          onRemoveDetectedCharacter={wizard.handleRemoveDetectedCharacter}
           addPage={wizard.addPage}
           removePage={wizard.removePage}
           movePage={wizard.movePage}
@@ -96,14 +88,14 @@ export function BookWizard({ resourceId }: BookWizardProps) {
         />
       )}
 
-      {wizard.currentStep === 3 && (
+      {wizard.currentStep === 2 && (
         <BookGenerateStep
           state={wizard.state}
           onUpdate={wizard.updateState}
         />
       )}
 
-      {wizard.currentStep === 4 && (
+      {wizard.currentStep === 3 && (
         <BookExportStep state={wizard.state} />
       )}
     </WizardLayout>

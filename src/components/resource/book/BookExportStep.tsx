@@ -87,7 +87,7 @@ export function BookExportStep({ state }: BookExportStepProps) {
             <div className="size-14 rounded-2xl bg-teal/20 flex items-center justify-center mx-auto mb-4">
               <Check className="size-7 text-teal" aria-hidden="true" />
             </div>
-            <h3 className="font-serif text-xl font-medium mb-2">
+            <h3 className="text-xl font-medium mb-2">
               PDF downloaded
             </h3>
             <p className="text-sm text-muted-foreground mb-4">

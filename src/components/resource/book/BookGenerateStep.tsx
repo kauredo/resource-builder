@@ -182,26 +182,24 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
     return (
       <div className="space-y-6">
         <div className="rounded-2xl border border-border/60 bg-card p-8 text-center">
-          <div className="relative">
-            <div className="size-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
-              <Wand2 className="size-8 text-coral" aria-hidden="true" />
-            </div>
-            <h3 className="text-2xl font-medium mb-2">
-              Ready to illustrate your book
-            </h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              AI will create {totalCount} illustration{totalCount !== 1 ? "s" : ""} for
-              your book.
-            </p>
-            <Button
-              size="lg"
-              onClick={generateAll}
-              className="btn-coral gap-2 text-base px-8 min-h-[48px]"
-            >
-              <Wand2 className="size-5" aria-hidden="true" />
-              Generate {totalCount} Image{totalCount !== 1 ? "s" : ""}
-            </Button>
+          <div className="size-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+            <Wand2 className="size-8 text-coral" aria-hidden="true" />
           </div>
+          <h3 className="text-2xl font-medium mb-2">
+            Ready to illustrate your book
+          </h3>
+          <p className="text-muted-foreground max-w-md mx-auto mb-6">
+            AI will create {totalCount} illustration{totalCount !== 1 ? "s" : ""} for
+            your book.
+          </p>
+          <Button
+            size="lg"
+            onClick={generateAll}
+            className="btn-coral gap-2 text-base px-8 min-h-[48px]"
+          >
+            <Wand2 className="size-5" aria-hidden="true" />
+            Generate {totalCount} Image{totalCount !== 1 ? "s" : ""}
+          </Button>
         </div>
 
         <div className="space-y-4">
@@ -298,7 +296,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                         <img
                           src={imageUrl}
                           alt={item.label || item.assetKey}
-                          className="w-full h-full object-cover"
+                          className="size-full object-cover"
                         />
                       )}
                       {item.status === "generating" && (
@@ -323,7 +321,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                         </div>
                       )}
                       {item.status === "complete" && !isGenerating && (
-                        <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors duration-150 motion-reduce:transition-none flex items-center justify-center opacity-0 hover:opacity-100">
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/40 focus-within:bg-black/40 transition-colors duration-150 motion-reduce:transition-none flex items-center justify-center opacity-0 hover:opacity-100 focus-within:opacity-100">
                           <Button
                             size="sm"
                             variant="secondary"

@@ -256,6 +256,80 @@ export const analyzeAndUpdatePrompt = action({
   },
 });
 
+// Create or match characters detected from AI content generation
+export const createDetectedCharacters = action({
+  args: {
+    userId: v.id("users"),
+    styleId: v.optional(v.id("styles")),
+    characters: v.array(
+      v.object({
+        name: v.string(),
+        description: v.string(),
+        personality: v.string(),
+        visualDescription: v.string(),
+        appearsOn: v.array(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.runQuery(api.characters.getUserCharacters, {
+      userId: args.userId,
+    });
+    const existingByName = new Map(
+      existing.map((c) => [c.name.toLowerCase().trim(), c]),
+    );
+
+    const results: Array<{
+      name: string;
+      characterId: Id<"characters">;
+      appearsOn: string[];
+      isNew: boolean;
+      promptFragment: string;
+    }> = [];
+
+    for (const char of args.characters) {
+      const match = existingByName.get(char.name.toLowerCase().trim());
+      if (match) {
+        // Reuse existing — fill empty promptFragment if needed
+        if (!match.promptFragment?.trim() && char.visualDescription) {
+          await ctx.runMutation(api.characters.updateCharacter, {
+            characterId: match._id,
+            promptFragment: char.visualDescription,
+          });
+        }
+        results.push({
+          name: char.name,
+          characterId: match._id,
+          appearsOn: char.appearsOn,
+          isNew: false,
+          promptFragment: match.promptFragment || char.visualDescription,
+        });
+      } else {
+        const charId = await ctx.runMutation(api.characters.createCharacter, {
+          userId: args.userId,
+          name: char.name,
+          ...(args.styleId ? { styleId: args.styleId } : {}),
+        });
+        await ctx.runMutation(api.characters.updateCharacter, {
+          characterId: charId,
+          description: char.description,
+          personality: char.personality,
+          promptFragment: char.visualDescription,
+        });
+        results.push({
+          name: char.name,
+          characterId: charId,
+          appearsOn: char.appearsOn,
+          isNew: true,
+          promptFragment: char.visualDescription,
+        });
+      }
+    }
+
+    return results;
+  },
+});
+
 // Generate a character group: N related but distinct characters from a description
 export const generateCharacterGroup = action({
   args: {

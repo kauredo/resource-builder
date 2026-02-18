@@ -12,6 +12,7 @@ import type {
   BookPage,
   BookCover,
   BookContent,
+  DetectedCharacterResult,
 } from "@/types";
 import type { ImageItem } from "@/components/resource/wizard/use-ai-wizard";
 
@@ -39,6 +40,9 @@ export interface BookWizardState {
   imageItems: ImageItem[];
   resourceId: Id<"resources"> | null;
   isEditMode: boolean;
+  // Detected characters
+  detectedCharacters: DetectedCharacterResult[];
+  detectedCharactersStatus: "idle" | "creating" | "ready" | "skipped";
 }
 
 export type BookStateUpdater =
@@ -48,18 +52,16 @@ export type BookStateUpdater =
 export const BOOK_STEP_LABELS = [
   "Setup",
   "Content",
-  "Review",
   "Generate",
   "Export",
 ] as const;
 export const BOOK_STEP_TITLES = [
   "Set Up Your Book",
-  "Create Content",
-  "Review & Edit Pages",
+  "Create & Edit Content",
   "Generate Images",
   "Export",
 ] as const;
-export const BOOK_TOTAL_STEPS = 5;
+export const BOOK_TOTAL_STEPS = 4;
 
 interface UseBookWizardArgs {
   editResourceId?: Id<"resources">;
@@ -99,6 +101,10 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   const generateContent = useAction(
     api.contentGeneration.generateResourceContent,
   );
+  const createDetectedCharacters = useAction(
+    api.characterActions.createDetectedCharacters,
+  );
+  const updateCharacterMut = useMutation(api.characters.updateCharacter);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -127,6 +133,8 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
     imageItems: [],
     resourceId: null,
     isEditMode: false,
+    detectedCharacters: [],
+    detectedCharactersStatus: "idle",
   });
 
   // Initialize from URL styleId
@@ -222,7 +230,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   // Generate AI content
   const handleGenerateContent = useCallback(async () => {
     if (!state.description.trim()) return;
-    updateState({ contentStatus: "generating", contentError: undefined });
+    updateState({ contentStatus: "generating", contentError: undefined, detectedCharacters: [], detectedCharactersStatus: "idle" });
 
     try {
       const result = await generateContent({
@@ -236,20 +244,89 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
       });
 
       const content = result as Record<string, unknown>;
+
+      // Extract detected characters from AI output
+      const rawDetected = (content.detectedCharacters as Array<Record<string, unknown>>) || [];
+      delete content.detectedCharacters;
+
       const name =
         (content.name as string) || state.name || state.description.slice(0, 50);
-      const pages = (content.pages as BookPage[]) || [];
+      let pages = (content.pages as BookPage[]) || [];
       const cover = (content.cover as BookCover) || null;
       const bookType = (content.bookType as string) || state.bookType;
+
+      let charSelection = state.characterSelection;
+
+      // Auto-detect characters if user hasn't pre-selected any
+      if (rawDetected.length > 0 && !state.characterSelection && user?._id) {
+        updateState({ contentStatus: "ready", detectedCharactersStatus: "creating", name, bookType, pages, cover });
+        try {
+          const charResults = await createDetectedCharacters({
+            userId: user._id,
+            styleId: state.styleId ?? undefined,
+            characters: rawDetected.map((c) => ({
+              name: (c.name as string) || "",
+              description: (c.description as string) || "",
+              personality: (c.personality as string) || "",
+              visualDescription: (c.visualDescription as string) || "",
+              appearsOn: Array.isArray(c.appearsOn) ? (c.appearsOn as string[]) : [],
+            })),
+          });
+
+          // Link characters to pages
+          const keyToChar = new Map<string, string>();
+          for (const r of charResults) {
+            for (const key of r.appearsOn) {
+              keyToChar.set(key, r.characterId);
+            }
+          }
+          pages = pages.map((page, i) => {
+            const charId = keyToChar.get(`page_${i}`);
+            return charId ? { ...page, characterId: charId } : page;
+          });
+
+          charSelection = {
+            mode: "per_item",
+            characterIds: charResults.map((r) => r.characterId),
+          };
+
+          const bookContent: BookContent = {
+            bookType,
+            layout: state.layout,
+            cover: state.hasCover ? cover : undefined,
+            pages,
+            characters: charSelection || undefined,
+          };
+          const imageItems = extractBookImageItems(bookContent);
+
+          updateState({
+            pages,
+            imageItems,
+            characterSelection: charSelection,
+            detectedCharacters: charResults.map((r) => ({
+              name: r.name,
+              characterId: r.characterId,
+              appearsOn: r.appearsOn,
+              isNew: r.isNew,
+              promptFragment: r.promptFragment,
+            })),
+            detectedCharactersStatus: "ready",
+          });
+          return;
+        } catch {
+          updateState({ detectedCharactersStatus: "idle" });
+        }
+      } else if (state.characterSelection) {
+        updateState({ detectedCharactersStatus: "skipped" });
+      }
 
       const bookContent: BookContent = {
         bookType,
         layout: state.layout,
         cover: state.hasCover ? cover : undefined,
         pages,
-        characters: state.characterSelection || undefined,
+        characters: charSelection || undefined,
       };
-
       const imageItems = extractBookImageItems(bookContent);
 
       updateState({
@@ -276,8 +353,45 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
     state.layout,
     state.hasCover,
     generateContent,
+    createDetectedCharacters,
+    user,
     updateState,
   ]);
+
+  // Update a detected character's prompt fragment
+  const handleUpdateCharacterPrompt = useCallback(async (characterId: string, promptFragment: string) => {
+    await updateCharacterMut({
+      characterId: characterId as Id<"characters">,
+      promptFragment,
+    });
+    updateState((prev) => ({
+      detectedCharacters: prev.detectedCharacters.map((c) =>
+        c.characterId === characterId ? { ...c, promptFragment } : c,
+      ),
+    }));
+  }, [updateCharacterMut, updateState]);
+
+  // Remove a detected character
+  const handleRemoveDetectedCharacter = useCallback((characterId: string) => {
+    updateState((prev) => {
+      const remaining = prev.detectedCharacters.filter((c) => c.characterId !== characterId);
+      const pages = prev.pages.map((p) =>
+        p.characterId === characterId ? { ...p, characterId: undefined } : p,
+      );
+      const charSelection = remaining.length > 0
+        ? { mode: "per_item" as const, characterIds: remaining.map((r) => r.characterId) }
+        : null;
+      const bookContent: BookContent = {
+        bookType: prev.bookType,
+        layout: prev.layout,
+        cover: prev.hasCover ? (prev.cover ?? undefined) : undefined,
+        pages,
+        characters: charSelection || undefined,
+      };
+      const imageItems = extractBookImageItems(bookContent);
+      return { detectedCharacters: remaining, pages, characterSelection: charSelection, imageItems };
+    });
+  }, [updateState]);
 
   // Build content object
   const buildContent = useCallback((): BookContent => {
@@ -416,11 +530,9 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
           state.pages.length > 0 &&
           state.pages.some((p) => p.text.trim().length > 0)
         );
-      case 2: // Review
-        return state.pages.length > 0;
-      case 3: // Generate
+      case 2: // Generate
         return state.imageItems.some((item) => item.status === "complete");
-      case 4: // Export
+      case 3: // Export
         return true;
       default:
         return false;
@@ -440,10 +552,8 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
           state.pages.some((p) => p.text.trim().length > 0)
         );
       case 2:
-        return state.pages.length > 0;
-      case 3:
         return state.imageItems.some((item) => item.status === "complete");
-      case 4:
+      case 3:
         return true;
       default:
         return false;
@@ -455,17 +565,8 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
     setIsNavigating(true);
 
     try {
-      // Content step: if AI mode and no content, generate first
-      if (
-        currentStep === 1 &&
-        state.creationMode === "ai" &&
-        state.contentStatus === "idle"
-      ) {
-        await handleGenerateContent();
-      }
-
-      // When leaving Review, rebuild image items and save draft
-      if (currentStep === 2) {
+      // When leaving Content, rebuild image items and save draft
+      if (currentStep === 1) {
         refreshImageItems();
         if (!state.resourceId) {
           const resourceId = await saveDraft();
@@ -529,6 +630,8 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
     handleBack,
     handleCancel,
     handleGenerateContent,
+    handleUpdateCharacterPrompt,
+    handleRemoveDetectedCharacter,
     saveDraft,
     buildContent,
     refreshImageItems,

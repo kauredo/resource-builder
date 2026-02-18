@@ -231,7 +231,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
             >
               {isGeneratingPDF ? (
                 <Loader2
-                  className="size-4 animate-spin"
+                  className="size-4 animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
               ) : (
@@ -272,7 +272,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                   >
                     {isDeleting && (
                       <Loader2
-                        className="size-4 animate-spin mr-2"
+                        className="size-4 animate-spin motion-reduce:animate-none mr-2"
                         aria-hidden="true"
                       />
                     )}

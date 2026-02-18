@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StylePicker } from "@/components/resource/emotion-cards/StylePicker";
 import { CharacterPicker } from "@/components/resource/wizard/CharacterPicker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BookOpen, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BookWizardState, BookCreationMode } from "./use-book-wizard";
@@ -149,11 +150,9 @@ export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
       {/* Cover toggle */}
       <div className="space-y-2">
         <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={state.hasCover}
-            onChange={(e) => onUpdate({ hasCover: e.target.checked })}
-            className="size-4 rounded border-border accent-coral"
+            onCheckedChange={(checked) => onUpdate({ hasCover: checked === true })}
           />
           <span className="text-sm font-medium">Include a cover page</span>
         </label>

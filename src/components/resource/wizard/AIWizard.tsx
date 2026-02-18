@@ -10,6 +10,7 @@ import { PosterReview } from "./review/PosterReview";
 import { FlashcardsReview } from "./review/FlashcardsReview";
 import { CardGameReview } from "./review/CardGameReview";
 import { BoardGameReview } from "./review/BoardGameReview";
+import { DetectedCharactersReview } from "./DetectedCharactersReview";
 import {
   useAIWizard,
   STEP_LABELS,
@@ -88,11 +89,19 @@ export function AIWizard({ resourceType, resourceId }: AIWizardProps) {
       )}
 
       {wizard.currentStep === 1 && (
-        <ReviewStep
-          resourceType={resourceType}
-          state={wizard.state}
-          onUpdate={wizard.updateState}
-        />
+        <div className="space-y-6">
+          <DetectedCharactersReview
+            characters={wizard.state.detectedCharacters}
+            status={wizard.state.detectedCharactersStatus}
+            onUpdatePromptFragment={wizard.handleUpdateCharacterPrompt}
+            onRemoveCharacter={wizard.handleRemoveDetectedCharacter}
+          />
+          <ReviewStep
+            resourceType={resourceType}
+            state={wizard.state}
+            onUpdate={wizard.updateState}
+          />
+        </div>
       )}
 
       {wizard.currentStep === 2 && (

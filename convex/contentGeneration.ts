@@ -30,7 +30,11 @@ Given a description, generate poster content as JSON:
   "subtext": "optional supportive subtitle or reminder phrase",
   "imagePrompt": "detailed illustration prompt describing what to draw, including the headline text to bake into the image"
 }
-Make the headline therapeutic, encouraging, and age-appropriate. The imagePrompt should describe a warm, inviting illustration that includes the headline text as part of the artwork.`,
+Make the headline therapeutic, encouraging, and age-appropriate. The imagePrompt should describe a warm, inviting illustration that includes the headline text as part of the artwork.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["poster"]}]
+If no named characters appear, omit "detectedCharacters".`,
 
   flashcards: `You are a creative assistant helping a therapist design flashcards for children/adolescent therapy.
 Given a description, generate flashcard content as JSON:
@@ -44,7 +48,11 @@ Given a description, generate flashcard content as JSON:
     }
   ]
 }
-Create therapeutic, educational flashcards. Each card should have clear front text and a supportive explanation on the back. Generate 4-12 cards depending on the described topic. The imagePrompt should describe an illustration that includes the front text as part of the artwork.`,
+Create therapeutic, educational flashcards. Each card should have clear front text and a supportive explanation on the back. Generate 4-12 cards depending on the described topic. The imagePrompt should describe an illustration that includes the front text as part of the artwork.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["card_0", "card_1"]}]
+"appearsOn" uses "card_N" where N is the card index. If no named characters appear, omit "detectedCharacters".`,
 
   card_game: `You are a creative assistant helping a therapist design a therapeutic card game for children/adolescents.
 
@@ -111,7 +119,11 @@ IMPORTANT GUIDELINES:
   - primaryText.content is the main text shown on the card (number, action name, etc.)
   - secondaryText is optional extra text (e.g., instructions on special cards)
   - Per-card text overrides (fontSize, color, etc.) are optional; omit to use defaults
-- Aim for 20-80+ cards total depending on the game design.`,
+- Aim for 20-80+ cards total depending on the game design.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["background_0", "icon_0"]}]
+"appearsOn" uses "background_N" or "icon_N" matching the index in backgrounds[] or icons[]. If no named characters appear, omit "detectedCharacters".`,
 
   board_game: `You are a creative assistant helping a therapist design a therapeutic board game for children/adolescents.
 Given a description, generate board game content as JSON:
@@ -131,7 +143,11 @@ Given a description, generate board game content as JSON:
     {"title": "card title", "text": "card instructions"}
   ]
 }
-Design an engaging therapeutic board game. The grid should have meaningful cells (Start, Finish, special action cells, etc.). Include 2-4 player tokens and 5-10 game cards with therapeutic prompts. Grid size should be 4-8 rows/cols depending on complexity.`,
+Design an engaging therapeutic board game. The grid should have meaningful cells (Start, Finish, special action cells, etc.). Include 2-4 player tokens and 5-10 game cards with therapeutic prompts. Grid size should be 4-8 rows/cols depending on complexity.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["board", "token_0", "card_0"]}]
+"appearsOn" uses "board", "token_N", or "card_N" matching the index. If no named characters appear, omit "detectedCharacters".`,
 
   book: `You are a creative assistant helping a therapist create an illustrated book for children/adolescent therapy.
 The book could be a social story, psychoeducation narrative, CBT workbook, activity book, or any therapeutic reading material.
@@ -161,7 +177,11 @@ IMPORTANT GUIDELINES:
 - The story should have a clear beginning, middle, and end with a positive or empowering conclusion.
 - If characters are provided, include them consistently across pages.
 - The cover image should be the most visually striking and representative of the book's theme.
-- bookType should describe the kind of book (e.g., "social story", "psychoeducation", "CBT workbook", "feelings journal", "activity book").`,
+- bookType should describe the kind of book (e.g., "social story", "psychoeducation", "CBT workbook", "feelings journal", "activity book").
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["cover", "page_0", "page_1"]}]
+"appearsOn" uses "cover" or "page_N" where N is the page index. If no named characters appear, omit "detectedCharacters".`,
 };
 
 export const generateResourceContent = action({
@@ -272,17 +292,26 @@ export const generateResourceContent = action({
       throw new Error("Failed to parse generated content as JSON");
     }
 
+    // Extract detected characters before post-processing
+    const rawParsed = parsed as Record<string, unknown>;
+    const detectedCharacters = Array.isArray(rawParsed.detectedCharacters)
+      ? (rawParsed.detectedCharacters as Array<Record<string, unknown>>).filter(
+          (c) => typeof c.name === "string" && typeof c.visualDescription === "string",
+        )
+      : [];
+    delete rawParsed.detectedCharacters;
+
     // Post-process card_game: resolve labels to IDs, assign asset keys
+    let content: Record<string, unknown>;
     if (args.resourceType === "card_game") {
-      return postProcessCardGameContent(parsed as Record<string, unknown>);
+      content = postProcessCardGameContent(rawParsed);
+    } else if (args.resourceType === "book") {
+      content = postProcessBookContent(rawParsed);
+    } else {
+      content = rawParsed;
     }
 
-    // Post-process book: assign UUIDs and asset keys to pages/cover
-    if (args.resourceType === "book") {
-      return postProcessBookContent(parsed as Record<string, unknown>);
-    }
-
-    return parsed;
+    return { ...content, detectedCharacters };
   },
 });
 

@@ -76,6 +76,14 @@ export interface CharacterSelection {
   characterIds: string[];
 }
 
+export interface DetectedCharacterResult {
+  name: string;
+  characterId: string;
+  appearsOn: string[];
+  isNew: boolean;
+  promptFragment: string;
+}
+
 // Emotion card content
 export interface EmotionCard {
   emotion: string;

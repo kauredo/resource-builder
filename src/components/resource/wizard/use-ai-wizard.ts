@@ -5,7 +5,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import type { StylePreset, ResourceType, CharacterSelection } from "@/types";
+import type { StylePreset, ResourceType, CharacterSelection, DetectedCharacterResult } from "@/types";
 
 export interface ImageItem {
   assetKey: string;
@@ -36,6 +36,8 @@ export interface AIWizardState {
   resourceId: Id<"resources"> | null;
   resourceType: ResourceType;
   isEditMode: boolean;
+  detectedCharacters: DetectedCharacterResult[];
+  detectedCharactersStatus: "idle" | "creating" | "ready" | "skipped";
 }
 
 export type StateUpdater = Partial<AIWizardState> | ((prev: AIWizardState) => Partial<AIWizardState>);
@@ -84,6 +86,8 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
   const recordFirstResource = useMutation(api.users.recordFirstResource);
   const generateContent = useAction(api.contentGeneration.generateResourceContent);
+  const createDetectedCharacters = useAction(api.characterActions.createDetectedCharacters);
+  const updateCharacter = useMutation(api.characters.updateCharacter);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -106,6 +110,8 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     resourceId: null,
     resourceType,
     isEditMode: false,
+    detectedCharacters: [],
+    detectedCharactersStatus: "idle",
   });
 
   // Initialize from URL styleId
@@ -191,7 +197,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   const handleGenerateContent = useCallback(async () => {
     if (!state.description.trim()) return;
 
-    updateState({ contentStatus: "generating", contentError: undefined });
+    updateState({ contentStatus: "generating", contentError: undefined, detectedCharacters: [], detectedCharactersStatus: "idle" });
 
     try {
       // Only poster, flashcards, card_game, board_game supported
@@ -213,12 +219,66 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
       const content = result as Record<string, unknown>;
 
+      // Extract detected characters from AI output
+      const rawDetected = (content.detectedCharacters as Array<Record<string, unknown>>) || [];
+      delete content.detectedCharacters;
+
       // Extract name from generated content
       const name =
         (content.name as string) || state.name || state.description.slice(0, 50);
 
       // Extract image prompts into imageItems
-      const imageItems = extractImageItems(resourceType, content, state.characterSelection);
+      let imageItems = extractImageItems(resourceType, content, state.characterSelection);
+
+      // Auto-detect characters if user hasn't pre-selected any
+      if (rawDetected.length > 0 && !state.characterSelection && user?._id) {
+        updateState({ contentStatus: "ready", detectedCharactersStatus: "creating", generatedContent: content, name, imageItems });
+        try {
+          const charResults = await createDetectedCharacters({
+            userId: user._id,
+            styleId: state.styleId ?? undefined,
+            characters: rawDetected.map((c) => ({
+              name: (c.name as string) || "",
+              description: (c.description as string) || "",
+              personality: (c.personality as string) || "",
+              visualDescription: (c.visualDescription as string) || "",
+              appearsOn: Array.isArray(c.appearsOn) ? (c.appearsOn as string[]) : [],
+            })),
+          });
+
+          // Link characters to content items
+          const linkedContent = linkCharactersToContent(resourceType, content, charResults);
+          // Build character selection
+          const charSelection: CharacterSelection = {
+            mode: "per_item",
+            characterIds: charResults.map((r) => r.characterId),
+          };
+          // Re-extract image items with character links
+          imageItems = extractImageItems(resourceType, linkedContent, charSelection);
+
+          updateState({
+            generatedContent: linkedContent,
+            imageItems,
+            characterSelection: charSelection,
+            detectedCharacters: charResults.map((r) => ({
+              name: r.name,
+              characterId: r.characterId,
+              appearsOn: r.appearsOn,
+              isNew: r.isNew,
+              promptFragment: r.promptFragment,
+            })),
+            detectedCharactersStatus: "ready",
+          });
+          return;
+        } catch {
+          // Non-blocking: proceed without character linking
+          updateState({
+            detectedCharactersStatus: "idle",
+          });
+        }
+      } else if (state.characterSelection) {
+        updateState({ detectedCharactersStatus: "skipped" });
+      }
 
       updateState({
         generatedContent: content,
@@ -240,8 +300,41 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     state.name,
     resourceType,
     generateContent,
+    createDetectedCharacters,
+    user,
     updateState,
   ]);
+
+  // Update a detected character's prompt fragment
+  const handleUpdateCharacterPrompt = useCallback(async (characterId: string, promptFragment: string) => {
+    await updateCharacter({
+      characterId: characterId as Id<"characters">,
+      promptFragment,
+    });
+    updateState((prev) => ({
+      detectedCharacters: prev.detectedCharacters.map((c) =>
+        c.characterId === characterId ? { ...c, promptFragment } : c,
+      ),
+    }));
+  }, [updateCharacter, updateState]);
+
+  // Remove a detected character (unlink from content, remove from list)
+  const handleRemoveDetectedCharacter = useCallback((characterId: string) => {
+    updateState((prev) => {
+      const remaining = prev.detectedCharacters.filter((c) => c.characterId !== characterId);
+      const content = prev.generatedContent ? unlinkCharacterFromContent(prev.resourceType, prev.generatedContent, characterId) : prev.generatedContent;
+      const charSelection = remaining.length > 0
+        ? { mode: "per_item" as const, characterIds: remaining.map((r) => r.characterId) }
+        : null;
+      const imageItems = content ? extractImageItems(prev.resourceType, content, charSelection) : prev.imageItems;
+      return {
+        detectedCharacters: remaining,
+        generatedContent: content,
+        characterSelection: charSelection,
+        imageItems,
+      };
+    });
+  }, [updateState]);
 
   // Save draft
   const saveDraft = useCallback(async () => {
@@ -401,6 +494,8 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     handleBack,
     handleCancel,
     handleGenerateContent,
+    handleUpdateCharacterPrompt,
+    handleRemoveDetectedCharacter,
     saveDraft,
     resumeDialog: {
       open: showResumeDialog,
@@ -409,6 +504,85 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     },
     isLoading,
   };
+}
+
+/** Link detected characters to content items based on appearsOn keys */
+function linkCharactersToContent(
+  resourceType: ResourceType,
+  content: Record<string, unknown>,
+  results: Array<{ name: string; characterId: string; appearsOn: string[] }>,
+): Record<string, unknown> {
+  const linked = { ...content };
+
+  // Build appearsOn key → characterId map
+  const keyToChar = new Map<string, string>();
+  for (const r of results) {
+    for (const key of r.appearsOn) {
+      keyToChar.set(key, r.characterId);
+    }
+  }
+
+  switch (resourceType) {
+    case "flashcards": {
+      const cards = [...((linked.cards as Array<Record<string, unknown>>) || [])];
+      cards.forEach((card, i) => {
+        const charId = keyToChar.get(`card_${i}`);
+        if (charId) cards[i] = { ...card, characterId: charId };
+      });
+      linked.cards = cards;
+      break;
+    }
+    case "board_game": {
+      const tokens = [...((linked.tokens as Array<Record<string, unknown>>) || [])];
+      tokens.forEach((token, i) => {
+        const charId = keyToChar.get(`token_${i}`);
+        if (charId) tokens[i] = { ...token, characterId: charId };
+      });
+      linked.tokens = tokens;
+      const cards = [...((linked.cards as Array<Record<string, unknown>>) || [])];
+      cards.forEach((card, i) => {
+        const charId = keyToChar.get(`card_${i}`);
+        if (charId) cards[i] = { ...card, characterId: charId };
+      });
+      linked.cards = cards;
+      break;
+    }
+    // poster and card_game: resource-level character (handled via characterSelection)
+    default:
+      break;
+  }
+
+  return linked;
+}
+
+/** Remove a character from all content item links */
+function unlinkCharacterFromContent(
+  resourceType: ResourceType,
+  content: Record<string, unknown>,
+  characterId: string,
+): Record<string, unknown> {
+  const unlinked = { ...content };
+
+  const removeChar = (items: Array<Record<string, unknown>>) =>
+    items.map((item) =>
+      item.characterId === characterId ? { ...item, characterId: undefined } : item,
+    );
+
+  switch (resourceType) {
+    case "flashcards": {
+      unlinked.cards = removeChar((unlinked.cards as Array<Record<string, unknown>>) || []);
+      break;
+    }
+    case "board_game": {
+      unlinked.tokens = removeChar((unlinked.tokens as Array<Record<string, unknown>>) || []);
+      unlinked.cards = removeChar((unlinked.cards as Array<Record<string, unknown>>) || []);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return unlinked;
 }
 
 /** Extract image items from generated content based on resource type */
