@@ -195,7 +195,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     try {
       // Only poster, flashcards, card_game, board_game supported
-      const validTypes = ["poster", "flashcards", "card_game", "board_game"] as const;
+      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book"] as const;
       type ValidType = (typeof validTypes)[number];
       if (!validTypes.includes(resourceType as ValidType)) {
         throw new Error(`Content generation not supported for ${resourceType}`);

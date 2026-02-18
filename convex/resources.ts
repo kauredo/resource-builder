@@ -14,6 +14,7 @@ export const getUserResources = query({
         v.literal("worksheet"),
         v.literal("poster"),
         v.literal("flashcards"),
+        v.literal("book"),
       ),
     ),
     tag: v.optional(v.string()),
@@ -90,7 +91,8 @@ export const getResourcesByType = query({
       v.literal("free_prompt"),
       v.literal("worksheet"),
       v.literal("poster"),
-      v.literal("flashcards")
+      v.literal("flashcards"),
+      v.literal("book")
     ),
   },
   handler: async (ctx, args) => {
@@ -168,7 +170,8 @@ export const createResource = mutation({
       v.literal("free_prompt"),
       v.literal("worksheet"),
       v.literal("poster"),
-      v.literal("flashcards")
+      v.literal("flashcards"),
+      v.literal("book")
     ),
     name: v.string(),
     description: v.string(),

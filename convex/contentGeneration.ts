@@ -132,6 +132,36 @@ Given a description, generate board game content as JSON:
   ]
 }
 Design an engaging therapeutic board game. The grid should have meaningful cells (Start, Finish, special action cells, etc.). Include 2-4 player tokens and 5-10 game cards with therapeutic prompts. Grid size should be 4-8 rows/cols depending on complexity.`,
+
+  book: `You are a creative assistant helping a therapist create an illustrated book for children/adolescent therapy.
+The book could be a social story, psychoeducation narrative, CBT workbook, activity book, or any therapeutic reading material.
+
+Given a description, generate book content as JSON:
+{
+  "name": "book title",
+  "bookType": "social story",
+  "cover": {
+    "title": "The Book Title",
+    "subtitle": "optional subtitle",
+    "imagePrompt": "detailed illustration prompt for the cover image — warm, inviting, and appropriate for the book's theme"
+  },
+  "pages": [
+    {
+      "text": "Page text — the narrative or instructional content for this page",
+      "imagePrompt": "detailed illustration prompt for this page's image, matching the story moment"
+    }
+  ]
+}
+
+IMPORTANT GUIDELINES:
+- Generate 6-12 pages depending on the topic complexity.
+- Each page should have a clear narrative beat or teaching point.
+- Keep page text concise and age-appropriate (2-4 sentences for picture books, 1-2 short paragraphs for text-heavy books).
+- Image prompts should depict the scene described in the text, be warm and therapeutic in tone, and avoid anything scary or overwhelming.
+- The story should have a clear beginning, middle, and end with a positive or empowering conclusion.
+- If characters are provided, include them consistently across pages.
+- The cover image should be the most visually striking and representative of the book's theme.
+- bookType should describe the kind of book (e.g., "social story", "psychoeducation", "CBT workbook", "feelings journal", "activity book").`,
 };
 
 export const generateResourceContent = action({
@@ -141,6 +171,7 @@ export const generateResourceContent = action({
       v.literal("flashcards"),
       v.literal("card_game"),
       v.literal("board_game"),
+      v.literal("book"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -244,6 +275,11 @@ export const generateResourceContent = action({
     // Post-process card_game: resolve labels to IDs, assign asset keys
     if (args.resourceType === "card_game") {
       return postProcessCardGameContent(parsed as Record<string, unknown>);
+    }
+
+    // Post-process book: assign UUIDs and asset keys to pages/cover
+    if (args.resourceType === "book") {
+      return postProcessBookContent(parsed as Record<string, unknown>);
     }
 
     return parsed;
@@ -358,5 +394,36 @@ function postProcessCardGameContent(raw: Record<string, unknown>): Record<string
     cards: processedCards,
     characterPlacement: "backgrounds",
     showText: "numbers_only",
+  };
+}
+
+/** Post-process AI-generated book content: assign UUIDs and asset keys to pages and cover */
+function postProcessBookContent(raw: Record<string, unknown>): Record<string, unknown> {
+  const pages = (raw.pages as Array<Record<string, unknown>>) || [];
+  const cover = raw.cover as Record<string, unknown> | null | undefined;
+
+  const processedPages = pages.map((page, i) => {
+    const id = makeId();
+    return {
+      id,
+      text: (page.text as string) || "",
+      imagePrompt: (page.imagePrompt as string) || undefined,
+      imageAssetKey: page.imagePrompt ? `book_page_${i}` : undefined,
+    };
+  });
+
+  const processedCover = cover
+    ? {
+        title: (cover.title as string) || (raw.name as string) || "Untitled",
+        subtitle: (cover.subtitle as string) || undefined,
+        imagePrompt: (cover.imagePrompt as string) || undefined,
+        imageAssetKey: cover.imagePrompt ? "book_cover" : undefined,
+      }
+    : undefined;
+
+  return {
+    ...raw,
+    pages: processedPages,
+    cover: processedCover,
   };
 }

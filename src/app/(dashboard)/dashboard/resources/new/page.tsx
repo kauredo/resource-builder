@@ -11,6 +11,7 @@ import {
   PencilRuler,
   Gamepad2,
   Wand2,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,14 @@ const RESOURCE_TYPES = [
     route: "/dashboard/resources/new/card-game",
     icon: Gamepad2,
     accent: "neutral" as const,
+  },
+  {
+    id: "book",
+    title: "Book",
+    description: "Illustrated books — social stories, workbooks, and narratives.",
+    route: "/dashboard/resources/new/book",
+    icon: BookOpen,
+    accent: "coral" as const,
   },
   {
     id: "free-prompt",

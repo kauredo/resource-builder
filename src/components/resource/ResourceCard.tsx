@@ -39,6 +39,8 @@ function formatCountLabel(type: string, count: number): string {
     case "poster":
     case "free_prompt":
       return `${count} image${count !== 1 ? "s" : ""}`;
+    case "book":
+      return `${count} page${count !== 1 ? "s" : ""}`;
     default:
       return `${count} item${count !== 1 ? "s" : ""}`;
   }

@@ -1,0 +1,365 @@
+"use client";
+
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useAction, useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Wand2, RefreshCw, Check, AlertCircle, Loader2 } from "lucide-react";
+import type { BookWizardState, BookStateUpdater } from "./use-book-wizard";
+import type { ImageItem } from "@/components/resource/wizard/use-ai-wizard";
+
+interface BookGenerateStepProps {
+  state: BookWizardState;
+  onUpdate: (updates: BookStateUpdater) => void;
+}
+
+export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generateImage = useAction(api.images.generateStyledImage);
+
+  const assets = useQuery(
+    api.assets.getByOwner,
+    state.resourceId
+      ? { ownerType: "resource", ownerId: state.resourceId }
+      : "skip",
+  );
+
+  // Restore image statuses from existing assets on mount
+  useEffect(() => {
+    if (!assets || assets.length === 0) return;
+    const allPending = state.imageItems.every((i) => i.status === "pending");
+    if (!allPending) return;
+
+    const updated = state.imageItems.map((item) => {
+      const asset = assets.find((a) => a.assetKey === item.assetKey);
+      if (asset?.currentVersion?.url) {
+        return { ...item, status: "complete" as const };
+      }
+      return item;
+    });
+
+    if (updated.some((item, i) => item.status !== state.imageItems[i].status)) {
+      onUpdate({ imageItems: updated });
+    }
+  }, [assets]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const runBatchGeneration = useCallback(
+    async (indices: number[]) => {
+      if (!state.resourceId || !state.stylePreset) return;
+
+      const BATCH_SIZE = 3;
+      for (let b = 0; b < indices.length; b += BATCH_SIZE) {
+        const batchIndices = indices.slice(b, b + BATCH_SIZE);
+
+        onUpdate((prev) => ({
+          imageItems: prev.imageItems.map((it, i) =>
+            batchIndices.includes(i)
+              ? { ...it, status: "generating" as const, error: undefined }
+              : it,
+          ),
+        }));
+
+        await Promise.allSettled(
+          batchIndices.map(async (idx) => {
+            const item = state.imageItems[idx];
+            try {
+              await generateImage({
+                ownerType: "resource",
+                ownerId: state.resourceId!,
+                assetType: item.assetType,
+                assetKey: item.assetKey,
+                prompt: item.prompt,
+                style: {
+                  colors: {
+                    primary: state.stylePreset!.colors.primary,
+                    secondary: state.stylePreset!.colors.secondary,
+                    accent: state.stylePreset!.colors.accent,
+                  },
+                  illustrationStyle: state.stylePreset!.illustrationStyle,
+                },
+                characterId: item.characterId,
+                includeText: item.includeText,
+                aspect: item.aspect,
+              });
+
+              onUpdate((prev) => ({
+                imageItems: prev.imageItems.map((it, i) =>
+                  i === idx
+                    ? { ...it, status: "complete" as const, error: undefined }
+                    : it,
+                ),
+              }));
+            } catch (error) {
+              onUpdate((prev) => ({
+                imageItems: prev.imageItems.map((it, i) =>
+                  i === idx
+                    ? {
+                        ...it,
+                        status: "error" as const,
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : "Unknown error",
+                      }
+                    : it,
+                ),
+              }));
+            }
+          }),
+        );
+      }
+    },
+    [state.imageItems, state.resourceId, state.stylePreset, generateImage, onUpdate],
+  );
+
+  const generateAll = useCallback(async () => {
+    const pendingIndices = state.imageItems
+      .map((item, i) => (item.status !== "complete" ? i : -1))
+      .filter((i) => i !== -1);
+    if (pendingIndices.length === 0) return;
+    setIsGenerating(true);
+    await runBatchGeneration(pendingIndices);
+    setIsGenerating(false);
+  }, [state.imageItems, runBatchGeneration]);
+
+  const regenerateAll = useCallback(async () => {
+    onUpdate((prev) => ({
+      imageItems: prev.imageItems.map((item) => ({
+        ...item,
+        status: "pending" as const,
+        error: undefined,
+      })),
+    }));
+    setIsGenerating(true);
+    const allIndices = state.imageItems.map((_, i) => i);
+    await runBatchGeneration(allIndices);
+    setIsGenerating(false);
+  }, [state.imageItems, onUpdate, runBatchGeneration]);
+
+  const generateSingle = useCallback(
+    async (index: number) => {
+      await runBatchGeneration([index]);
+    },
+    [runBatchGeneration],
+  );
+
+  const completedCount = state.imageItems.filter(
+    (i) => i.status === "complete",
+  ).length;
+  const failedCount = state.imageItems.filter(
+    (i) => i.status === "error",
+  ).length;
+  const totalCount = state.imageItems.length;
+  const hasStarted = state.imageItems.some((i) => i.status !== "pending");
+
+  // Group items
+  const groups = useMemo(() => {
+    const grouped: { label: string; items: { item: ImageItem; index: number }[] }[] = [];
+    const seen = new Set<string>();
+
+    state.imageItems.forEach((item, index) => {
+      const label = item.group || "Images";
+      if (!seen.has(label)) {
+        seen.add(label);
+        grouped.push({ label, items: [] });
+      }
+      grouped.find((g) => g.label === label)!.items.push({ item, index });
+    });
+
+    return grouped;
+  }, [state.imageItems]);
+
+  if (totalCount === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <p>No images to generate. Add image prompts to your pages first.</p>
+      </div>
+    );
+  }
+
+  // Pre-generation
+  if (!hasStarted) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border/60 bg-card p-8 text-center">
+          <div className="relative">
+            <div className="size-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+              <Wand2 className="size-8 text-coral" aria-hidden="true" />
+            </div>
+            <h3 className="text-2xl font-medium mb-2">
+              Ready to illustrate your book
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              AI will create {totalCount} illustration{totalCount !== 1 ? "s" : ""} for
+              your book.
+            </p>
+            <Button
+              size="lg"
+              onClick={generateAll}
+              className="btn-coral gap-2 text-base px-8 min-h-[48px]"
+            >
+              <Wand2 className="size-5" aria-hidden="true" />
+              Generate {totalCount} Image{totalCount !== 1 ? "s" : ""}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <div key={group.label}>
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                {group.label}
+              </h4>
+              <div className="space-y-2">
+                {group.items.map(({ item }) => (
+                  <div
+                    key={item.assetKey}
+                    className="px-3 py-2 rounded-lg bg-muted/50 text-sm text-foreground/80 flex items-center gap-2"
+                  >
+                    <span className="font-medium capitalize">{item.label}</span>
+                    <span className="text-muted-foreground ml-auto text-xs truncate max-w-[50%]">
+                      {item.prompt.slice(0, 80)}
+                      {item.prompt.length > 80 ? "..." : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // During/after generation
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            {isGenerating ? "Generating..." : "Generation complete"}
+          </span>
+          <span className="tabular-nums font-medium">
+            {completedCount}/{totalCount}
+          </span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-border/70">
+          <div
+            className="h-2 rounded-full bg-coral transition-all duration-300 ease-out motion-reduce:transition-none"
+            style={{ width: `${(completedCount / totalCount) * 100}%` }}
+          />
+        </div>
+        {failedCount > 0 && (
+          <p className="text-xs text-red-600">
+            {failedCount} image{failedCount !== 1 ? "s" : ""} failed
+          </p>
+        )}
+      </div>
+
+      {!isGenerating && (
+        <div className="flex justify-center gap-3">
+          {failedCount > 0 && (
+            <Button variant="outline" onClick={generateAll} className="gap-2">
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Retry Failed ({failedCount})
+            </Button>
+          )}
+          {completedCount > 0 && (
+            <Button variant="outline" onClick={regenerateAll} className="gap-2">
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Regenerate All
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              {group.label}
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {group.items.map(({ item, index }) => {
+                const asset = assets?.find(
+                  (a) => a.assetKey === item.assetKey,
+                );
+                const imageUrl = asset?.currentVersion?.url ?? null;
+
+                return (
+                  <div
+                    key={item.assetKey}
+                    className="rounded-xl border border-border/60 bg-card overflow-hidden"
+                  >
+                    <div
+                      className={`relative bg-muted/30 ${item.aspect === "1:1" ? "aspect-square" : item.aspect === "3:4" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
+                    >
+                      {item.status === "complete" && imageUrl && (
+                        <img
+                          src={imageUrl}
+                          alt={item.label || item.assetKey}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      {item.status === "generating" && (
+                        <div
+                          className="absolute inset-0 flex items-center justify-center"
+                          role="status"
+                        >
+                          <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" />
+                        </div>
+                      )}
+                      {item.status === "error" && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                          <AlertCircle className="size-8 text-red-400 mb-2" />
+                          <p className="text-xs text-red-600 line-clamp-2">
+                            {item.error || "Failed"}
+                          </p>
+                        </div>
+                      )}
+                      {item.status === "pending" && (
+                        <div className="absolute inset-0 flex items-center justify-center" role="status" aria-label="Pending">
+                          <div className="size-8 rounded-full border-2 border-border/50" />
+                        </div>
+                      )}
+                      {item.status === "complete" && !isGenerating && (
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors duration-150 motion-reduce:transition-none flex items-center justify-center opacity-0 hover:opacity-100">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => generateSingle(index)}
+                            className="gap-1.5"
+                          >
+                            <RefreshCw className="size-3" aria-hidden="true" />
+                            Regenerate
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 flex items-center gap-2">
+                      {item.status === "complete" && (
+                        <Check className="size-3.5 text-teal shrink-0" />
+                      )}
+                      <span className="text-xs text-muted-foreground truncate">
+                        {item.label}
+                      </span>
+                      {item.status === "error" && !isGenerating && (
+                        <button
+                          type="button"
+                          onClick={() => generateSingle(index)}
+                          className="ml-auto text-xs text-coral hover:text-coral/80 cursor-pointer transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

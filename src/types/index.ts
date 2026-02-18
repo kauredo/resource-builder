@@ -136,6 +136,8 @@ export type AssetType =
   | "card_icon"
   | "card_back"
   | "free_prompt_image"
+  | "book_page_image"
+  | "book_cover_image"
   | "frame_border"
   | "frame_full_card";
 
@@ -169,7 +171,8 @@ export type ResourceType =
   | "free_prompt"
   | "worksheet"
   | "poster"
-  | "flashcards";
+  | "flashcards"
+  | "book";
 
 export type SubscriptionStatus = "trial" | "active" | "expired";
 
@@ -357,5 +360,31 @@ export interface FreePromptContent {
     aspect: "1:1" | "3:4" | "4:3";
   };
   imageAssetKey: AssetKey;
+  characters?: CharacterSelection;
+}
+
+// Book resource types
+export type BookLayout = "picture_book" | "illustrated_text";
+
+export interface BookPage {
+  id: string;
+  text: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+  characterId?: string;
+}
+
+export interface BookCover {
+  title: string;
+  subtitle?: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+}
+
+export interface BookContent {
+  bookType: string;
+  layout: BookLayout;
+  cover?: BookCover;
+  pages: BookPage[];
   characters?: CharacterSelection;
 }

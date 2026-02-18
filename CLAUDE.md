@@ -35,15 +35,32 @@ src/
 │       ├── styles/           # Style management
 │       ├── characters/       # Character management
 │       └── resources/        # Resource builder + library
+│           ├── new/          # Resource type picker + per-type routes
+│           └── [id]/         # Detail + edit pages
 ├── components/
 │   ├── ui/                   # shadcn components
 │   ├── style/                # Style picker, editor
 │   ├── character/            # Character components
-│   └── resource/             # Resource builder components
+│   └── resource/
+│       ├── wizard/           # Shared AI wizard (4-step: Describe → Review → Generate → Export)
+│       ├── book/             # Book (custom 5-step wizard)
+│       ├── flashcards/       # Flashcards (shared wizard)
+│       ├── poster/           # Poster (shared wizard)
+│       ├── emotion-cards/    # Emotion cards (shared wizard)
+│       ├── card-game/        # Card game (shared wizard)
+│       ├── board-game/       # Board game (shared wizard)
+│       ├── worksheet/        # Worksheet (shared wizard)
+│       ├── free-prompt/      # Free prompt (custom wizard)
+│       └── editor/           # ImageEditorModal (Konva-based)
 └── lib/
     ├── utils.ts              # Tailwind class merging (cn)
     ├── style-presets.ts      # Built-in style presets
-    └── pdf.ts                # PDF generation
+    ├── pdf.ts                # PDF generation (emotion cards, shared utils)
+    ├── pdf-image-pages.ts    # Full-page/grid image PDFs (poster, flashcards)
+    ├── pdf-worksheet.ts      # Block-based worksheet PDFs
+    ├── pdf-card-game.ts      # Card game PDFs with layered composition
+    ├── pdf-book.ts           # Book PDFs (two layouts: picture_book, illustrated_text)
+    └── pdf-fonts.ts          # Font registration for @react-pdf
 
 convex/
 ├── schema.ts                 # Database schema (source of truth for data models)
@@ -51,7 +68,10 @@ convex/
 ├── characters.ts             # Character queries/mutations
 ├── characterActions.ts       # AI actions (prompt gen, image analysis)
 ├── resources.ts              # Resource queries/mutations
-├── images.ts                 # Image generation actions
+├── contentGeneration.ts      # AI content generation (per-type system prompts)
+├── images.ts                 # Image generation actions (Gemini)
+├── assets.ts                 # Asset queries (images with version history)
+├── assetVersions.ts          # Asset version management (pruning, pinning)
 └── frameActions.ts           # Frame asset generation
 ```
 
@@ -63,6 +83,64 @@ convex/
 - Always include style's `illustrationStyle` in every image prompt
 - When using a character, prepend its `promptFragment`
 - PDF generation via @react-pdf/renderer with print-ready layouts
+
+## Resource Types
+
+8 resource types, each with a wizard, detail page, and PDF export:
+
+| Type | Wizard | Content Model | PDF |
+|------|--------|---------------|-----|
+| Poster | Shared AI | Single image | `pdf-image-pages.ts` (full page) |
+| Flashcards | Shared AI | Array of cards (front text + image) | `pdf-image-pages.ts` (grid) |
+| Emotion Cards | Shared AI | Array of emotions (label + image) | `pdf.ts` |
+| Card Game | Shared AI | Array of cards (text + image) | `pdf-card-game.ts` |
+| Board Game | Shared AI | Board + cards + pieces | Custom |
+| Worksheet | Shared AI | Blocks (text, image, fill-in) | `pdf-worksheet.ts` |
+| Free Prompt | Custom | Single image with free prompt | `pdf-image-pages.ts` |
+| Book | Custom | Multi-page narrative (cover + pages) | `pdf-book.ts` |
+
+### Shared AI Wizard (`resource/wizard/`)
+
+4-step flow used by most types: **Describe → Review → Generate → Export**
+
+- `AIWizard.tsx` — orchestrator with `WizardLayout` chrome
+- `use-ai-wizard.ts` — state hook: content generation, `ImageItem[]` tracking, resource CRUD
+- `WizardDescribeStep.tsx` — per-type placeholder map, style/character pickers
+- `WizardGenerateStep.tsx` — batch image generation with progress (3 at a time)
+- `WizardExportStep.tsx` — per-type PDF download + mark complete
+- `review/` — per-type review components (e.g., `FlashcardsReview.tsx`)
+
+Adding a new type to the shared wizard: add to `use-ai-wizard.ts` validTypes, add system prompt to `contentGeneration.ts`, create `{Type}Review.tsx`, add export branch to `WizardExportStep.tsx`.
+
+### Custom Book Wizard (`resource/book/`)
+
+5-step flow: **Setup → Content → Review → Generate → Export**
+
+Custom because books need two creation modes (AI-generated vs therapist-written) and a multi-page editor with reorder/add/remove — neither fits the shared wizard.
+
+- `BookWizard.tsx` — 5-step orchestrator
+- `use-book-wizard.ts` — state hook: pages, cover, layout, creation mode, imageItems
+- `BookSetupStep.tsx` — layout choice (picture_book / illustrated_text), cover toggle, style/character
+- `BookContentStep.tsx` — AI mode (describe + generate) or manual mode (write pages directly)
+- `BookReviewStep.tsx` — multi-page editor with `BookPageEditor` per page
+- `BookGenerateStep.tsx` — batch image generation with progress
+- `BookExportStep.tsx` — PDF download
+- `BookDetail.tsx` — detail page: cover + page list with per-image PromptEditor, Edit, History
+
+### Book Data Model (`src/types/index.ts`)
+
+```
+BookContent {
+  bookType: string          // "social story", "CBT workbook", etc.
+  layout: "picture_book" | "illustrated_text"
+  cover?: BookCover         // title, subtitle, imagePrompt, imageAssetKey
+  pages: BookPage[]         // id, text, imagePrompt, imageAssetKey, characterId
+  characters?: CharacterSelection
+}
+```
+
+Asset types: `book_page_image`, `book_cover_image`
+Image aspects: cover `3:4` (portrait), pages `4:3` (landscape)
 
 ---
 

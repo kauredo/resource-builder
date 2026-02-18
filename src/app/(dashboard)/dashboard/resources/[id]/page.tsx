@@ -13,6 +13,7 @@ import { WorksheetDetail } from "@/components/resource/worksheet/WorksheetDetail
 import { BoardGameDetail } from "@/components/resource/board-game/BoardGameDetail";
 import { CardGameDetail } from "@/components/resource/card-game/CardGameDetail";
 import { FreePromptDetail } from "@/components/resource/free-prompt/FreePromptDetail";
+import { BookDetail } from "@/components/resource/book/BookDetail";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -92,6 +93,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
       return <CardGameDetail resourceId={resourceId} />;
     case "free_prompt":
       return <FreePromptDetail resourceId={resourceId} />;
+    case "book":
+      return <BookDetail resourceId={resourceId} />;
     default:
       return null;
   }
