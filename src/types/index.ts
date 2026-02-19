@@ -82,6 +82,7 @@ export interface DetectedCharacterResult {
   appearsOn: string[];
   isNew: boolean;
   promptFragment: string;
+  suggestedPromptFragment?: string;
 }
 
 // Emotion card content

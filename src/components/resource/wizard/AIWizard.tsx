@@ -93,6 +93,7 @@ export function AIWizard({ resourceType, resourceId }: AIWizardProps) {
           <DetectedCharactersReview
             characters={wizard.state.detectedCharacters}
             status={wizard.state.detectedCharactersStatus}
+            styleId={wizard.state.styleId ?? undefined}
             onUpdatePromptFragment={wizard.handleUpdateCharacterPrompt}
             onRemoveCharacter={wizard.handleRemoveDetectedCharacter}
           />

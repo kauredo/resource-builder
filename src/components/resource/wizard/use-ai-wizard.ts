@@ -273,6 +273,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
               appearsOn: r.appearsOn,
               isNew: r.isNew,
               promptFragment: r.promptFragment,
+              suggestedPromptFragment: r.suggestedPromptFragment,
             })),
             detectedCharactersStatus: "ready",
           });

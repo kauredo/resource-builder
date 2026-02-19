@@ -316,6 +316,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
               appearsOn: r.appearsOn,
               isNew: r.isNew,
               promptFragment: r.promptFragment,
+              suggestedPromptFragment: r.suggestedPromptFragment,
             })),
             detectedCharactersStatus: "ready",
           });

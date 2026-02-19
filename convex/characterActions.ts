@@ -285,6 +285,7 @@ export const createDetectedCharacters = action({
       appearsOn: string[];
       isNew: boolean;
       promptFragment: string;
+      suggestedPromptFragment?: string;
     }> = [];
 
     for (const char of args.characters) {
@@ -310,12 +311,22 @@ export const createDetectedCharacters = action({
             });
           } catch { /* non-blocking */ }
         }
+        // Suggest updated description when AI provides a different one
+        const suggested =
+          char.visualDescription &&
+          char.visualDescription.trim() &&
+          match.promptFragment?.trim() &&
+          char.visualDescription.trim() !== match.promptFragment.trim()
+            ? char.visualDescription
+            : undefined;
+
         results.push({
           name: char.name,
           characterId: match._id,
           appearsOn: char.appearsOn,
           isNew: false,
           promptFragment: match.promptFragment || char.visualDescription,
+          suggestedPromptFragment: suggested,
         });
       } else {
         const charId = await ctx.runMutation(api.characters.createCharacter, {
@@ -358,6 +369,7 @@ export const ensureCharacterReference = action({
   args: {
     characterId: v.id("characters"),
     styleId: v.id("styles"),
+    force: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
@@ -369,8 +381,9 @@ export const ensureCharacterReference = action({
       });
       if (!character) return { storageId: null };
 
-      // Return cached if style matches
+      // Return cached if style matches (skip cache when forced)
       if (
+        !args.force &&
         character.styledReferenceImageId &&
         character.styledReferenceStyleId === args.styleId
       ) {

@@ -123,6 +123,7 @@ export function BookContentStep({
         <DetectedCharactersReview
           characters={state.detectedCharacters}
           status={state.detectedCharactersStatus}
+          styleId={state.styleId ?? undefined}
           onUpdatePromptFragment={onUpdateCharacterPrompt}
           onRemoveCharacter={onRemoveDetectedCharacter}
         />
