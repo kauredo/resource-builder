@@ -126,6 +126,8 @@ export const updateCharacter = mutation({
     description: v.optional(v.string()),
     personality: v.optional(v.string()),
     promptFragment: v.optional(v.string()),
+    styledReferenceImageId: v.optional(v.id("_storage")),
+    styledReferenceStyleId: v.optional(v.id("styles")),
   },
   handler: async (ctx, args) => {
     const { characterId, ...updates } = args;
@@ -152,6 +154,10 @@ export const deleteCharacter = mutation({
       // Delete all reference images from storage
       for (const storageId of character.referenceImages) {
         await ctx.storage.delete(storageId);
+      }
+      // Delete styled reference image if present
+      if (character.styledReferenceImageId) {
+        await ctx.storage.delete(character.styledReferenceImageId);
       }
     }
     await ctx.db.delete(args.characterId);

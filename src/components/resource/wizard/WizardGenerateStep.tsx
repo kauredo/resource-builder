@@ -19,6 +19,7 @@ export function WizardGenerateStep({
   const [isGenerating, setIsGenerating] = useState(false);
   const generateImage = useAction(api.images.generateStyledImage);
   const generateIconImage = useAction(api.cardGameImages.generateIconImage);
+  const ensureCharacterRef = useAction(api.characterActions.ensureCharacterReference);
 
   // Query assets to restore previously generated images
   const assets = useQuery(
@@ -144,15 +145,37 @@ export function WizardGenerateStep({
     [state.resourceId, state.stylePreset, state.imageItems, runBatchGeneration],
   );
 
+  /** Ensure styled reference images exist for all characters in the given indices */
+  const ensureReferences = useCallback(
+    async (indices: number[]) => {
+      if (!state.styleId) return;
+      const charIds = [
+        ...new Set(
+          indices
+            .map((i) => state.imageItems[i]?.characterId)
+            .filter((id): id is NonNullable<typeof id> => !!id),
+        ),
+      ];
+      if (charIds.length === 0) return;
+      await Promise.allSettled(
+        charIds.map((id) =>
+          ensureCharacterRef({ characterId: id, styleId: state.styleId! }),
+        ),
+      );
+    },
+    [state.styleId, state.imageItems, ensureCharacterRef],
+  );
+
   const generateAll = useCallback(async () => {
     const pendingIndices = state.imageItems
       .map((item, i) => (item.status !== "complete" ? i : -1))
       .filter((i) => i !== -1);
     if (pendingIndices.length === 0) return;
     setIsGenerating(true);
+    await ensureReferences(pendingIndices);
     await runBatchGeneration(pendingIndices);
     setIsGenerating(false);
-  }, [state.imageItems, runBatchGeneration]);
+  }, [state.imageItems, runBatchGeneration, ensureReferences]);
 
   const regenerateAll = useCallback(async () => {
     // Reset all to pending
@@ -165,9 +188,10 @@ export function WizardGenerateStep({
     }));
     setIsGenerating(true);
     const allIndices = state.imageItems.map((_, i) => i);
+    await ensureReferences(allIndices);
     await runBatchGeneration(allIndices);
     setIsGenerating(false);
-  }, [state.imageItems, onUpdate, runBatchGeneration]);
+  }, [state.imageItems, onUpdate, runBatchGeneration, ensureReferences]);
 
   const completedCount = state.imageItems.filter(
     (i) => i.status === "complete",

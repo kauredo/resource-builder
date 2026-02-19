@@ -253,8 +253,11 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
             mode: "per_item",
             characterIds: charResults.map((r) => r.characterId),
           };
-          // Re-extract image items with character links
-          imageItems = extractImageItems(resourceType, linkedContent, charSelection);
+          // Re-extract image items with character links + world context
+          imageItems = applyWorldContext(
+            extractImageItems(resourceType, linkedContent, charSelection),
+            charResults.map((r) => ({ name: r.name, promptFragment: r.promptFragment })),
+          );
 
           updateState({
             generatedContent: linkedContent,
@@ -591,9 +594,11 @@ function extractImageItems(
   content: Record<string, unknown>,
   characterSelection?: CharacterSelection | null,
 ): ImageItem[] {
-  // For "resource" mode, apply same character to all items
+  // Character to apply to all items (resource-level types like poster, card_game, board_game).
+  // When mode is "per_item" (e.g. from auto-detection), per-item types (flashcards) read
+  // characterId directly from content items. Resource-level types still need a fallback.
   const resourceCharacterId =
-    characterSelection?.mode === "resource" && characterSelection.characterIds.length > 0
+    characterSelection?.characterIds && characterSelection.characterIds.length > 0
       ? (characterSelection.characterIds[0] as Id<"characters">)
       : undefined;
   const items: ImageItem[] = [];
@@ -622,7 +627,8 @@ function extractImageItems(
           assetKey: `flashcard_front_${i}`,
           assetType: "flashcard_front_image",
           prompt,
-          characterId: card.characterId as Id<"characters"> | undefined,
+          characterId:
+            (card.characterId as Id<"characters"> | undefined) ?? resourceCharacterId,
           includeText: true,
           aspect: "1:1",
           status: "pending",
@@ -729,4 +735,26 @@ function extractImageItems(
   }
 
   return items;
+}
+
+/** Add visual world context to all image items so every illustration shares the same universe.
+ *  Even pages where a character doesn't physically appear will reference the world's look. */
+export function applyWorldContext(
+  items: ImageItem[],
+  characters: Array<{ name: string; promptFragment: string }>,
+): ImageItem[] {
+  if (characters.length === 0) return items;
+
+  const worldDesc = characters
+    .map((c) => `"${c.name}": ${c.promptFragment}`)
+    .join(". ");
+  const worldPrefix =
+    `VISUAL WORLD: All illustrations in this series share the same visual universe. ` +
+    `The world is defined by these characters — maintain their aesthetic, proportions, and style ` +
+    `even in scenes where they don't appear: ${worldDesc}. `;
+
+  return items.map((item) => ({
+    ...item,
+    prompt: worldPrefix + item.prompt,
+  }));
 }

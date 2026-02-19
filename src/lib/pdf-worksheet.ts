@@ -113,7 +113,7 @@ export async function generateWorksheetPDF({
   const styles = {
     page: {
       padding: 36,
-      backgroundColor: effectiveStyle.colors.background,
+      backgroundColor: "#FFFFFF",
       color: effectiveStyle.colors.text,
     },
     title: {

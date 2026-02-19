@@ -150,7 +150,11 @@ export function BookExportStep({ state }: BookExportStepProps) {
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Layout</dt>
             <dd className="font-medium capitalize">
-              {state.layout === "picture_book" ? "Picture Book" : "Illustrated Text"}
+              {state.layout === "picture_book"
+                ? "Picture Book"
+                : state.layout === "booklet"
+                  ? "Booklet"
+                  : "Illustrated Text"}
             </dd>
           </div>
           <div className="flex justify-between">

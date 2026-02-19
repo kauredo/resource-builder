@@ -14,7 +14,7 @@ import type {
   BookContent,
   DetectedCharacterResult,
 } from "@/types";
-import type { ImageItem } from "@/components/resource/wizard/use-ai-wizard";
+import { applyWorldContext, type ImageItem } from "@/components/resource/wizard/use-ai-wizard";
 
 const makeId = () => globalThis.crypto.randomUUID();
 
@@ -297,7 +297,10 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
             pages,
             characters: charSelection || undefined,
           };
-          const imageItems = extractBookImageItems(bookContent);
+          const imageItems = applyWorldContext(
+            extractBookImageItems(bookContent),
+            charResults.map((r) => ({ name: r.name, promptFragment: r.promptFragment })),
+          );
 
           updateState({
             pages,
@@ -652,8 +655,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
 function extractBookImageItems(content: BookContent): ImageItem[] {
   const items: ImageItem[] = [];
   const resourceCharacterId =
-    content.characters?.mode === "resource" &&
-    content.characters.characterIds.length > 0
+    content.characters?.characterIds && content.characters.characterIds.length > 0
       ? (content.characters.characterIds[0] as Id<"characters">)
       : undefined;
 
@@ -662,7 +664,11 @@ function extractBookImageItems(content: BookContent): ImageItem[] {
     items.push({
       assetKey: content.cover.imageAssetKey || "book_cover",
       assetType: "book_cover_image",
-      prompt: `Book cover illustration: ${content.cover.imagePrompt}`,
+      prompt:
+        `Book cover illustration: ${content.cover.imagePrompt}. ` +
+        "Fill the entire image edge-to-edge with the illustration — no borders, frames, margins, or surrounding whitespace. " +
+        "Do NOT include any text, titles, or words in the image — text will be overlaid separately. " +
+        "This is a full-bleed cover image.",
       characterId: resourceCharacterId,
       includeText: false,
       aspect: "3:4",
@@ -683,7 +689,7 @@ function extractBookImageItems(content: BookContent): ImageItem[] {
         (page.characterId as Id<"characters"> | undefined) ??
         resourceCharacterId,
       includeText: false,
-      aspect: content.layout === "picture_book" ? "4:3" : "4:3",
+      aspect: content.layout === "booklet" ? "3:4" : "4:3",
       label: `Page ${i + 1}`,
       group: "Pages",
       status: "pending",

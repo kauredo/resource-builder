@@ -297,6 +297,19 @@ export const createDetectedCharacters = action({
             promptFragment: char.visualDescription,
           });
         }
+        // Generate styled reference if style provided and missing/stale
+        if (
+          args.styleId &&
+          (!match.styledReferenceImageId ||
+            match.styledReferenceStyleId !== args.styleId)
+        ) {
+          try {
+            await ctx.runAction(api.characterActions.ensureCharacterReference, {
+              characterId: match._id,
+              styleId: args.styleId,
+            });
+          } catch { /* non-blocking */ }
+        }
         results.push({
           name: char.name,
           characterId: match._id,
@@ -316,6 +329,15 @@ export const createDetectedCharacters = action({
           personality: char.personality,
           promptFragment: char.visualDescription,
         });
+        // Generate styled reference immediately for new characters
+        if (args.styleId) {
+          try {
+            await ctx.runAction(api.characterActions.ensureCharacterReference, {
+              characterId: charId,
+              styleId: args.styleId,
+            });
+          } catch { /* non-blocking */ }
+        }
         results.push({
           name: char.name,
           characterId: charId,
@@ -329,6 +351,136 @@ export const createDetectedCharacters = action({
     return results;
   },
 });
+
+// Generate (or return cached) styled reference portrait for a character.
+// Idempotent: returns existing image if the style matches.
+export const ensureCharacterReference = action({
+  args: {
+    characterId: v.id("characters"),
+    styleId: v.id("styles"),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ storageId: Id<"_storage"> | null }> => {
+    try {
+      const character = await ctx.runQuery(api.characters.getCharacter, {
+        characterId: args.characterId,
+      });
+      if (!character) return { storageId: null };
+
+      // Return cached if style matches
+      if (
+        character.styledReferenceImageId &&
+        character.styledReferenceStyleId === args.styleId
+      ) {
+        return { storageId: character.styledReferenceImageId };
+      }
+
+      // No prompt fragment → can't generate a meaningful reference
+      if (!character.promptFragment?.trim()) {
+        return { storageId: null };
+      }
+
+      const apiKey = process.env.GOOGLE_AI_API_KEY;
+      if (!apiKey) return { storageId: null };
+
+      // Look up style for illustration guidance
+      const style = await ctx.runQuery(api.styles.getStyle, {
+        styleId: args.styleId,
+      });
+      if (!style) return { storageId: null };
+
+      const prompt = buildStyledReferencePrompt(character, style);
+
+      const response: Response = await fetch(
+        `${GEMINI_API_BASE}/${IMAGE_MODEL}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ["image", "text"] },
+            safetySettings: [
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+            ],
+          }),
+        },
+      );
+
+      if (!response.ok) return { storageId: null };
+
+      const data = await response.json();
+      const candidates = data.candidates;
+      if (!candidates?.[0]?.content?.parts) return { storageId: null };
+
+      const imagePart = candidates[0].content.parts.find(
+        (part: { inlineData?: { data: string; mimeType: string } }) =>
+          part.inlineData,
+      );
+      if (!imagePart?.inlineData) return { storageId: null };
+
+      const imageData: string = imagePart.inlineData.data;
+      const mimeType: string = imagePart.inlineData.mimeType || "image/png";
+      const binaryString: string = atob(imageData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType });
+      const storageId: Id<"_storage"> = await ctx.storage.store(blob);
+
+      await ctx.runMutation(api.characters.updateCharacter, {
+        characterId: args.characterId,
+        styledReferenceImageId: storageId,
+        styledReferenceStyleId: args.styleId,
+      });
+
+      return { storageId };
+    } catch {
+      return { storageId: null };
+    }
+  },
+});
+
+function buildStyledReferencePrompt(
+  character: { name: string; promptFragment: string; description: string; personality: string },
+  style: { illustrationStyle: string; colors: { primary: string; secondary: string; accent: string } },
+): string {
+  const parts: string[] = [];
+
+  parts.push(character.promptFragment);
+  parts.push(
+    `Create a character reference illustration of "${character.name}".`,
+  );
+  if (character.description) {
+    parts.push(character.description);
+  }
+  if (character.personality) {
+    parts.push(`Their personality is: ${character.personality}`);
+  }
+  parts.push(
+    "IMPORTANT: follow the illustration style guidance EXACTLY: " +
+      style.illustrationStyle,
+  );
+  parts.push(
+    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+  );
+  parts.push(
+    "Create a clear, centered character portrait in 3:4 portrait orientation with a clean white background. The character should be shown from the waist up, facing slightly towards the viewer with a neutral, friendly expression. The illustration should be suitable as a character reference sheet for consistent reproduction in future illustrations.",
+  );
+  parts.push(
+    "IMPORTANT: Do NOT include any text, words, letters, or labels in the image.",
+  );
+  parts.push(
+    "This is an original character for therapy materials, not a copyrighted character. If the description resembles an existing character, make it visually distinct enough to be clearly original.",
+  );
+
+  return parts.join(". ");
+}
 
 // Generate a character group: N related but distinct characters from a description
 export const generateCharacterGroup = action({

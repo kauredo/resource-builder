@@ -60,6 +60,7 @@ export const generateEmotionCard = action({
       promptFragment?: string;
       description?: string;
     } = {};
+    let referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
     if (args.characterId) {
       const character = await ctx.runQuery(api.characters.getCharacter, {
         characterId: args.characterId,
@@ -69,6 +70,20 @@ export const generateEmotionCard = action({
           promptFragment: character.promptFragment || undefined,
           description: character.description || undefined,
         };
+        // Fetch styled reference image for visual consistency
+        if (character.styledReferenceImageId) {
+          const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
+          if (refUrl) {
+            try {
+              const resp = await fetch(refUrl);
+              const buf = await resp.arrayBuffer();
+              const bytes = new Uint8Array(buf);
+              let binary = "";
+              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+              referenceImageParts = [{ inlineData: { mimeType: "image/png", data: btoa(binary) } }];
+            } catch { /* proceed without reference */ }
+          }
+        }
       }
     }
 
@@ -102,6 +117,7 @@ export const generateEmotionCard = action({
                 {
                   text: prompt,
                 },
+                ...referenceImageParts,
               ],
             },
           ],
@@ -226,6 +242,7 @@ export const generateStyledImage = action({
     }
 
     let characterContext: { promptFragment?: string; description?: string } = {};
+    let referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
     if (args.characterId) {
       const character = await ctx.runQuery(api.characters.getCharacter, {
         characterId: args.characterId,
@@ -235,6 +252,20 @@ export const generateStyledImage = action({
           promptFragment: character.promptFragment || undefined,
           description: character.description || undefined,
         };
+        // Fetch styled reference image for visual consistency
+        if (character.styledReferenceImageId) {
+          const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
+          if (refUrl) {
+            try {
+              const resp = await fetch(refUrl);
+              const buf = await resp.arrayBuffer();
+              const bytes = new Uint8Array(buf);
+              let binary = "";
+              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+              referenceImageParts = [{ inlineData: { mimeType: "image/png", data: btoa(binary) } }];
+            } catch { /* proceed without reference */ }
+          }
+        }
       }
     }
 
@@ -265,6 +296,7 @@ export const generateStyledImage = action({
                 {
                   text: prompt,
                 },
+                ...referenceImageParts,
               ],
             },
           ],
@@ -449,12 +481,16 @@ function buildEmotionCardPrompt({
 }): string {
   const parts: string[] = [];
 
-  // Start with character details if provided
+  // Character description comes first and is strongly emphasized for consistency
   if (characterContext?.promptFragment) {
-    parts.push(characterContext.promptFragment);
+    parts.push(
+      "CRITICAL CHARACTER REFERENCE — this character MUST appear exactly as described. " +
+      "Match every visual detail precisely (colors, proportions, markings, clothing): " +
+      characterContext.promptFragment,
+    );
   }
   if (characterContext?.description) {
-    parts.push(`Character appearance: ${characterContext.description}`);
+    parts.push(`Character role: ${characterContext.description}`);
   }
 
   // Add the base prompt
@@ -591,11 +627,17 @@ function buildGenericPrompt({
   aspect: "1:1" | "3:4" | "4:3";
 }) {
   const parts: string[] = [];
+
+  // Character description comes first and is strongly emphasized for consistency
   if (characterContext?.promptFragment) {
-    parts.push(characterContext.promptFragment);
+    parts.push(
+      "CRITICAL CHARACTER REFERENCE — this character MUST appear exactly as described in every image. " +
+      "Match every visual detail precisely (colors, proportions, markings, clothing): " +
+      characterContext.promptFragment,
+    );
   }
   if (characterContext?.description) {
-    parts.push(`Character appearance: ${characterContext.description}`);
+    parts.push(`Character role: ${characterContext.description}`);
   }
 
   parts.push(prompt);

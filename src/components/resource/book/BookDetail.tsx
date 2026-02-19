@@ -319,6 +319,18 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                     fill
                     className="object-cover"
                   />
+                  {/* Title overlay — matches PDF output */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent pt-16 pb-6 px-5">
+                    <p className="font-serif text-xl font-semibold text-white leading-tight">
+                      {content.cover.title}
+                    </p>
+                    {content.cover.subtitle && (
+                      <p className="text-sm text-white/80 mt-1">
+                        {content.cover.subtitle}
+                      </p>
+                    )}
+                  </div>
+                  {/* Hover controls */}
                   <div
                     className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200 motion-reduce:transition-none ${
                       hoveredCover
@@ -358,24 +370,16 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                 </div>
               )}
             </div>
-            <div className="p-4">
-              <p className="font-medium">{content.cover.title}</p>
-              {content.cover.subtitle && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {content.cover.subtitle}
-                </p>
-              )}
-              {content.cover.imageAssetKey && (
-                <div className="mt-3 pt-3 border-t border-border/40">
-                  <PromptEditor
-                    prompt={content.cover.imagePrompt ?? content.cover.title}
-                    onPromptChange={handleCoverPromptChange}
-                    onRegenerate={handleCoverRegenerate}
-                    isGenerating={regeneratingCover}
-                  />
-                </div>
-              )}
-            </div>
+            {content.cover.imageAssetKey && (
+              <div className="p-4">
+                <PromptEditor
+                  prompt={content.cover.imagePrompt ?? content.cover.title}
+                  onPromptChange={handleCoverPromptChange}
+                  onRegenerate={handleCoverRegenerate}
+                  isGenerating={regeneratingCover}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

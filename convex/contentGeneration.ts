@@ -33,7 +33,7 @@ Given a description, generate poster content as JSON:
 Make the headline therapeutic, encouraging, and age-appropriate. The imagePrompt should describe a warm, inviting illustration that includes the headline text as part of the artwork.
 
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
-"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["poster"]}]
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["poster"]}]
 If no named characters appear, omit "detectedCharacters".`,
 
   flashcards: `You are a creative assistant helping a therapist design flashcards for children/adolescent therapy.
@@ -51,7 +51,7 @@ Given a description, generate flashcard content as JSON:
 Create therapeutic, educational flashcards. Each card should have clear front text and a supportive explanation on the back. Generate 4-12 cards depending on the described topic. The imagePrompt should describe an illustration that includes the front text as part of the artwork.
 
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
-"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["card_0", "card_1"]}]
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["card_0", "card_1"]}]
 "appearsOn" uses "card_N" where N is the card index. If no named characters appear, omit "detectedCharacters".`,
 
   card_game: `You are a creative assistant helping a therapist design a therapeutic card game for children/adolescents.
@@ -122,7 +122,7 @@ IMPORTANT GUIDELINES:
 - Aim for 20-80+ cards total depending on the game design.
 
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
-"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["background_0", "icon_0"]}]
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["background_0", "icon_0"]}]
 "appearsOn" uses "background_N" or "icon_N" matching the index in backgrounds[] or icons[]. If no named characters appear, omit "detectedCharacters".`,
 
   board_game: `You are a creative assistant helping a therapist design a therapeutic board game for children/adolescents.
@@ -146,7 +146,7 @@ Given a description, generate board game content as JSON:
 Design an engaging therapeutic board game. The grid should have meaningful cells (Start, Finish, special action cells, etc.). Include 2-4 player tokens and 5-10 game cards with therapeutic prompts. Grid size should be 4-8 rows/cols depending on complexity.
 
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
-"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["board", "token_0", "card_0"]}]
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["board", "token_0", "card_0"]}]
 "appearsOn" uses "board", "token_N", or "card_N" matching the index. If no named characters appear, omit "detectedCharacters".`,
 
   book: `You are a creative assistant helping a therapist create an illustrated book for children/adolescent therapy.
@@ -175,12 +175,13 @@ IMPORTANT GUIDELINES:
 - Keep page text concise and age-appropriate (2-4 sentences for picture books, 1-2 short paragraphs for text-heavy books).
 - Image prompts should depict the scene described in the text, be warm and therapeutic in tone, and avoid anything scary or overwhelming.
 - The story should have a clear beginning, middle, and end with a positive or empowering conclusion.
-- If characters are provided, include them consistently across pages.
+- If characters are provided or emerge from the story, include them on EVERY page and the cover. List ALL pages in each character's "appearsOn" array so illustrations stay consistent.
+- Each page's imagePrompt should mention the character by name so the illustrator knows to include them.
 - The cover image should be the most visually striking and representative of the book's theme.
 - bookType should describe the kind of book (e.g., "social story", "psychoeducation", "CBT workbook", "feelings journal", "activity book").
 
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
-"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A visual-only prompt fragment (2-4 sentences): body type, colors, clothing, distinguishing features. No emotions or scene context.", "appearsOn": ["cover", "page_0", "page_1"]}]
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["cover", "page_0", "page_1"]}]
 "appearsOn" uses "cover" or "page_N" where N is the page index. If no named characters appear, omit "detectedCharacters".`,
 };
 

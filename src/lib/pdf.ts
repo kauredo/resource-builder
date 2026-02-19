@@ -218,7 +218,7 @@ const createStyles = (
     card: {
       width: dimensions.cardWidth,
       height: dimensions.cardHeight,
-      backgroundColor: style.colors.background,
+      backgroundColor: "#FFFFFF",
       borderRadius: 8,
       overflow: "hidden",
       position: "relative",
@@ -233,7 +233,7 @@ const createStyles = (
     cardImageContainer: {
       width: "100%",
       height: imageHeightPercent,
-      backgroundColor: style.colors.background,
+      backgroundColor: "#FFFFFF",
       position: "relative",
     },
     cardImage: {

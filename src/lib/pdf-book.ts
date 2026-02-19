@@ -1,9 +1,11 @@
 /**
  * PDF generator for Book resources.
  *
- * Two layout modes:
+ * Three layout modes:
  * - picture_book: Large image (~65% of page) + text below (~35%)
  * - illustrated_text: Smaller image (~30% of page) at top + text below
+ * - booklet: Saddle-stitch booklet — landscape A4, two book pages per sheet,
+ *   pages reordered for print-and-fold imposition.
  *
  * Cover page (optional): Full-bleed image with title/subtitle overlaid.
  * Page numbers at the bottom of each page.
@@ -79,6 +81,13 @@ export async function generateBookPDF({
   const headingFontFamily = getPDFFontFamily(headingFont);
   const bodyFontFamily = getPDFFontFamily(bodyFont);
 
+  const fontOpts = { headingFontFamily, bodyFontFamily, colors: effectiveStyle.colors };
+
+  // Booklet uses a completely different rendering path
+  if (content.layout === "booklet") {
+    return generateBookletLayout(content, assetMap, fontOpts);
+  }
+
   const isPictureBook = content.layout === "picture_book";
   const usableWidth = A4_WIDTH - MARGIN * 2;
   const usableHeight = A4_HEIGHT - MARGIN * 2;
@@ -89,9 +98,7 @@ export async function generateBookPDF({
   if (content.cover) {
     pages.push(
       renderCoverPage(content.cover, assetMap, {
-        headingFontFamily,
-        bodyFontFamily,
-        colors: effectiveStyle.colors,
+        ...fontOpts,
         usableWidth,
         usableHeight,
       }),
@@ -103,9 +110,7 @@ export async function generateBookPDF({
     pages.push(
       renderContentPage(page, i, content.pages.length, assetMap, {
         isPictureBook,
-        headingFontFamily,
-        bodyFontFamily,
-        colors: effectiveStyle.colors,
+        ...fontOpts,
         usableWidth,
         usableHeight,
         hasCover: !!content.cover,
@@ -258,7 +263,7 @@ function renderCoverPage(
       key: "cover",
       size: "A4",
       style: {
-        backgroundColor: opts.colors.background,
+        backgroundColor: "#FFFFFF",
         position: "relative",
       },
     },
@@ -372,10 +377,323 @@ function renderContentPage(
       size: "A4",
       style: {
         padding: MARGIN,
-        backgroundColor: opts.colors.background,
+        backgroundColor: "#FFFFFF",
         flexDirection: "column",
       },
     },
+    ...children,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Booklet layout — saddle-stitch imposition
+// ---------------------------------------------------------------------------
+
+// Landscape A4 dimensions
+const LANDSCAPE_WIDTH = A4_HEIGHT; // 841.89
+const LANDSCAPE_HEIGHT = A4_WIDTH; // 595.28
+const SLOT_WIDTH = LANDSCAPE_WIDTH / 2;
+const BOOKLET_MARGIN = 24;
+const FOLD_MARGIN = 12; // Extra inner margin near the fold
+
+interface FontOpts {
+  headingFontFamily: string;
+  bodyFontFamily: string;
+  colors: typeof DEFAULT_STYLE.colors;
+}
+
+/** A "book page" for imposition — either content, cover, or blank */
+type BookSlot =
+  | { type: "cover"; cover: BookCover }
+  | { type: "page"; page: BookPage; pageNum: number }
+  | { type: "blank" };
+
+/**
+ * Saddle-stitch imposition: given N book pages (padded to multiple of 4),
+ * returns pairs of [left, right] slots for each physical sheet side.
+ *
+ * For 8 pages → 2 sheets:
+ *   Sheet 1 front: [8, 1], Sheet 1 back: [2, 7]
+ *   Sheet 2 front: [6, 3], Sheet 2 back: [4, 5]
+ */
+function computeImposition(slots: BookSlot[]): [BookSlot, BookSlot][] {
+  // Pad to multiple of 4
+  while (slots.length % 4 !== 0) {
+    slots.push({ type: "blank" });
+  }
+  const n = slots.length;
+  const sides: [BookSlot, BookSlot][] = [];
+
+  for (let s = 0; s < n / 4; s++) {
+    // Front of sheet: [last - 2s, first + 2s]
+    sides.push([slots[n - 1 - 2 * s], slots[2 * s]]);
+    // Back of sheet: [first + 2s + 1, last - 2s - 1]
+    sides.push([slots[2 * s + 1], slots[n - 2 - 2 * s]]);
+  }
+
+  return sides;
+}
+
+async function generateBookletLayout(
+  content: BookContent,
+  assetMap: Map<string, string>,
+  fontOpts: FontOpts,
+): Promise<Blob> {
+  // Build linear list of book slots: cover (if any) + pages
+  const slots: BookSlot[] = [];
+  if (content.cover) {
+    slots.push({ type: "cover", cover: content.cover });
+  }
+  content.pages.forEach((page, i) => {
+    slots.push({ type: "page", page, pageNum: i + 1 });
+  });
+
+  // Compute imposition order
+  const sheetSides = computeImposition([...slots]);
+
+  const slotUsableWidth = SLOT_WIDTH - BOOKLET_MARGIN - FOLD_MARGIN;
+  const slotUsableHeight = LANDSCAPE_HEIGHT - BOOKLET_MARGIN * 2;
+
+  // Render each sheet side as a landscape PDF page
+  const pages = sheetSides.map((pair, sideIndex) => {
+    const [leftSlot, rightSlot] = pair;
+
+    const leftContent = renderBookletSlot(leftSlot, "left", assetMap, {
+      ...fontOpts,
+      slotWidth: SLOT_WIDTH,
+      usableWidth: slotUsableWidth,
+      usableHeight: slotUsableHeight,
+    });
+
+    const rightContent = renderBookletSlot(rightSlot, "right", assetMap, {
+      ...fontOpts,
+      slotWidth: SLOT_WIDTH,
+      usableWidth: slotUsableWidth,
+      usableHeight: slotUsableHeight,
+    });
+
+    return createElement(
+      Page,
+      {
+        key: `sheet-${sideIndex}`,
+        size: [LANDSCAPE_WIDTH, LANDSCAPE_HEIGHT],
+        style: {
+          flexDirection: "row",
+          backgroundColor: "#FFFFFF",
+        },
+      },
+      // Left half
+      leftContent,
+      // Fold line
+      createElement(View, {
+        key: "fold",
+        style: {
+          width: 0,
+          borderLeft: "1px dashed #CCCCCC",
+          height: "100%",
+        },
+      }),
+      // Right half
+      rightContent,
+    );
+  });
+
+  const document = createElement(Document, {}, ...pages);
+  return await pdf(document).toBlob();
+}
+
+function bookletContainerStyle(side: "left" | "right", slotWidth: number) {
+  return {
+    width: slotWidth,
+    height: LANDSCAPE_HEIGHT,
+    paddingTop: BOOKLET_MARGIN,
+    paddingBottom: BOOKLET_MARGIN,
+    paddingLeft: side === "left" ? BOOKLET_MARGIN : FOLD_MARGIN,
+    paddingRight: side === "left" ? FOLD_MARGIN : BOOKLET_MARGIN,
+    flexDirection: "column" as const,
+  };
+}
+
+function renderBookletSlot(
+  slot: BookSlot,
+  side: "left" | "right",
+  assetMap: Map<string, string>,
+  opts: FontOpts & {
+    slotWidth: number;
+    usableWidth: number;
+    usableHeight: number;
+  },
+): ReturnType<typeof createElement> {
+  const style = bookletContainerStyle(side, opts.slotWidth);
+
+  if (slot.type === "blank") {
+    return createElement(View, { key: `${side}-blank`, style });
+  }
+
+  if (slot.type === "cover") {
+    return renderBookletCover(slot.cover, side, assetMap, opts, style);
+  }
+
+  return renderBookletPage(slot.page, slot.pageNum, side, assetMap, opts, style);
+}
+
+function renderBookletCover(
+  cover: BookCover,
+  side: "left" | "right",
+  assetMap: Map<string, string>,
+  opts: FontOpts & { usableWidth: number; usableHeight: number },
+  containerStyle: ReturnType<typeof bookletContainerStyle>,
+): ReturnType<typeof createElement> {
+  const coverUrl = cover.imageAssetKey ? assetMap.get(cover.imageAssetKey) : undefined;
+  const children: ReturnType<typeof createElement>[] = [];
+
+  if (coverUrl) {
+    // Image fills most of the slot
+    const imageHeight = opts.usableHeight * 0.65;
+    children.push(
+      createElement(
+        View,
+        {
+          key: "cover-img-wrap",
+          style: {
+            width: opts.usableWidth,
+            height: imageHeight,
+            borderRadius: 6,
+            overflow: "hidden",
+            marginBottom: 10,
+          },
+        },
+        createElement(Image, {
+          src: coverUrl,
+          style: { width: "100%", height: "100%", objectFit: "cover" },
+        }),
+      ),
+    );
+  }
+
+  // Title
+  children.push(
+    createElement(
+      Text,
+      {
+        key: "cover-title",
+        style: {
+          fontFamily: opts.headingFontFamily,
+          fontSize: 22,
+          color: opts.colors.text,
+          textAlign: "center",
+          marginBottom: 4,
+        },
+      },
+      cover.title,
+    ),
+  );
+
+  if (cover.subtitle) {
+    children.push(
+      createElement(
+        Text,
+        {
+          key: "cover-subtitle",
+          style: {
+            fontFamily: opts.bodyFontFamily,
+            fontSize: 12,
+            color: opts.colors.text,
+            textAlign: "center",
+            opacity: 0.6,
+          },
+        },
+        cover.subtitle,
+      ),
+    );
+  }
+
+  return createElement(
+    View,
+    { key: `${side}-cover`, style: containerStyle },
+    ...children,
+  );
+}
+
+function renderBookletPage(
+  page: BookPage,
+  pageNum: number,
+  side: "left" | "right",
+  assetMap: Map<string, string>,
+  opts: FontOpts & { usableWidth: number; usableHeight: number },
+  containerStyle: ReturnType<typeof bookletContainerStyle>,
+): ReturnType<typeof createElement> {
+  const imageUrl = page.imageAssetKey ? assetMap.get(page.imageAssetKey) : undefined;
+  const children: ReturnType<typeof createElement>[] = [];
+
+  // Image — takes ~55% of slot height
+  if (imageUrl) {
+    const imageHeight = opts.usableHeight * 0.55;
+    children.push(
+      createElement(
+        View,
+        {
+          key: "img-wrap",
+          style: {
+            width: opts.usableWidth,
+            height: imageHeight,
+            borderRadius: 6,
+            overflow: "hidden",
+            marginBottom: 8,
+          },
+        },
+        createElement(Image, {
+          src: imageUrl,
+          style: { width: "100%", height: "100%", objectFit: "cover" },
+        }),
+      ),
+    );
+  }
+
+  // Text
+  if (page.text) {
+    children.push(
+      createElement(
+        View,
+        { key: "text-wrap", style: { flex: 1 } },
+        createElement(
+          Text,
+          {
+            style: {
+              fontFamily: opts.bodyFontFamily,
+              fontSize: 11,
+              lineHeight: 1.5,
+              color: opts.colors.text,
+            },
+          },
+          page.text,
+        ),
+      ),
+    );
+  }
+
+  // Page number
+  children.push(
+    createElement(
+      Text,
+      {
+        key: "page-num",
+        style: {
+          fontFamily: opts.bodyFontFamily,
+          fontSize: 8,
+          color: opts.colors.text,
+          opacity: 0.35,
+          textAlign: side === "left" ? "left" : "right",
+          marginTop: "auto",
+        },
+      },
+      String(pageNum),
+    ),
+  );
+
+  return createElement(
+    View,
+    { key: `${side}-page-${pageNum}`, style: containerStyle },
     ...children,
   );
 }

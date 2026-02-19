@@ -103,6 +103,8 @@ export default defineSchema({
     imageDescriptions: v.optional(v.record(v.string(), v.string())),
     promptFragment: v.string(),
     promptFragmentUpdatedAt: v.optional(v.number()),
+    styledReferenceImageId: v.optional(v.id("_storage")),
+    styledReferenceStyleId: v.optional(v.id("styles")),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
