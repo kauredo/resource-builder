@@ -91,17 +91,21 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
   );
 
   useEffect(() => {
-    if (!editResourceId || !existingResource || !existingStyle) return;
+    if (!editResourceId || !existingResource) return;
+    // Wait for style to load if the resource has one
+    if (existingResource.styleId && !existingStyle) return;
     const content = existingResource.content as WorksheetContent;
     setState({
       name: existingResource.name,
-      styleId: existingResource.styleId,
-      stylePreset: {
-        name: existingStyle.name,
-        colors: existingStyle.colors,
-        typography: existingStyle.typography,
-        illustrationStyle: existingStyle.illustrationStyle,
-      },
+      styleId: existingResource.styleId ?? null,
+      stylePreset: existingStyle
+        ? {
+            name: existingStyle.name,
+            colors: existingStyle.colors,
+            typography: existingStyle.typography,
+            illustrationStyle: existingStyle.illustrationStyle,
+          }
+        : null,
       title: content.title,
       blocks: content.blocks,
       headerImagePrompt: content.headerImagePrompt ?? "",
@@ -150,11 +154,7 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
     selectedStyleId: Id<"styles"> | null,
     preset: StylePreset | null,
   ) => {
-    if (selectedStyleId) {
-      setState((prev) => ({ ...prev, styleId: selectedStyleId, stylePreset: preset }));
-    } else if (preset) {
-      setState((prev) => ({ ...prev, styleId: null, stylePreset: preset }));
-    }
+    setState((prev) => ({ ...prev, styleId: selectedStyleId, stylePreset: preset }));
   };
 
   const addBlock = (type: WorksheetBlock["type"]) => {
@@ -188,7 +188,6 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
 
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
-    if (!state.styleId && !state.stylePreset) return null;
 
     let styleId = state.styleId;
     if (!styleId && state.stylePreset) {
@@ -201,8 +200,6 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
       });
       setState((prev) => ({ ...prev, styleId }));
     }
-
-    if (!styleId) return null;
 
     const content: WorksheetContent = {
       title: state.title,
@@ -222,7 +219,7 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
 
     const newId = await createResource({
       userId: user._id,
-      styleId,
+      styleId: styleId ?? undefined,
       type: "worksheet",
       name: state.name,
       description: `Worksheet: ${state.title || state.name}`,
@@ -234,8 +231,7 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
   const canGoNext = () => {
     switch (currentStep) {
       case 0:
-        return state.name.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null);
+        return state.name.trim().length > 0;
       case 1:
         return state.title.trim().length > 0;
       default:
@@ -270,24 +266,28 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
   };
 
   const handleGenerateImage = async () => {
-    if (!state.resourceId || !state.stylePreset) return;
+    if (!state.resourceId) return;
     if (!state.headerImagePrompt.trim()) return;
     setIsGenerating(true);
     try {
+      const styleArg = state.stylePreset
+        ? {
+            colors: {
+              primary: state.stylePreset.colors.primary,
+              secondary: state.stylePreset.colors.secondary,
+              accent: state.stylePreset.colors.accent,
+            },
+            illustrationStyle: state.stylePreset.illustrationStyle,
+          }
+        : undefined;
+
       await generateImage({
         ownerType: "resource",
         ownerId: state.resourceId,
         assetType: "worksheet_image",
         assetKey: "worksheet_header",
         prompt: `Worksheet header illustration: ${state.headerImagePrompt}`,
-        style: {
-          colors: {
-            primary: state.stylePreset.colors.primary,
-            secondary: state.stylePreset.colors.secondary,
-            accent: state.stylePreset.colors.accent,
-          },
-          illustrationStyle: state.stylePreset.illustrationStyle,
-        },
+        style: styleArg,
         includeText: false,
         aspect: "4:3",
       });
@@ -297,7 +297,6 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
   };
 
   const handleExport = async () => {
-    if (!state.stylePreset) return;
     const blob = await generateWorksheetPDF({
       content: {
         title: state.title,
@@ -305,10 +304,9 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
         headerImagePrompt: state.headerImagePrompt || undefined,
         headerImageAssetKey: "worksheet_header",
       },
-      style: {
-        colors: state.stylePreset.colors,
-        typography: state.stylePreset.typography,
-      },
+      style: state.stylePreset
+        ? { colors: state.stylePreset.colors, typography: state.stylePreset.typography }
+        : undefined,
       headerImageUrl: assets?.currentVersion?.url ?? undefined,
     });
 
@@ -327,7 +325,7 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
   };
 
   const isLoading =
-    !user || (editResourceId && (!existingResource || !existingStyle));
+    !user || (editResourceId && !existingResource);
 
   if (isLoading) {
     return (
@@ -377,16 +375,25 @@ export function WorksheetWizard({ resourceId: editResourceId }: WorksheetWizardP
           </div>
 
           <div className="space-y-2">
-            <Label className="text-base font-medium">Visual Style</Label>
+            <Label className="text-base font-medium">Visual Style <span className="text-muted-foreground font-normal">(optional)</span></Label>
             {state.isEditMode ? (
-              <p className="text-sm text-muted-foreground">Style is locked after creation.</p>
+              <p className="text-sm text-muted-foreground">
+                {state.stylePreset
+                  ? `Style is locked after creation (${state.stylePreset.name}).`
+                  : "No style — the AI chooses colors and illustrations freely."}
+              </p>
             ) : (
+              <>
+              <p className="text-sm text-muted-foreground mb-4">
+                Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
+              </p>
               <StylePicker
                 selectedStyleId={state.styleId}
                 selectedPreset={state.stylePreset}
                 onSelect={handleStyleSelect}
                 userId={user._id}
               />
+              </>
             )}
           </div>
         </div>

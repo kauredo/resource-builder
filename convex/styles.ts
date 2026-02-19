@@ -5,22 +5,6 @@ import { mutation, query } from "./_generated/server";
 // Duplicated here because Convex backend can't import from src/
 const STYLE_PRESETS = [
   {
-    name: "Neutral / No Style",
-    colors: {
-      primary: "#7A7A7A",
-      secondary: "#B0B0B0",
-      accent: "#D7D7D7",
-      background: "#FFFFFF",
-      text: "#1A1A1A",
-    },
-    typography: {
-      headingFont: "Nunito",
-      bodyFont: "Work Sans",
-    },
-    illustrationStyle:
-      "Neutral, clean, minimal line illustration style with soft shading. No distinct character style, keep visuals simple and versatile.",
-  },
-  {
     name: "Warm & Playful",
     colors: {
       primary: "#FF6B6B",
@@ -55,18 +39,18 @@ const STYLE_PRESETS = [
   {
     name: "Bold & Colorful",
     colors: {
-      primary: "#7400B8",
-      secondary: "#5390D9",
-      accent: "#56CFE1",
+      primary: "#E63946",
+      secondary: "#1D3557",
+      accent: "#F4A261",
       background: "#FFFFFF",
       text: "#1A1A2E",
     },
     typography: {
-      headingFont: "Poppins",
-      bodyFont: "Inter",
+      headingFont: "Fredoka",
+      bodyFont: "Nunito Sans",
     },
     illustrationStyle:
-      "Bold vibrant colors, high contrast, energetic and dynamic, playful geometric shapes, strong outlines, modern and eye-catching",
+      "Bold graphic illustrations with high saturation, strong outlines, flat color blocks, dynamic compositions, confident shapes, print-friendly with high contrast",
   },
   {
     name: "Nature & Earthy",
@@ -87,18 +71,18 @@ const STYLE_PRESETS = [
   {
     name: "Whimsical Fantasy",
     colors: {
-      primary: "#E0AAFF",
-      secondary: "#C77DFF",
-      accent: "#9D4EDD",
-      background: "#FFF0F5",
-      text: "#4A4063",
+      primary: "#F4A0C4",
+      secondary: "#7EC8E3",
+      accent: "#FFD166",
+      background: "#FFF8F0",
+      text: "#3D3655",
     },
     typography: {
       headingFont: "Baloo 2",
-      bodyFont: "Rubik",
+      bodyFont: "Quicksand",
     },
     illustrationStyle:
-      "Magical and dreamy, soft pastels with sparkles, fantasy creatures, clouds and stars, whimsical and enchanting, fairy-tale like, gentle magical glow",
+      "Whimsical fairy-tale illustrations with soft watercolor textures, gentle curves, dreamy pastel atmosphere, storybook quality, imaginative creatures, hand-painted feel",
   },
 ];
 

@@ -433,7 +433,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
         <StyleSpecification
           style={style}
           layout={content.layout}
-          resourceStyleId={resource.styleId}
+          resourceStyleId={resource.styleId!}
         />
       )}
 

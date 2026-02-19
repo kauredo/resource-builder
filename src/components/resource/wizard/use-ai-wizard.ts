@@ -142,9 +142,11 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
     if (
       editResourceId &&
       existingResource &&
-      existingStyle &&
       !hasInitializedEditMode.current
     ) {
+      // Wait for style to load if the resource has one
+      if (existingResource.styleId && !existingStyle) return;
+
       hasInitializedEditMode.current = true;
       const content = existingResource.content as Record<string, unknown>;
       const charSel = (content.characters as CharacterSelection) || null;
@@ -153,13 +155,15 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
         ...prev,
         name: existingResource.name,
         description: existingResource.description,
-        styleId: existingResource.styleId,
-        stylePreset: {
-          name: existingStyle.name,
-          colors: existingStyle.colors,
-          typography: existingStyle.typography,
-          illustrationStyle: existingStyle.illustrationStyle,
-        },
+        styleId: existingResource.styleId ?? null,
+        stylePreset: existingStyle
+          ? {
+              name: existingStyle.name,
+              colors: existingStyle.colors,
+              typography: existingStyle.typography,
+              illustrationStyle: existingStyle.illustrationStyle,
+            }
+          : null,
         resourceId: existingResource._id,
         generatedContent: content,
         contentStatus: "ready",
@@ -342,7 +346,6 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   // Save draft
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
-    if (!state.styleId && !state.stylePreset) return null;
 
     let styleId = state.styleId;
     if (!styleId && state.stylePreset) {
@@ -355,8 +358,6 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
       });
       updateState({ styleId });
     }
-
-    if (!styleId) return null;
 
     const content = state.generatedContent ?? {};
 
@@ -371,7 +372,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     const newId = await createResource({
       userId: user._id,
-      styleId,
+      styleId: styleId ?? undefined,
       type: resourceType,
       name: state.name,
       description: state.description || `${resourceType}: ${state.name}`,
@@ -394,10 +395,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   const canGoNext = (): boolean => {
     switch (currentStep) {
       case 0: // Describe
-        return (
-          state.description.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.description.trim().length > 0;
       case 1: // Review
         return state.contentStatus === "ready" && state.name.trim().length > 0;
       case 2: // Generate
@@ -412,10 +410,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   const isStepComplete = (step: number): boolean => {
     switch (step) {
       case 0:
-        return (
-          state.description.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.description.trim().length > 0;
       case 1:
         return state.contentStatus === "ready" && state.name.trim().length > 0;
       case 2:
@@ -482,7 +477,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
   };
 
   const isLoading =
-    !user || (!!editResourceId && (!existingResource || !existingStyle));
+    !user || (!!editResourceId && !existingResource);
 
   return {
     user,

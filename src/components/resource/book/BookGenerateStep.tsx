@@ -46,7 +46,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
 
   const runBatchGeneration = useCallback(
     async (indices: number[]) => {
-      if (!state.resourceId || !state.stylePreset) return;
+      if (!state.resourceId) return;
 
       const BATCH_SIZE = 3;
       for (let b = 0; b < indices.length; b += BATCH_SIZE) {
@@ -64,20 +64,24 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
           batchIndices.map(async (idx) => {
             const item = state.imageItems[idx];
             try {
+              const styleArg = state.stylePreset
+                ? {
+                    colors: {
+                      primary: state.stylePreset.colors.primary,
+                      secondary: state.stylePreset.colors.secondary,
+                      accent: state.stylePreset.colors.accent,
+                    },
+                    illustrationStyle: state.stylePreset.illustrationStyle,
+                  }
+                : undefined;
+
               await generateImage({
                 ownerType: "resource",
                 ownerId: state.resourceId!,
                 assetType: item.assetType,
                 assetKey: item.assetKey,
                 prompt: item.prompt,
-                style: {
-                  colors: {
-                    primary: state.stylePreset!.colors.primary,
-                    secondary: state.stylePreset!.colors.secondary,
-                    accent: state.stylePreset!.colors.accent,
-                  },
-                  illustrationStyle: state.stylePreset!.illustrationStyle,
-                },
+                style: styleArg,
                 characterId: item.characterId,
                 includeText: item.includeText,
                 aspect: item.aspect,

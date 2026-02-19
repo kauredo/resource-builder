@@ -30,17 +30,15 @@ export const generateEmotionCard = action({
     includeText: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    // Get style from either styleId or direct style data
+    // Get style from either styleId or direct style data (both optional)
     let styleData: {
       colors: { primary: string; secondary: string; accent: string };
       illustrationStyle: string;
-    };
+    } | null = null;
 
     if (args.style) {
-      // Use directly provided style data
       styleData = args.style;
     } else if (args.styleId) {
-      // Fetch from database
       const style = await ctx.runQuery(api.styles.getStyle, {
         styleId: args.styleId,
       });
@@ -51,8 +49,6 @@ export const generateEmotionCard = action({
         colors: style.colors,
         illustrationStyle: style.illustrationStyle,
       };
-    } else {
-      throw new Error("Either styleId or style data must be provided");
     }
 
     // Get character if provided
@@ -90,7 +86,7 @@ export const generateEmotionCard = action({
     // Build the prompt
     const prompt = buildEmotionCardPrompt({
       emotion: args.emotion,
-      style: styleData,
+      style: styleData ?? undefined,
       characterContext,
       description: args.description,
       includeText: args.includeText ?? false,
@@ -180,10 +176,9 @@ export const generateEmotionCard = action({
       prompt,
       params: {
         model: MODEL,
-        style: {
-          colors: styleData.colors,
-          illustrationStyle: styleData.illustrationStyle,
-        },
+        style: styleData
+          ? { colors: styleData.colors, illustrationStyle: styleData.illustrationStyle }
+          : null,
         characterId: args.characterId,
         includeText: args.includeText ?? false,
       },
@@ -224,7 +219,7 @@ export const generateStyledImage = action({
     let styleData: {
       colors: { primary: string; secondary: string; accent: string };
       illustrationStyle: string;
-    };
+    } | null = null;
 
     if (args.style) {
       styleData = args.style;
@@ -237,8 +232,6 @@ export const generateStyledImage = action({
         colors: style.colors,
         illustrationStyle: style.illustrationStyle,
       };
-    } else {
-      throw new Error("Either styleId or style data must be provided");
     }
 
     let characterContext: { promptFragment?: string; description?: string } = {};
@@ -271,7 +264,7 @@ export const generateStyledImage = action({
 
     const prompt = buildGenericPrompt({
       prompt: args.prompt,
-      style: styleData,
+      style: styleData ?? undefined,
       characterContext,
       includeText: args.includeText ?? false,
       aspect: args.aspect ?? "1:1",
@@ -351,10 +344,9 @@ export const generateStyledImage = action({
       prompt,
       params: {
         model: MODEL,
-        style: {
-          colors: styleData.colors,
-          illustrationStyle: styleData.illustrationStyle,
-        },
+        style: styleData
+          ? { colors: styleData.colors, illustrationStyle: styleData.illustrationStyle }
+          : null,
         characterId: args.characterId,
         includeText: args.includeText ?? false,
         layout: {
@@ -464,7 +456,7 @@ function buildEmotionCardPrompt({
   includeText = false,
 }: {
   emotion: string;
-  style: {
+  style?: {
     colors: {
       primary: string;
       secondary: string;
@@ -500,16 +492,16 @@ function buildEmotionCardPrompt({
   }
   parts.push(basePrompt);
 
-  // Always include the style's illustration style
-  parts.push(
-    "IMPORTANT: follow the illustration style guidance EXACTLY: ",
-    style.illustrationStyle,
-  );
-
-  // Add color guidance
-  parts.push(
-    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
-  );
+  // Include style guidance only when a style is provided
+  if (style) {
+    parts.push(
+      "IMPORTANT: follow the illustration style guidance EXACTLY: ",
+      style.illustrationStyle,
+    );
+    parts.push(
+      `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+    );
+  }
 
   // Text instruction - explicitly tell the model whether to include text
   if (includeText) {
@@ -621,7 +613,7 @@ function buildGenericPrompt({
   aspect,
 }: {
   prompt: string;
-  style: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
+  style?: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
   characterContext?: { promptFragment?: string; description?: string };
   includeText: boolean;
   aspect: "1:1" | "3:4" | "4:3";
@@ -642,13 +634,15 @@ function buildGenericPrompt({
 
   parts.push(prompt);
 
-  parts.push(
-    "IMPORTANT: follow the illustration style guidance EXACTLY: ",
-    style.illustrationStyle,
-  );
-  parts.push(
-    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
-  );
+  if (style) {
+    parts.push(
+      "IMPORTANT: follow the illustration style guidance EXACTLY: ",
+      style.illustrationStyle,
+    );
+    parts.push(
+      `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+    );
+  }
 
   if (includeText) {
     parts.push("Include the specified text clearly in the image.");

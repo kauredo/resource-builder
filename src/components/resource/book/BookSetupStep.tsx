@@ -65,11 +65,7 @@ export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
     styleId: Id<"styles"> | null,
     preset: StylePreset | null,
   ) => {
-    if (styleId) {
-      onUpdate({ styleId, stylePreset: preset });
-    } else if (preset) {
-      onUpdate({ styleId: null, stylePreset: preset });
-    }
+    onUpdate({ styleId, stylePreset: preset });
   };
 
   const handleCharacterChange = (selection: CharacterSelection | null) => {
@@ -211,18 +207,25 @@ export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
 
       {/* Visual style */}
       <div className="space-y-2">
-        <Label className="text-base font-medium">Visual Style</Label>
+        <Label className="text-base font-medium">Visual Style <span className="text-muted-foreground font-normal">(optional)</span></Label>
         {state.isEditMode ? (
           <p className="text-sm text-muted-foreground">
-            Style is locked after creation.
+            {state.stylePreset
+              ? `Style is locked after creation (${state.stylePreset.name}).`
+              : "No style — the AI chooses colors and illustrations freely."}
           </p>
         ) : (
+          <>
+          <p className="text-sm text-muted-foreground mb-4">
+            Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
+          </p>
           <StylePicker
             selectedStyleId={state.styleId}
             selectedPreset={state.stylePreset}
             onSelect={handleStyleSelect}
             userId={userId}
           />
+          </>
         )}
       </div>
 

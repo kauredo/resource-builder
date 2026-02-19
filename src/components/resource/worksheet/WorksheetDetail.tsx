@@ -52,16 +52,15 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const generateStyledImage = useAction(api.images.generateStyledImage);
 
   const handleDownloadPDF = useCallback(async () => {
-    if (!resource || !style) return;
+    if (!resource) return;
     const content = resource.content as WorksheetContent;
     setIsGeneratingPDF(true);
     try {
       const blob = await generateWorksheetPDF({
         content,
-        style: {
-          colors: style.colors,
-          typography: style.typography,
-        },
+        style: style
+          ? { colors: style.colors, typography: style.typography }
+          : undefined,
         headerImageUrl: asset?.currentVersion?.url ?? undefined,
       });
       const url = URL.createObjectURL(blob);

@@ -52,7 +52,7 @@ export function WizardGenerateStep({
   /** Generate images for given indices with batched concurrency */
   const runBatchGeneration = useCallback(
     async (indices: number[]) => {
-      if (!state.resourceId || !state.stylePreset) return;
+      if (!state.resourceId) return;
 
       const BATCH_SIZE = 3;
       for (let b = 0; b < indices.length; b += BATCH_SIZE) {
@@ -72,14 +72,16 @@ export function WizardGenerateStep({
             // Read immutable item data (prompt, assetKey, etc.) from closure
             const item = state.imageItems[idx];
             try {
-              const styleArg = {
-                colors: {
-                  primary: state.stylePreset!.colors.primary,
-                  secondary: state.stylePreset!.colors.secondary,
-                  accent: state.stylePreset!.colors.accent,
-                },
-                illustrationStyle: state.stylePreset!.illustrationStyle,
-              };
+              const styleArg = state.stylePreset
+                ? {
+                    colors: {
+                      primary: state.stylePreset.colors.primary,
+                      secondary: state.stylePreset.colors.secondary,
+                      accent: state.stylePreset.colors.accent,
+                    },
+                    illustrationStyle: state.stylePreset.illustrationStyle,
+                  }
+                : undefined;
 
               if (item.greenScreen) {
                 // Route to green screen icon generation
@@ -138,11 +140,10 @@ export function WizardGenerateStep({
 
   const generateSingle = useCallback(
     async (index: number) => {
-      if (!state.resourceId || !state.stylePreset || !state.imageItems[index])
-        return;
+      if (!state.resourceId || !state.imageItems[index]) return;
       await runBatchGeneration([index]);
     },
-    [state.resourceId, state.stylePreset, state.imageItems, runBatchGeneration],
+    [state.resourceId, state.imageItems, runBatchGeneration],
   );
 
   /** Ensure styled reference images exist for all characters in the given indices */

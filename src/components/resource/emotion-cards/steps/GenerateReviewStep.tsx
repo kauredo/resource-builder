@@ -142,7 +142,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
 
   const generateSingleCard = useCallback(
     async (emotion: string) => {
-      if (!state.resourceId || !state.stylePreset) return;
+      if (!state.resourceId) return;
 
       setResults((prev) => {
         const updated = new Map(prev);
@@ -151,17 +151,21 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
       });
 
       try {
+        const styleArg = state.stylePreset
+          ? {
+              colors: {
+                primary: state.stylePreset.colors.primary,
+                secondary: state.stylePreset.colors.secondary,
+                accent: state.stylePreset.colors.accent,
+              },
+              illustrationStyle: state.stylePreset.illustrationStyle,
+            }
+          : undefined;
+
         const result = await generateCard({
           resourceId: state.resourceId,
           emotion,
-          style: {
-            colors: {
-              primary: state.stylePreset.colors.primary,
-              secondary: state.stylePreset.colors.secondary,
-              accent: state.stylePreset.colors.accent,
-            },
-            illustrationStyle: state.stylePreset.illustrationStyle,
-          },
+          style: styleArg,
           characterId: state.characterId ?? undefined,
           includeText: state.includeTextInImage,
         });
@@ -191,7 +195,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
   );
 
   const startGeneration = useCallback(async () => {
-    if (!state.resourceId || !state.stylePreset) return;
+    if (!state.resourceId) return;
 
     setIsGenerating(true);
     onUpdate({ generationStatus: "generating" });
@@ -206,6 +210,18 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
       }
       return updated;
     });
+
+    // Build style arg once
+    const styleArg = state.stylePreset
+      ? {
+          colors: {
+            primary: state.stylePreset.colors.primary,
+            secondary: state.stylePreset.colors.secondary,
+            accent: state.stylePreset.colors.accent,
+          },
+          illustrationStyle: state.stylePreset.illustrationStyle,
+        }
+      : undefined;
 
     // Generate cards with concurrency limit
     const BATCH_SIZE = 3;
@@ -235,14 +251,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             const result = await generateCard({
               resourceId: state.resourceId!,
               emotion,
-              style: {
-                colors: {
-                  primary: state.stylePreset!.colors.primary,
-                  secondary: state.stylePreset!.colors.secondary,
-                  accent: state.stylePreset!.colors.accent,
-                },
-                illustrationStyle: state.stylePreset!.illustrationStyle,
-              },
+              style: styleArg,
               characterId: state.characterId ?? undefined,
               includeText: state.includeTextInImage,
             });
@@ -285,7 +294,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
   ]);
 
   const regenerateAll = useCallback(async () => {
-    if (!state.resourceId || !state.stylePreset) return;
+    if (!state.resourceId) return;
 
     setIsGenerating(true);
     onUpdate({ generationStatus: "generating" });
@@ -298,6 +307,18 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
       }
       return updated;
     });
+
+    // Build style arg once
+    const styleArg = state.stylePreset
+      ? {
+          colors: {
+            primary: state.stylePreset.colors.primary,
+            secondary: state.stylePreset.colors.secondary,
+            accent: state.stylePreset.colors.accent,
+          },
+          illustrationStyle: state.stylePreset.illustrationStyle,
+        }
+      : undefined;
 
     // Generate ALL cards with concurrency limit
     const BATCH_SIZE = 3;
@@ -324,14 +345,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             const result = await generateCard({
               resourceId: state.resourceId!,
               emotion,
-              style: {
-                colors: {
-                  primary: state.stylePreset!.colors.primary,
-                  secondary: state.stylePreset!.colors.secondary,
-                  accent: state.stylePreset!.colors.accent,
-                },
-                illustrationStyle: state.stylePreset!.illustrationStyle,
-              },
+              style: styleArg,
               characterId: state.characterId ?? undefined,
               includeText: state.includeTextInImage,
             });

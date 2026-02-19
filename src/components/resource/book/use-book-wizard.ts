@@ -165,9 +165,11 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
     if (
       editResourceId &&
       existingResource &&
-      existingStyle &&
       !hasInitializedEditMode.current
     ) {
+      // Wait for style to load if the resource has one
+      if (existingResource.styleId && !existingStyle) return;
+
       hasInitializedEditMode.current = true;
       const content = existingResource.content as BookContent;
       const imageItems = extractBookImageItems(content);
@@ -179,13 +181,15 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
         layout: content.layout || "picture_book",
         hasCover: !!content.cover,
         creationMode: "ai",
-        styleId: existingResource.styleId,
-        stylePreset: {
-          name: existingStyle.name,
-          colors: existingStyle.colors,
-          typography: existingStyle.typography,
-          illustrationStyle: existingStyle.illustrationStyle,
-        },
+        styleId: existingResource.styleId ?? null,
+        stylePreset: existingStyle
+          ? {
+              name: existingStyle.name,
+              colors: existingStyle.colors,
+              typography: existingStyle.typography,
+              illustrationStyle: existingStyle.illustrationStyle,
+            }
+          : null,
         resourceId: existingResource._id,
         cover: content.cover || null,
         pages: content.pages || [],
@@ -410,7 +414,6 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   // Save draft
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
-    if (!state.styleId && !state.stylePreset) return null;
 
     let styleId = state.styleId;
     if (!styleId && state.stylePreset) {
@@ -423,8 +426,6 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
       });
       updateState({ styleId });
     }
-
-    if (!styleId) return null;
 
     const content = buildContent();
 
@@ -439,7 +440,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
 
     const newId = await createResource({
       userId: user._id,
-      styleId,
+      styleId: styleId ?? undefined,
       type: "book",
       name: state.name,
       description: state.description || `Book: ${state.name}`,
@@ -524,10 +525,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   const canGoNext = (): boolean => {
     switch (currentStep) {
       case 0: // Setup
-        return (
-          state.name.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.name.trim().length > 0;
       case 1: // Content
         return (
           state.pages.length > 0 &&
@@ -545,10 +543,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   const isStepComplete = (step: number): boolean => {
     switch (step) {
       case 0:
-        return (
-          state.name.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.name.trim().length > 0;
       case 1:
         return (
           state.pages.length > 0 &&
@@ -618,7 +613,7 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   };
 
   const isLoading =
-    !user || (!!editResourceId && (!existingResource || !existingStyle));
+    !user || (!!editResourceId && !existingResource);
 
   return {
     user,

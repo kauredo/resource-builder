@@ -200,24 +200,28 @@ export function useEmotionCardsWizard({
     if (
       editResourceId &&
       existingResource &&
-      existingStyle &&
       !hasInitializedEditMode.current
     ) {
+      // Wait for style to load if the resource has one
+      if (existingResource.styleId && !existingStyle) return;
+
       hasInitializedEditMode.current = true;
       const content = existingResource.content as EmotionCardContent;
       const emotions = content.cards.map(c => c.emotion);
 
       // Build stylePreset from existing style
-      const stylePreset: StylePreset = {
-        name: existingStyle.name,
-        colors: existingStyle.colors,
-        typography: existingStyle.typography,
-        illustrationStyle: existingStyle.illustrationStyle,
-      };
+      const stylePreset: StylePreset | null = existingStyle
+        ? {
+            name: existingStyle.name,
+            colors: existingStyle.colors,
+            typography: existingStyle.typography,
+            illustrationStyle: existingStyle.illustrationStyle,
+          }
+        : null;
 
       setState({
         name: existingResource.name,
-        styleId: existingResource.styleId,
+        styleId: existingResource.styleId ?? null,
         stylePreset,
         selectedEmotions: emotions,
         originalEmotions: emotions,
@@ -269,7 +273,6 @@ export function useEmotionCardsWizard({
   // Save draft to Convex after Step 1
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
-    if (!state.styleId && !state.stylePreset) return null;
 
     // Ensure we have a styleId - create from preset if needed
     let styleId = state.styleId;
@@ -281,11 +284,8 @@ export function useEmotionCardsWizard({
         typography: state.stylePreset.typography,
         illustrationStyle: state.stylePreset.illustrationStyle,
       });
-      // Update state with the new styleId
       updateState({ styleId });
     }
-
-    if (!styleId) return null;
 
     const content: EmotionCardContent = {
       cards: state.selectedEmotions.map(emotion => ({
@@ -322,7 +322,7 @@ export function useEmotionCardsWizard({
       // Create new draft
       const resourceId = await createResource({
         userId: user._id,
-        styleId,
+        styleId: styleId ?? undefined,
         type: "emotion_cards",
         name: state.name,
         description: `Emotion card deck with ${state.selectedEmotions.length} cards`,
@@ -347,10 +347,7 @@ export function useEmotionCardsWizard({
   const canGoNext = (): boolean => {
     switch (currentStep) {
       case 0: // Name & Style
-        return (
-          state.name.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.name.trim().length > 0;
       case 1: // Emotions
         return state.selectedEmotions.length > 0;
       case 2: // Options (Character + Layout)
@@ -367,10 +364,7 @@ export function useEmotionCardsWizard({
   const isStepComplete = (step: number): boolean => {
     switch (step) {
       case 0:
-        return (
-          state.name.trim().length > 0 &&
-          (state.styleId !== null || state.stylePreset !== null)
-        );
+        return state.name.trim().length > 0;
       case 1:
         return state.selectedEmotions.length > 0;
       case 2:
@@ -460,8 +454,7 @@ export function useEmotionCardsWizard({
   const previewCardLayout = styleWithFrames?.cardLayout;
 
   // Show loading state while user or edit mode data is loading
-  const isLoadingEditData =
-    editResourceId && (!existingResource || !existingStyle);
+  const isLoadingEditData = editResourceId && !existingResource;
   const isLoading = !user || isLoadingEditData;
 
   return {

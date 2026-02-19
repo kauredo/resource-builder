@@ -162,7 +162,7 @@ export const getResource = query({
 export const createResource = mutation({
   args: {
     userId: v.id("users"),
-    styleId: v.id("styles"),
+    styleId: v.optional(v.id("styles")),
     type: v.union(
       v.literal("emotion_cards"),
       v.literal("board_game"),

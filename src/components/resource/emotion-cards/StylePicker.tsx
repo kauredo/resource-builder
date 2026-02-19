@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { StylePreset } from "@/types";
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StylePickerProps {
@@ -23,8 +23,6 @@ function StyleOption({
   isSelected,
   onSelect,
   accentColor = "coral",
-  displayName,
-  badge,
 }: {
   style: {
     _id: Id<"styles">;
@@ -46,8 +44,6 @@ function StyleOption({
   isSelected: boolean;
   onSelect: () => void;
   accentColor?: "coral" | "teal";
-  displayName?: string;
-  badge?: string;
 }) {
   return (
     <button
@@ -101,26 +97,15 @@ function StyleOption({
           expressed in many ways
         </p>
 
-        {/* Style name and badges */}
+        {/* Style name and selection indicator */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-current/10">
           <span
             className="text-sm font-medium"
             style={{ color: style.colors.text }}
           >
-            {displayName ?? style.name}
+            {style.name}
           </span>
           <div className="flex items-center gap-2">
-            {badge && (
-              <span
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                style={{
-                  backgroundColor: `color-mix(in oklch, ${style.colors.text} 8%, transparent)`,
-                  color: style.colors.text,
-                }}
-              >
-                {badge}
-              </span>
-            )}
             {style.isPreset && (
               <Lock
                 className="size-3.5 opacity-50"
@@ -135,7 +120,8 @@ function StyleOption({
                   accentColor === "coral" ? "bg-coral" : "bg-teal"
                 )}
               >
-                <Check className="size-3 text-white" aria-hidden="true" />
+                <Check className="size-3 text-white group-hover:hidden" aria-hidden="true" />
+                <X className="size-3 text-white hidden group-hover:block" aria-hidden="true" />
               </div>
             )}
           </div>
@@ -157,13 +143,9 @@ export function StylePicker({
   // Split into presets and custom styles
   const presetStyles = userStyles?.filter((s) => s.isPreset) ?? [];
   const customStyles = userStyles?.filter((s) => !s.isPreset) ?? [];
-  const sortedPresets = [...presetStyles].sort((a, b) => {
-    const aIsNeutral = a.name.toLowerCase().includes("neutral");
-    const bIsNeutral = b.name.toLowerCase().includes("neutral");
-    if (aIsNeutral && !bIsNeutral) return -1;
-    if (!aIsNeutral && bIsNeutral) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedPresets = [...presetStyles].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 
   // Loading state
   if (userStyles === undefined) {
@@ -198,24 +180,18 @@ export function StylePicker({
                 key={style._id}
                 style={style}
                 isSelected={selectedStyleId === style._id}
-                displayName={
-                  style.name.toLowerCase().includes("neutral")
-                    ? "No style"
-                    : undefined
-                }
-                badge={
-                  style.name.toLowerCase().includes("neutral")
-                    ? "Neutral"
-                    : undefined
-                }
-                onSelect={() =>
-                  onSelect(style._id, {
-                    name: style.name,
-                    colors: style.colors,
-                    typography: style.typography,
-                    illustrationStyle: style.illustrationStyle,
-                  })
-                }
+                onSelect={() => {
+                  if (selectedStyleId === style._id) {
+                    onSelect(null, null);
+                  } else {
+                    onSelect(style._id, {
+                      name: style.name,
+                      colors: style.colors,
+                      typography: style.typography,
+                      illustrationStyle: style.illustrationStyle,
+                    });
+                  }
+                }}
                 accentColor="coral"
               />
             ))}
@@ -235,14 +211,18 @@ export function StylePicker({
                 key={style._id}
                 style={style}
                 isSelected={selectedStyleId === style._id}
-                onSelect={() =>
-                  onSelect(style._id, {
-                    name: style.name,
-                    colors: style.colors,
-                    typography: style.typography,
-                    illustrationStyle: style.illustrationStyle,
-                  })
-                }
+                onSelect={() => {
+                  if (selectedStyleId === style._id) {
+                    onSelect(null, null);
+                  } else {
+                    onSelect(style._id, {
+                      name: style.name,
+                      colors: style.colors,
+                      typography: style.typography,
+                      illustrationStyle: style.illustrationStyle,
+                    });
+                  }
+                }}
                 accentColor="teal"
               />
             ))}

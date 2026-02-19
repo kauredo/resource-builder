@@ -2,22 +2,6 @@ import { StylePreset } from "@/types";
 
 export const STYLE_PRESETS: StylePreset[] = [
   {
-    name: "Neutral / No Style",
-    colors: {
-      primary: "#7A7A7A", // Neutral gray
-      secondary: "#B0B0B0", // Light gray
-      accent: "#D7D7D7", // Mist gray
-      background: "#FFFFFF", // White
-      text: "#1A1A1A", // Near black
-    },
-    typography: {
-      headingFont: "Nunito",
-      bodyFont: "Work Sans",
-    },
-    illustrationStyle:
-      "Neutral, clean, minimal line illustration style with soft shading. No distinct character style, keep visuals simple and versatile.",
-  },
-  {
     name: "Warm & Playful",
     colors: {
       primary: "#FF6B6B", // Coral red
@@ -52,18 +36,18 @@ export const STYLE_PRESETS: StylePreset[] = [
   {
     name: "Bold & Colorful",
     colors: {
-      primary: "#7400B8", // Purple
-      secondary: "#5390D9", // Blue
-      accent: "#56CFE1", // Cyan
+      primary: "#E63946", // Bright red
+      secondary: "#1D3557", // Deep navy
+      accent: "#F4A261", // Golden amber
       background: "#FFFFFF", // White
       text: "#1A1A2E", // Near black
     },
     typography: {
-      headingFont: "Poppins",
-      bodyFont: "Inter",
+      headingFont: "Fredoka",
+      bodyFont: "Nunito Sans",
     },
     illustrationStyle:
-      "Bold vibrant colors, high contrast, energetic and dynamic, playful geometric shapes, strong outlines, modern and eye-catching",
+      "Bold graphic illustrations with high saturation, strong outlines, flat color blocks, dynamic compositions, confident shapes, print-friendly with high contrast",
   },
   {
     name: "Nature & Earthy",
@@ -84,17 +68,17 @@ export const STYLE_PRESETS: StylePreset[] = [
   {
     name: "Whimsical Fantasy",
     colors: {
-      primary: "#E0AAFF", // Lavender
-      secondary: "#C77DFF", // Purple
-      accent: "#9D4EDD", // Deep purple
-      background: "#FFF0F5", // Lavender blush
-      text: "#4A4063", // Dark purple
+      primary: "#F4A0C4", // Rose pink
+      secondary: "#7EC8E3", // Sky blue
+      accent: "#FFD166", // Golden
+      background: "#FFF8F0", // Warm cream
+      text: "#3D3655", // Dark plum
     },
     typography: {
       headingFont: "Baloo 2",
-      bodyFont: "Rubik",
+      bodyFont: "Quicksand",
     },
     illustrationStyle:
-      "Magical and dreamy, soft pastels with sparkles, fantasy creatures, clouds and stars, whimsical and enchanting, fairy-tale like, gentle magical glow",
+      "Whimsical fairy-tale illustrations with soft watercolor textures, gentle curves, dreamy pastel atmosphere, storybook quality, imaginative creatures, hand-painted feel",
   },
 ];

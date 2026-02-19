@@ -34,13 +34,7 @@ export function NameStyleStep({
     selectedStyleId: Id<"styles"> | null,
     preset: StylePreset | null
   ) => {
-    if (selectedStyleId) {
-      // User selected their own custom style (from DB)
-      onUpdate({ styleId: selectedStyleId, stylePreset: preset });
-    } else if (preset) {
-      // User selected a preset - just store the data, no DB record yet
-      onUpdate({ styleId: null, stylePreset: preset });
-    }
+    onUpdate({ styleId: selectedStyleId, stylePreset: preset });
   };
 
   if (!user) {
@@ -56,8 +50,8 @@ export function NameStyleStep({
       {/* First-time help tip - only show for new users */}
       {isFirstTimeUser && (
         <HelpTip>
-          Think of your style as this deck&apos;s personality — it shapes every
-          illustration we create together.
+          A style keeps your illustrations consistent — same colors, fonts,
+          and art direction across every card. Without one, the AI creates freely.
         </HelpTip>
       )}
 
@@ -83,39 +77,44 @@ export function NameStyleStep({
       {/* Style Selection */}
       <div className="space-y-2">
         <Label className="text-base font-medium">
-          Visual Style
+          Visual Style <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         {isEditMode ? (
           <>
-            <p className="text-sm text-muted-foreground mb-4">
-              Style is locked after creation. Changing it would require regenerating all images.
-            </p>
-            {/* Locked style display */}
-            {stylePreset && (
-              <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
-                <div className="flex gap-1.5">
-                  <div
-                    className="w-6 h-6 rounded-md shadow-sm"
-                    style={{ backgroundColor: stylePreset.colors.primary }}
-                  />
-                  <div
-                    className="w-6 h-6 rounded-md shadow-sm"
-                    style={{ backgroundColor: stylePreset.colors.secondary }}
-                  />
-                  <div
-                    className="w-6 h-6 rounded-md shadow-sm"
-                    style={{ backgroundColor: stylePreset.colors.accent }}
-                  />
+            {stylePreset ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Style is locked after creation. Changing it would require regenerating all images.
+                </p>
+                <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
+                  <div className="flex gap-1.5">
+                    <div
+                      className="w-6 h-6 rounded-md shadow-sm"
+                      style={{ backgroundColor: stylePreset.colors.primary }}
+                    />
+                    <div
+                      className="w-6 h-6 rounded-md shadow-sm"
+                      style={{ backgroundColor: stylePreset.colors.secondary }}
+                    />
+                    <div
+                      className="w-6 h-6 rounded-md shadow-sm"
+                      style={{ backgroundColor: stylePreset.colors.accent }}
+                    />
+                  </div>
+                  <span className="font-medium">{stylePreset.name}</span>
+                  <Lock className="size-4 text-muted-foreground ml-auto" aria-hidden="true" />
                 </div>
-                <span className="font-medium">{stylePreset.name}</span>
-                <Lock className="size-4 text-muted-foreground ml-auto" aria-hidden="true" />
-              </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No style — the AI chooses colors and illustrations freely.
+              </p>
             )}
           </>
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              Choose a style for your emotion cards. This determines colors, fonts, and illustration style.
+              Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
             </p>
             <StylePicker
               selectedStyleId={styleId}

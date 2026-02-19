@@ -38,7 +38,7 @@ export const generateIconImage = action({
     let styleData: {
       colors: { primary: string; secondary: string; accent: string };
       illustrationStyle: string;
-    };
+    } | null = null;
 
     if (args.style) {
       styleData = args.style;
@@ -51,8 +51,6 @@ export const generateIconImage = action({
         colors: style.colors,
         illustrationStyle: style.illustrationStyle,
       };
-    } else {
-      throw new Error("Either styleId or style data must be provided");
     }
 
     let characterContext: { promptFragment?: string; description?: string } = {};
@@ -70,7 +68,7 @@ export const generateIconImage = action({
 
     const prompt = buildIconPrompt({
       prompt: args.prompt,
-      style: styleData,
+      style: styleData ?? undefined,
       characterContext,
     });
 
@@ -138,10 +136,9 @@ export const generateIconImage = action({
       prompt,
       params: {
         model: MODEL,
-        style: {
-          colors: styleData.colors,
-          illustrationStyle: styleData.illustrationStyle,
-        },
+        style: styleData
+          ? { colors: styleData.colors, illustrationStyle: styleData.illustrationStyle }
+          : null,
         characterId: args.characterId,
       },
       source: "generated",
@@ -161,7 +158,7 @@ function buildIconPrompt({
   characterContext,
 }: {
   prompt: string;
-  style: {
+  style?: {
     colors: { primary: string; secondary: string; accent: string };
     illustrationStyle: string;
   };
@@ -178,13 +175,15 @@ function buildIconPrompt({
 
   parts.push(prompt);
 
-  parts.push(
-    "IMPORTANT: follow the illustration style guidance EXACTLY: ",
-    style.illustrationStyle,
-  );
-  parts.push(
-    `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
-  );
+  if (style) {
+    parts.push(
+      "IMPORTANT: follow the illustration style guidance EXACTLY: ",
+      style.illustrationStyle,
+    );
+    parts.push(
+      `Using these colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+    );
+  }
 
   parts.push("Do NOT include any text, words, or letters in the image.");
 
