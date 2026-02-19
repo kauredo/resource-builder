@@ -183,6 +183,49 @@ IMPORTANT GUIDELINES:
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
 "detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["cover", "page_0", "page_1"]}]
 "appearsOn" uses "cover" or "page_N" where N is the page index. If no named characters appear, omit "detectedCharacters".`,
+
+  worksheet: `You are a creative assistant helping a therapist design a therapeutic worksheet for children/adolescents.
+Worksheets are printed activity sheets used in therapy sessions — think CBT thought records, coping skills worksheets, feelings journals, and psychoeducation handouts.
+
+Given a description, generate worksheet content as JSON:
+{
+  "name": "worksheet name",
+  "title": "Title displayed at the top of the worksheet",
+  "blocks": [
+    { "type": "heading", "text": "Section heading" },
+    { "type": "prompt", "text": "Instructions or questions for the child" },
+    { "type": "text", "text": "Informational or psychoeducational text" },
+    { "type": "lines", "lines": 3 },
+    { "type": "checklist", "items": ["Item 1", "Item 2", "Item 3"] },
+    { "type": "scale", "scaleLabels": { "min": "Not at all", "max": "Very much" } },
+    { "type": "drawing_box", "label": "Draw how you feel right now" },
+    { "type": "word_bank", "words": ["happy", "sad", "angry", "calm", "worried"] },
+    { "type": "matching", "leftItems": ["Feeling", "Thought"], "rightItems": ["Body clue", "Coping skill"] },
+    { "type": "fill_in_blank", "text": "When I feel ___ I can try ___" },
+    { "type": "multiple_choice", "question": "Which is a coping skill?", "options": ["Deep breathing", "Yelling", "Counting to 10"] },
+    { "type": "image", "caption": "My safe place", "imagePrompt": "a warm cozy room with soft blankets and fairy lights" },
+    { "type": "table", "headers": ["Situation", "Feeling", "Thought", "Action"], "tableRows": [["", "", "", ""], ["", "", "", ""]] }
+  ]
+}
+
+IMPORTANT GUIDELINES:
+- Use a MIX of block types to create an engaging, interactive worksheet. Don't just use text and lines.
+- Generate 6-15 blocks depending on the topic complexity.
+- Keep text age-appropriate and therapeutic in tone.
+- Use drawing_box for creative expression activities.
+- Use word_bank for vocabulary/emotion labeling activities.
+- Use matching for connecting concepts (feelings to body sensations, situations to coping skills).
+- Use fill_in_blank for sentence completion exercises.
+- Use multiple_choice for psychoeducation review.
+- Use image blocks sparingly (0-2) — only when a visual illustration adds real value (e.g., a calming scene, an example scenario).
+- Use table for structured tracking (thought records, mood logs, etc.).
+- The worksheet should flow logically: introduction → activity → reflection.
+- Use headings to create clear sections.
+- Empty table rows should use empty strings ["", "", ""] to indicate fillable cells.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["block_0", "block_5"]}]
+"appearsOn" uses "block_N" where N is the block index. If no named characters appear, omit "detectedCharacters".`,
 };
 
 export const generateResourceContent = action({
@@ -193,6 +236,7 @@ export const generateResourceContent = action({
       v.literal("card_game"),
       v.literal("board_game"),
       v.literal("book"),
+      v.literal("worksheet"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -302,12 +346,14 @@ export const generateResourceContent = action({
       : [];
     delete rawParsed.detectedCharacters;
 
-    // Post-process card_game: resolve labels to IDs, assign asset keys
+    // Post-process: resolve labels to IDs, assign asset keys
     let content: Record<string, unknown>;
     if (args.resourceType === "card_game") {
       content = postProcessCardGameContent(rawParsed);
     } else if (args.resourceType === "book") {
       content = postProcessBookContent(rawParsed);
+    } else if (args.resourceType === "worksheet") {
+      content = postProcessWorksheetContent(rawParsed);
     } else {
       content = rawParsed;
     }
@@ -455,5 +501,28 @@ function postProcessBookContent(raw: Record<string, unknown>): Record<string, un
     ...raw,
     pages: processedPages,
     cover: processedCover,
+  };
+}
+
+/** Post-process AI-generated worksheet content: assign UUIDs and asset keys to blocks */
+function postProcessWorksheetContent(raw: Record<string, unknown>): Record<string, unknown> {
+  const blocks = (raw.blocks as Array<Record<string, unknown>>) || [];
+
+  const processedBlocks = blocks.map((block, i) => {
+    const id = makeId();
+    const type = (block.type as string) || "text";
+    const base: Record<string, unknown> = { ...block, id };
+
+    // Assign imageAssetKey to image blocks
+    if (type === "image" && block.imagePrompt) {
+      base.imageAssetKey = `worksheet_block_${i}`;
+    }
+
+    return base;
+  });
+
+  return {
+    ...raw,
+    blocks: processedBlocks,
   };
 }

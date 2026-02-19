@@ -138,6 +138,7 @@ export type AssetType =
   | "flashcard_front_image"
   | "flashcard_back_image"
   | "worksheet_image"
+  | "worksheet_block_image"
   | "board_image"
   | "token_image"
   | "card_image"
@@ -222,19 +223,41 @@ export type WorksheetBlockType =
   | "lines"
   | "checklist"
   | "scale"
-  | "text";
+  | "text"
+  | "drawing_box"
+  | "word_bank"
+  | "matching"
+  | "fill_in_blank"
+  | "multiple_choice"
+  | "image"
+  | "table";
 
 export interface WorksheetBlock {
+  id: string;
   type: WorksheetBlockType;
   text?: string;
   items?: string[];
   scaleLabels?: { min: string; max: string };
   lines?: number;
+  label?: string;
+  height?: number;
+  words?: string[];
+  leftItems?: string[];
+  rightItems?: string[];
+  question?: string;
+  options?: string[];
+  headers?: string[];
+  tableRows?: string[][];
+  caption?: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+  characterId?: string;
 }
 
 export interface WorksheetContent {
   title: string;
   blocks: WorksheetBlock[];
+  creationMode?: "ai" | "manual";
   imageAssetKey?: AssetKey;
   imagePrompt?: string;
   headerImagePrompt?: string;

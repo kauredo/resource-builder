@@ -60,14 +60,12 @@ export function createFlashcardsTemplate() {
 
 export function createWorksheetTemplate() {
   const blocks: WorksheetBlock[] = [
-    { type: "heading", text: "My Calm Plan" },
-    {
-      type: "prompt",
-      text: "When I start to feel overwhelmed, I can try:",
-    },
-    { type: "checklist", items: ["Breathe slowly", "Count to 10", "Get a drink of water"] },
-    { type: "lines", lines: 3 },
-    { type: "scale", scaleLabels: { min: "Not calm", max: "Very calm" } },
+    { id: makeId(), type: "heading", text: "My Calm Plan" },
+    { id: makeId(), type: "prompt", text: "When I start to feel overwhelmed, I can try:" },
+    { id: makeId(), type: "checklist", items: ["Breathe slowly", "Count to 10", "Get a drink of water"] },
+    { id: makeId(), type: "drawing_box", label: "Draw your calm place" },
+    { id: makeId(), type: "lines", lines: 3 },
+    { id: makeId(), type: "scale", scaleLabels: { min: "Not calm", max: "Very calm" } },
   ];
 
   return {
