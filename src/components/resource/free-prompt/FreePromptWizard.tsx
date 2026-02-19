@@ -15,7 +15,7 @@ import { DraftResumeDialog } from "@/components/resource/DraftResumeDialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { Wand2 } from "lucide-react";
+import { Loader2, Undo2, Wand2 } from "lucide-react";
 import type { FreePromptContent, StylePreset } from "@/types";
 import { toast } from "sonner";
 
@@ -57,6 +57,9 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
     null,
   );
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
+  const [preRefinePrompt, setPreRefinePrompt] = useState<string | null>(null);
+  const [refineError, setRefineError] = useState<string | null>(null);
 
   const [state, setState] = useState({
     name: "",
@@ -85,6 +88,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
   const updateResource = useMutation(api.resources.updateResource);
   const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
   const generateImage = useAction(api.images.generateStyledImage);
+  const refinePrompt = useAction(api.contentGeneration.refinePrompt);
 
   useEffect(() => {
     if (!editResourceId || !existingResource) return;
@@ -150,6 +154,32 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
     preset: StylePreset | null,
   ) => {
     setState((prev) => ({ ...prev, styleId: selectedStyleId, stylePreset: preset }));
+  };
+
+  const handleRefinePrompt = async () => {
+    if (!state.prompt.trim() || isRefining) return;
+    setIsRefining(true);
+    setRefineError(null);
+    try {
+      const result = await refinePrompt({
+        prompt: state.prompt,
+        aspect: state.aspect,
+        styleId: state.styleId ?? undefined,
+      });
+      setPreRefinePrompt(state.prompt);
+      setState((prev) => ({ ...prev, prompt: result.refinedPrompt }));
+    } catch (error) {
+      setRefineError(error instanceof Error ? error.message : "Refinement failed. Please try again.");
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const handleUndoRefine = () => {
+    if (preRefinePrompt !== null) {
+      setState((prev) => ({ ...prev, prompt: preRefinePrompt }));
+      setPreRefinePrompt(null);
+    }
   };
 
   const saveDraft = useCallback(async () => {
@@ -363,7 +393,37 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
             onChange={(e) => setState((prev) => ({ ...prev, prompt: e.target.value }))}
             rows={5}
             placeholder="Describe the image you want"
+            disabled={isRefining}
           />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefinePrompt}
+              disabled={!state.prompt.trim() || isRefining}
+              className="gap-1.5"
+            >
+              {isRefining ? (
+                <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : (
+                <Wand2 className="size-3.5" aria-hidden="true" />
+              )}
+              {isRefining ? "Refining…" : "Refine with AI"}
+            </Button>
+            {preRefinePrompt !== null && !isRefining && (
+              <button
+                type="button"
+                onClick={handleUndoRefine}
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+              >
+                <Undo2 className="size-3.5" aria-hidden="true" />
+                Undo
+              </button>
+            )}
+          </div>
+          {refineError && (
+            <p className="text-sm text-destructive">{refineError}</p>
+          )}
           <div className="space-y-2">
             <Label>Aspect ratio</Label>
             <div className="flex gap-2">

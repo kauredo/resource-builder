@@ -18,6 +18,7 @@ import type * as characters from "../characters.js";
 import type * as contentGeneration from "../contentGeneration.js";
 import type * as frameActions from "../frameActions.js";
 import type * as frames from "../frames.js";
+import type * as geminiErrors from "../geminiErrors.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as resources from "../resources.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   contentGeneration: typeof contentGeneration;
   frameActions: typeof frameActions;
   frames: typeof frames;
+  geminiErrors: typeof geminiErrors;
   http: typeof http;
   images: typeof images;
   resources: typeof resources;

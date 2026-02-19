@@ -229,6 +229,68 @@ If your content features any named characters (animals, people, creatures, etc.)
 "appearsOn" uses "block_N" where N is the block index. If no named characters appear, omit "detectedCharacters".`,
 };
 
+export const refinePrompt = action({
+  args: {
+    prompt: v.string(),
+    aspect: v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3")),
+    styleId: v.optional(v.id("styles")),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
+
+    const contextParts: string[] = [];
+    if (args.styleId) {
+      const style = (await ctx.runQuery(api.styles.getStyle, {
+        styleId: args.styleId,
+      })) as Doc<"styles"> | null;
+      if (style) {
+        contextParts.push(
+          `Illustration style: ${style.illustrationStyle}`,
+          `Colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent)`,
+        );
+      }
+    }
+
+    const systemPrompt = `You are an expert image prompt engineer. Given a rough description, expand it into a detailed, compositionally rich image generation prompt in 2-4 sentences. Include specifics about composition, lighting, mood, and textures. Output ONLY the refined prompt text — no JSON, no labels, no explanation.${
+      contextParts.length > 0
+        ? `\n\nIncorporate this visual context naturally:\n${contextParts.join("\n")}`
+        : ""
+    }`;
+
+    const userPrompt = `Aspect ratio: ${args.aspect}\n\nRough description: ${args.prompt}`;
+
+    const response: Response = await fetch(
+      `${GEMINI_API_BASE}/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userPrompt }] }],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        friendlyGeminiError(response.status, errorData.error?.message || ""),
+      );
+    }
+
+    const data = await response.json();
+    const refinedPrompt: string | undefined =
+      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!refinedPrompt) {
+      throw new Error("No content generated");
+    }
+
+    return { refinedPrompt };
+  },
+});
+
 export const generateResourceContent = action({
   args: {
     resourceType: v.union(
