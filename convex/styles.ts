@@ -362,10 +362,37 @@ export const seedUserPresets = mutation({
       }
     }
 
-    // Get updated list of existing preset names
-    const existingNames = new Set(presetsByName.keys());
+    // Build lookup of canonical presets by name
+    const canonicalPresets = new Map(
+      STYLE_PRESETS.map((p) => [p.name, p]),
+    );
+
+    // Update existing presets if their data has drifted from canonical
+    for (const [name, presets] of presetsByName) {
+      const canonical = canonicalPresets.get(name);
+      if (!canonical) continue; // Not in current presets (e.g., removed Neutral) — leave it
+      const existing = presets[0]; // After dedup, first is the keeper
+      if (
+        existing.colors.primary !== canonical.colors.primary ||
+        existing.colors.secondary !== canonical.colors.secondary ||
+        existing.colors.accent !== canonical.colors.accent ||
+        existing.colors.background !== canonical.colors.background ||
+        existing.colors.text !== canonical.colors.text ||
+        existing.typography.headingFont !== canonical.typography.headingFont ||
+        existing.typography.bodyFont !== canonical.typography.bodyFont ||
+        existing.illustrationStyle !== canonical.illustrationStyle
+      ) {
+        await ctx.db.patch(existing._id, {
+          colors: canonical.colors,
+          typography: canonical.typography,
+          illustrationStyle: canonical.illustrationStyle,
+          updatedAt: Date.now(),
+        });
+      }
+    }
 
     // Create any missing presets
+    const existingNames = new Set(presetsByName.keys());
     const now = Date.now();
     for (const preset of STYLE_PRESETS) {
       if (!existingNames.has(preset.name)) {

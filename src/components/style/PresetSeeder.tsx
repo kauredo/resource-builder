@@ -3,10 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { STYLE_PRESETS } from "@/lib/style-presets";
+
+// Bump this when presets change to force re-seeding for all users
+const PRESET_VERSION = 2;
 
 /**
- * Automatically seeds style presets for users and cleans up duplicates.
- * This ensures all users have exactly 6 default presets with no duplicates.
+ * Automatically seeds style presets for users and keeps them up to date.
  * Renders nothing - just handles the seeding logic.
  */
 export function PresetSeeder() {
@@ -19,19 +22,23 @@ export function PresetSeeder() {
   const hasSeeded = useRef(false);
 
   useEffect(() => {
-    // Only run once per mount, only if user exists and styles have loaded
     if (!user?._id || userStyles === undefined || hasSeeded.current) return;
 
-    // Check if user needs seeding:
-    // - Missing presets (< 6)
-    // - Or has duplicates (more presets than unique names)
     const presets = userStyles.filter((s) => s.isPreset);
     const uniqueNames = new Set(presets.map((s) => s.name));
-    const needsSeeding = presets.length !== 6 || uniqueNames.size !== presets.length;
+    const expectedNames = new Set(STYLE_PRESETS.map((p) => p.name));
+
+    // Seed if: missing canonical presets, has duplicates, or version changed
+    const hasDuplicates = uniqueNames.size !== presets.length;
+    const missingPresets = [...expectedNames].some((name) => !uniqueNames.has(name));
+    const lastVersion = Number(localStorage.getItem(`preset-v-${user._id}`) ?? "0");
+    const needsSeeding = hasDuplicates || missingPresets || lastVersion < PRESET_VERSION;
 
     if (needsSeeding) {
       hasSeeded.current = true;
-      seedPresets({ userId: user._id }).catch(console.error);
+      seedPresets({ userId: user._id })
+        .then(() => localStorage.setItem(`preset-v-${user._id}`, String(PRESET_VERSION)))
+        .catch(console.error);
     }
   }, [user?._id, userStyles, seedPresets]);
 
