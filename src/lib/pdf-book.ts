@@ -290,9 +290,8 @@ function renderContentPage(
     ? assetMap.get(page.imageAssetKey)
     : undefined;
 
-  const imageHeightRatio = opts.isPictureBook ? 0.6 : 0.3;
-  const imageHeight = imageUrl ? opts.usableHeight * imageHeightRatio : 0;
-  const textAreaHeight = opts.usableHeight - imageHeight - (imageUrl ? 16 : 0) - 24; // 16 gap, 24 page number
+  // Page images are 4:3 — derive height from width to match the actual ratio
+  const imageHeight = imageUrl ? opts.usableWidth * (3 / 4) : 0;
 
   const children: ReturnType<typeof createElement>[] = [];
 
@@ -548,19 +547,21 @@ function renderBookletCover(
   const children: ReturnType<typeof createElement>[] = [];
 
   if (coverUrl) {
-    // Image fills most of the slot
-    const imageHeight = opts.usableHeight * 0.65;
+    // Cover images are 3:4 portrait — derive height from width
+    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight * 0.75);
+    const imageWidth = imageHeight * (3 / 4);
     children.push(
       createElement(
         View,
         {
           key: "cover-img-wrap",
           style: {
-            width: opts.usableWidth,
+            width: imageWidth,
             height: imageHeight,
             borderRadius: 6,
             overflow: "hidden",
             marginBottom: 10,
+            alignSelf: "center",
           },
         },
         createElement(Image, {
@@ -626,9 +627,9 @@ function renderBookletPage(
   const imageUrl = page.imageAssetKey ? assetMap.get(page.imageAssetKey) : undefined;
   const children: ReturnType<typeof createElement>[] = [];
 
-  // Image — takes ~55% of slot height
+  // Page images are 4:3 — same ratio as standard layout
   if (imageUrl) {
-    const imageHeight = opts.usableHeight * 0.55;
+    const imageHeight = opts.usableWidth * (3 / 4);
     children.push(
       createElement(
         View,

@@ -290,6 +290,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
             assetKey: editingKey,
           }}
           imageUrl={assetMap.get(editingKey) as string}
+          aspectRatio={4 / 3}
           title="Edit worksheet image"
         />
       )}

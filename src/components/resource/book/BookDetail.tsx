@@ -526,6 +526,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
             assetKey: editingKey,
           }}
           imageUrl={assetMap.get(editingKey) as string}
+          aspectRatio={editingKey === "book_cover" ? 3 / 4 : 4 / 3}
           title="Edit book image"
         />
       )}

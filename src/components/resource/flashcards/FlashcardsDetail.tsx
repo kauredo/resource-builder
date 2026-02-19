@@ -330,6 +330,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
             assetKey: editingKey,
           }}
           imageUrl={assetMap.get(editingKey) as string}
+          aspectRatio={1}
           title="Edit flashcard image"
         />
       )}
