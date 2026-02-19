@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import { friendlyGeminiError } from "./geminiErrors";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const MODEL = "models/gemini-3-pro-image-preview";
@@ -126,7 +127,7 @@ export const generateEmotionCard = action({
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || "Failed to generate image");
+      throw new Error(friendlyGeminiError(response.status, errorData.error?.message || ""));
     }
 
     const data = await response.json();
@@ -302,7 +303,7 @@ export const generateStyledImage = action({
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || "Failed to generate image");
+      throw new Error(friendlyGeminiError(response.status, errorData.error?.message || ""));
     }
 
     const data = await response.json();

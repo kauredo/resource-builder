@@ -17,6 +17,7 @@ import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal"
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { Wand2 } from "lucide-react";
 import type { FreePromptContent, StylePreset } from "@/types";
+import { toast } from "sonner";
 
 const STEP_LABELS = ["Style", "Prompt", "Generate", "Export"] as const;
 const STEP_TITLES = ["Name & Style", "Prompt", "Generate", "Export"] as const;
@@ -256,6 +257,8 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
         includeText: false,
         aspect: state.aspect,
       });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
     } finally {
       setIsGenerating(false);
     }

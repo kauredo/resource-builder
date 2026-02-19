@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
+import { toast } from "sonner";
 
 interface BookDetailProps {
   resourceId: Id<"resources">;
@@ -151,6 +152,8 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           characterId: page.characterId as Id<"characters"> | undefined,
           aspect: "4:3",
         });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
       } finally {
         setRegeneratingPages((prev) => {
           const next = new Set(prev);
@@ -191,6 +194,8 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         styleId: resource.styleId as Id<"styles"> | undefined,
         aspect: "3:4",
       });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
     } finally {
       setRegeneratingCover(false);
     }

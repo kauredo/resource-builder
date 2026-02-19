@@ -43,6 +43,7 @@ import {
 import { getEmotionDescription } from "@/lib/emotions";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import type { EmotionCardContent, StyleFrames } from "@/types";
+import { toast } from "sonner";
 
 interface EmotionCardsDetailProps {
   resourceId: Id<"resources">;
@@ -85,6 +86,8 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
           characterId: card?.characterId as Id<"characters"> | undefined,
           includeText: content.layout.showLabels,
         });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
       } finally {
         setRegeneratingEmotions((prev) => {
           const next = new Set(prev);

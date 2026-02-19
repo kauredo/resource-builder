@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./convex-client-provider";
+import { Toaster } from "sonner";
 
 const fraunces = Fraunces({
   variable: "--font-heading",
@@ -65,6 +66,7 @@ export default function RootLayout({
         className={`${fraunces.variable} ${plusJakarta.variable} font-sans antialiased`}
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

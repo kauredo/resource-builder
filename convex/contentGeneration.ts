@@ -5,6 +5,7 @@ import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { Doc } from "./_generated/dataModel";
 import crypto from "crypto";
+import { friendlyGeminiError } from "./geminiErrors";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const TEXT_MODEL = "models/gemini-2.0-flash";
@@ -320,7 +321,7 @@ export const generateResourceContent = action({
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error?.message || "Failed to generate content",
+        friendlyGeminiError(response.status, errorData.error?.message || ""),
       );
     }
 

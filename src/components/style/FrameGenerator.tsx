@@ -21,6 +21,7 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames, FrameType } from "@/types";
+import { toast } from "sonner";
 
 interface FrameGeneratorProps {
   styleId: Id<"styles">;
@@ -92,7 +93,7 @@ export function FrameGenerator({
         promptSuffix: framePromptSuffix,
       });
     } catch (error) {
-      console.error(`Failed to generate ${frameType}:`, error);
+      toast.error("Failed to generate frame. Please try again.");
     } finally {
       setGeneratingTypes(prev => {
         const next = new Set(prev);
@@ -114,8 +115,8 @@ export function FrameGenerator({
           colors: style.colors,
           illustrationStyle: style.illustrationStyle,
           promptSuffix: framePromptSuffix,
-        }).catch(error => {
-          console.error(`Failed to generate ${frameType}:`, error);
+        }).catch(() => {
+          toast.error("Failed to generate frame. Please try again.");
         }),
       ),
     );

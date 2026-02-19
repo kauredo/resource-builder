@@ -23,6 +23,7 @@ import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import type { PosterContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
+import { toast } from "sonner";
 
 interface PosterDetailProps {
   resourceId: Id<"resources">;
@@ -64,6 +65,8 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
         styleId: resource.styleId as Id<"styles"> | undefined,
         aspect: "3:4",
       });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
     } finally {
       setIsRegenerating(false);
     }
