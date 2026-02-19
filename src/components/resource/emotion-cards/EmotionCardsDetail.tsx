@@ -83,7 +83,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
           emotion,
           description: card?.description,
           styleId: resource.styleId as Id<"styles"> | undefined,
-          characterId: card?.characterId as Id<"characters"> | undefined,
+          characterId: card?.characterIds?.[0] as Id<"characters"> | undefined,
           includeText: content.layout.showLabels,
         });
       } catch (error) {

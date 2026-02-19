@@ -85,7 +85,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                 assetKey: item.assetKey,
                 prompt: item.prompt,
                 style: styleArg,
-                characterId: item.characterId,
+                characterIds: item.characterIds,
                 includeText: item.includeText,
                 aspect: item.aspect,
               });
@@ -126,9 +126,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
       if (!state.styleId) return;
       const charIds = [
         ...new Set(
-          indices
-            .map((i) => state.imageItems[i]?.characterId)
-            .filter((id): id is NonNullable<typeof id> => !!id),
+          indices.flatMap((i) => state.imageItems[i]?.characterIds ?? []),
         ),
       ];
       if (charIds.length === 0) return;

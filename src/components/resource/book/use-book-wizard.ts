@@ -14,7 +14,7 @@ import type {
   BookContent,
   DetectedCharacterResult,
 } from "@/types";
-import { applyWorldContext, type ImageItem } from "@/components/resource/wizard/use-ai-wizard";
+import { applyWorldContext, buildCharacterMap, type ImageItem } from "@/components/resource/wizard/use-ai-wizard";
 
 const makeId = () => globalThis.crypto.randomUUID();
 
@@ -277,16 +277,11 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
             })),
           });
 
-          // Link characters to pages
-          const keyToChar = new Map<string, string>();
-          for (const r of charResults) {
-            for (const key of r.appearsOn) {
-              keyToChar.set(key, r.characterId);
-            }
-          }
+          // Link characters to pages (accumulate — multiple characters can share a page)
+          const keyToChars = buildCharacterMap(charResults);
           pages = pages.map((page, i) => {
-            const charId = keyToChar.get(`page_${i}`);
-            return charId ? { ...page, characterId: charId } : page;
+            const charIds = keyToChars.get(`page_${i}`);
+            return charIds ? { ...page, characterIds: charIds } : page;
           });
 
           charSelection = {
@@ -383,9 +378,11 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
   const handleRemoveDetectedCharacter = useCallback((characterId: string) => {
     updateState((prev) => {
       const remaining = prev.detectedCharacters.filter((c) => c.characterId !== characterId);
-      const pages = prev.pages.map((p) =>
-        p.characterId === characterId ? { ...p, characterId: undefined } : p,
-      );
+      const pages = prev.pages.map((p) => {
+        if (!p.characterIds) return p;
+        const filtered = p.characterIds.filter((id) => id !== characterId);
+        return { ...p, characterIds: filtered.length > 0 ? filtered : undefined };
+      });
       const charSelection = remaining.length > 0
         ? { mode: "per_item" as const, characterIds: remaining.map((r) => r.characterId) }
         : null;
@@ -650,12 +647,12 @@ export function useBookWizard({ editResourceId }: UseBookWizardArgs) {
 /** Extract image items from book content for generation */
 function extractBookImageItems(content: BookContent): ImageItem[] {
   const items: ImageItem[] = [];
-  const resourceCharacterId =
+  const resourceCharacterIds =
     content.characters?.characterIds && content.characters.characterIds.length > 0
-      ? (content.characters.characterIds[0] as Id<"characters">)
+      ? content.characters.characterIds.map((id) => id as Id<"characters">)
       : undefined;
 
-  // Cover image
+  // Cover image — use all resource-level characters
   if (content.cover?.imagePrompt) {
     items.push({
       assetKey: content.cover.imageAssetKey || "book_cover",
@@ -665,7 +662,7 @@ function extractBookImageItems(content: BookContent): ImageItem[] {
         "Fill the entire image edge-to-edge with the illustration — no borders, frames, margins, or surrounding whitespace. " +
         "Do NOT include any text, titles, or words in the image — text will be overlaid separately. " +
         "This is a full-bleed cover image.",
-      characterId: resourceCharacterId,
+      characterIds: resourceCharacterIds,
       includeText: false,
       aspect: "3:4",
       label: "Cover",
@@ -674,16 +671,17 @@ function extractBookImageItems(content: BookContent): ImageItem[] {
     });
   }
 
-  // Page images
+  // Page images — use page-level characterIds, fallback to resource-level
   content.pages.forEach((page, i) => {
     if (!page.imagePrompt) return;
+    const pageCharIds = page.characterIds && page.characterIds.length > 0
+      ? page.characterIds.map((id) => id as Id<"characters">)
+      : resourceCharacterIds;
     items.push({
       assetKey: page.imageAssetKey || `book_page_${i}`,
       assetType: "book_page_image",
       prompt: page.imagePrompt,
-      characterId:
-        (page.characterId as Id<"characters"> | undefined) ??
-        resourceCharacterId,
+      characterIds: pageCharIds,
       includeText: false,
       aspect: content.layout === "booklet" ? "3:4" : "4:3",
       label: `Page ${i + 1}`,

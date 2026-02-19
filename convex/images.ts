@@ -213,6 +213,7 @@ export const generateStyledImage = action({
     styleId: v.optional(v.id("styles")),
     style: v.optional(styleDataValidator),
     characterId: v.optional(v.id("characters")),
+    characterIds: v.optional(v.array(v.id("characters"))),
     includeText: v.optional(v.boolean()),
     aspect: v.optional(v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3"))),
   },
@@ -235,30 +236,34 @@ export const generateStyledImage = action({
       };
     }
 
-    let characterContext: { promptFragment?: string; description?: string } = {};
-    let referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
-    if (args.characterId) {
+    // Normalize characterId/characterIds into a single array
+    const resolvedCharIds: Id<"characters">[] = args.characterIds
+      ?? (args.characterId ? [args.characterId] : []);
+
+    // Load all character data and reference images
+    const characterContexts: Array<{ promptFragment?: string; description?: string }> = [];
+    const referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+
+    for (const charId of resolvedCharIds) {
       const character = await ctx.runQuery(api.characters.getCharacter, {
-        characterId: args.characterId,
+        characterId: charId,
       });
-      if (character) {
-        characterContext = {
-          promptFragment: character.promptFragment || undefined,
-          description: character.description || undefined,
-        };
-        // Fetch styled reference image for visual consistency
-        if (character.styledReferenceImageId) {
-          const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
-          if (refUrl) {
-            try {
-              const resp = await fetch(refUrl);
-              const buf = await resp.arrayBuffer();
-              const bytes = new Uint8Array(buf);
-              let binary = "";
-              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-              referenceImageParts = [{ inlineData: { mimeType: "image/png", data: btoa(binary) } }];
-            } catch { /* proceed without reference */ }
-          }
+      if (!character) continue;
+      characterContexts.push({
+        promptFragment: character.promptFragment || undefined,
+        description: character.description || undefined,
+      });
+      if (character.styledReferenceImageId) {
+        const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
+        if (refUrl) {
+          try {
+            const resp = await fetch(refUrl);
+            const buf = await resp.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            referenceImageParts.push({ inlineData: { mimeType: "image/png", data: btoa(binary) } });
+          } catch { /* proceed without reference */ }
         }
       }
     }
@@ -266,7 +271,7 @@ export const generateStyledImage = action({
     const prompt = buildGenericPrompt({
       prompt: args.prompt,
       style: styleData ?? undefined,
-      characterContext,
+      characterContexts,
       includeText: args.includeText ?? false,
       aspect: args.aspect ?? "1:1",
     });
@@ -349,6 +354,7 @@ export const generateStyledImage = action({
           ? { colors: styleData.colors, illustrationStyle: styleData.illustrationStyle }
           : null,
         characterId: args.characterId,
+        characterIds: resolvedCharIds.length > 0 ? resolvedCharIds : undefined,
         includeText: args.includeText ?? false,
         layout: {
           aspect: args.aspect ?? "1:1",
@@ -533,6 +539,7 @@ export const generateImageBatch = action({
         assetType: v.string(),
         prompt: v.string(),
         characterId: v.optional(v.id("characters")),
+        characterIds: v.optional(v.array(v.id("characters"))),
         includeText: v.optional(v.boolean()),
         aspect: v.optional(
           v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3")),
@@ -569,6 +576,7 @@ export const generateImageBatch = action({
                 styleId: args.styleId,
                 style: args.style,
                 characterId: item.characterId,
+                characterIds: item.characterIds,
                 includeText: item.includeText ?? true,
                 aspect: item.aspect ?? "1:1",
               },
@@ -609,28 +617,41 @@ export const generateImageBatch = action({
 function buildGenericPrompt({
   prompt,
   style,
-  characterContext,
+  characterContexts,
   includeText,
   aspect,
 }: {
   prompt: string;
   style?: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
-  characterContext?: { promptFragment?: string; description?: string };
+  characterContexts?: Array<{ promptFragment?: string; description?: string }>;
   includeText: boolean;
   aspect: "1:1" | "3:4" | "4:3";
 }) {
   const parts: string[] = [];
 
-  // Character description comes first and is strongly emphasized for consistency
-  if (characterContext?.promptFragment) {
+  const chars = characterContexts?.filter((c) => c.promptFragment) ?? [];
+  if (chars.length === 1) {
+    // Single character: keep existing CRITICAL format
     parts.push(
       "CRITICAL CHARACTER REFERENCE — this character MUST appear exactly as described in every image. " +
       "Match every visual detail precisely (colors, proportions, markings, clothing): " +
-      characterContext.promptFragment,
+      chars[0].promptFragment!,
     );
-  }
-  if (characterContext?.description) {
-    parts.push(`Character role: ${characterContext.description}`);
+    if (chars[0].description) {
+      parts.push(`Character role: ${chars[0].description}`);
+    }
+  } else if (chars.length > 1) {
+    // Multiple characters: numbered CRITICAL blocks
+    chars.forEach((char, i) => {
+      parts.push(
+        `CRITICAL CHARACTER ${i + 1} REFERENCE — this character MUST appear exactly as described. ` +
+        `Match every visual detail precisely (colors, proportions, markings, clothing): ` +
+        char.promptFragment!,
+      );
+      if (char.description) {
+        parts.push(`Character ${i + 1} role: ${char.description}`);
+      }
+    });
   }
 
   parts.push(prompt);

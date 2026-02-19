@@ -142,6 +142,10 @@ export function BookDetail({ resourceId }: BookDetailProps) {
 
       setRegeneratingPages((prev) => new Set(prev).add(pageId));
       try {
+        const charIds = page.characterIds
+          ?.map((id) => id as Id<"characters">)
+          ?? (content.characters?.characterIds
+            ?.map((id) => id as Id<"characters">));
         await generateStyledImage({
           ownerType: "resource",
           ownerId: resource._id,
@@ -149,7 +153,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           assetKey: page.imageAssetKey,
           prompt: page.imagePrompt ?? page.text,
           styleId: resource.styleId as Id<"styles"> | undefined,
-          characterId: page.characterId as Id<"characters"> | undefined,
+          characterIds: charIds,
           aspect: "4:3",
         });
       } catch (error) {
@@ -185,6 +189,8 @@ export function BookDetail({ resourceId }: BookDetailProps) {
 
     setRegeneratingCover(true);
     try {
+      const charIds = content.characters?.characterIds
+        ?.map((id) => id as Id<"characters">);
       await generateStyledImage({
         ownerType: "resource",
         ownerId: resource._id,
@@ -192,6 +198,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         assetKey: content.cover.imageAssetKey,
         prompt: content.cover.imagePrompt ?? content.cover.title,
         styleId: resource.styleId as Id<"styles"> | undefined,
+        characterIds: charIds,
         aspect: "3:4",
       });
     } catch (error) {

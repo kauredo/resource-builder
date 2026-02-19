@@ -136,7 +136,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
           assetKey: card.frontImageAssetKey,
           prompt: card.imagePrompt ?? card.frontText,
           styleId: resource.styleId as Id<"styles"> | undefined,
-          characterId: card.characterId as Id<"characters"> | undefined,
+          characterIds: card.characterIds?.map((id) => id as Id<"characters">),
           aspect: "1:1",
         });
       } finally {

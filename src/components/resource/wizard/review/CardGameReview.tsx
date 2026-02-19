@@ -75,11 +75,11 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
     (content.characterPlacement as CharacterPlacement) || "backgrounds";
   const showTextMode = (content.showText as ShowTextMode) || "numbers_only";
 
-  // Resolve character ID for "resource" mode
-  const resourceCharacterId =
+  // Resolve character IDs for "resource" mode
+  const resourceCharacterIds =
     state.characterSelection?.mode === "resource" &&
     state.characterSelection.characterIds.length > 0
-      ? (state.characterSelection.characterIds[0] as Id<"characters">)
+      ? state.characterSelection.characterIds.map((id) => id as Id<"characters">)
       : undefined;
 
   // Helper to update content and sync imageItems
@@ -99,13 +99,13 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
         )
           ? (rawPlacement as CharacterPlacement)
           : "backgrounds";
-      const charForBg =
+      const charIdsForBg =
         placement === "backgrounds" || placement === "both"
-          ? resourceCharacterId
+          ? resourceCharacterIds
           : undefined;
-      const charForIcon =
+      const charIdsForIcon =
         placement === "icons" || placement === "both"
-          ? resourceCharacterId
+          ? resourceCharacterIds
           : undefined;
 
       const imageItems: ImageItem[] = [];
@@ -119,10 +119,10 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
             `CARD BACKGROUND for a printable card game. ${bgPrompt}. ` +
             "This image is ONLY the card itself — fill the entire image edge-to-edge with the design, no borders, margins, padding, or surrounding space. " +
             "Keep the center area relatively clear and simple so that icons and text can be overlaid on top. " +
-            (charForBg ? "If a character is included, place them along the edges or corners of the card — NOT in the center. The center must stay clear for overlay elements. " : "") +
+            (charIdsForBg ? "If a character is included, place them along the edges or corners of the card — NOT in the center. The center must stay clear for overlay elements. " : "") +
             "Do NOT use a white background — the image IS the full card background. Use a 3:4 portrait aspect ratio.",
           label: bg.label || "Background",
-          characterId: charForBg,
+          characterIds: charIdsForBg,
           includeText: false,
           aspect: "3:4",
           group: "Backgrounds",
@@ -136,7 +136,7 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
           assetType: "card_icon",
           prompt: icon.imagePrompt || `Card icon: ${icon.label}`,
           label: icon.label || "Icon",
-          characterId: charForIcon,
+          characterIds: charIdsForIcon,
           includeText: false,
           aspect: "1:1",
           greenScreen: true,
@@ -163,7 +163,7 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
 
       onUpdate({ generatedContent: newContent, imageItems });
     },
-    [onUpdate, resourceCharacterId],
+    [onUpdate, resourceCharacterIds],
   );
 
   const updateField = (field: string, value: unknown) => {
@@ -360,7 +360,7 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
         <SectionHeader title="Generation Settings" />
         <div className="rounded-xl border border-border/60 bg-card p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-            {resourceCharacterId && (
+            {resourceCharacterIds && (
               <div className="space-y-1">
                 <Label htmlFor="char-placement" className="text-xs">
                   Character appears in

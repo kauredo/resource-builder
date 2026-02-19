@@ -11,7 +11,7 @@ export interface ImageItem {
   assetKey: string;
   assetType: string;
   prompt: string;
-  characterId?: Id<"characters">;
+  characterIds?: Id<"characters">[];
   includeText: boolean;
   aspect: "1:1" | "3:4" | "4:3";
   greenScreen?: boolean;
@@ -513,20 +513,14 @@ function linkCharactersToContent(
 ): Record<string, unknown> {
   const linked = { ...content };
 
-  // Build appearsOn key → characterId map
-  const keyToChar = new Map<string, string>();
-  for (const r of results) {
-    for (const key of r.appearsOn) {
-      keyToChar.set(key, r.characterId);
-    }
-  }
+  const keyToChars = buildCharacterMap(results);
 
   switch (resourceType) {
     case "flashcards": {
       const cards = [...((linked.cards as Array<Record<string, unknown>>) || [])];
       cards.forEach((card, i) => {
-        const charId = keyToChar.get(`card_${i}`);
-        if (charId) cards[i] = { ...card, characterId: charId };
+        const charIds = keyToChars.get(`card_${i}`);
+        if (charIds) cards[i] = { ...card, characterIds: charIds };
       });
       linked.cards = cards;
       break;
@@ -534,14 +528,14 @@ function linkCharactersToContent(
     case "board_game": {
       const tokens = [...((linked.tokens as Array<Record<string, unknown>>) || [])];
       tokens.forEach((token, i) => {
-        const charId = keyToChar.get(`token_${i}`);
-        if (charId) tokens[i] = { ...token, characterId: charId };
+        const charIds = keyToChars.get(`token_${i}`);
+        if (charIds) tokens[i] = { ...token, characterIds: charIds };
       });
       linked.tokens = tokens;
       const cards = [...((linked.cards as Array<Record<string, unknown>>) || [])];
       cards.forEach((card, i) => {
-        const charId = keyToChar.get(`card_${i}`);
-        if (charId) cards[i] = { ...card, characterId: charId };
+        const charIds = keyToChars.get(`card_${i}`);
+        if (charIds) cards[i] = { ...card, characterIds: charIds };
       });
       linked.cards = cards;
       break;
@@ -563,9 +557,12 @@ function unlinkCharacterFromContent(
   const unlinked = { ...content };
 
   const removeChar = (items: Array<Record<string, unknown>>) =>
-    items.map((item) =>
-      item.characterId === characterId ? { ...item, characterId: undefined } : item,
-    );
+    items.map((item) => {
+      const ids = item.characterIds as string[] | undefined;
+      if (!ids) return item;
+      const filtered = ids.filter((id) => id !== characterId);
+      return { ...item, characterIds: filtered.length > 0 ? filtered : undefined };
+    });
 
   switch (resourceType) {
     case "flashcards": {
@@ -590,12 +587,12 @@ function extractImageItems(
   content: Record<string, unknown>,
   characterSelection?: CharacterSelection | null,
 ): ImageItem[] {
-  // Character to apply to all items (resource-level types like poster, card_game, board_game).
+  // Character(s) to apply to all items (resource-level types like poster, card_game, board_game).
   // When mode is "per_item" (e.g. from auto-detection), per-item types (flashcards) read
-  // characterId directly from content items. Resource-level types still need a fallback.
-  const resourceCharacterId =
+  // characterIds directly from content items. Resource-level types still need a fallback.
+  const resourceCharacterIds =
     characterSelection?.characterIds && characterSelection.characterIds.length > 0
-      ? (characterSelection.characterIds[0] as Id<"characters">)
+      ? characterSelection.characterIds.map((id) => id as Id<"characters">)
       : undefined;
   const items: ImageItem[] = [];
 
@@ -606,7 +603,7 @@ function extractImageItems(
         assetKey: "poster_main",
         assetType: "poster_image",
         prompt: `Poster illustration: ${prompt}`,
-        characterId: resourceCharacterId,
+        characterIds: resourceCharacterIds,
         includeText: true,
         aspect: "3:4",
         status: "pending",
@@ -619,12 +616,12 @@ function extractImageItems(
       cards.forEach((card, i) => {
         const prompt =
           (card.imagePrompt as string) || `Flashcard illustration for: ${card.frontText as string}`;
+        const cardCharIds = (card.characterIds as string[] | undefined)?.map((id) => id as Id<"characters">);
         items.push({
           assetKey: `flashcard_front_${i}`,
           assetType: "flashcard_front_image",
           prompt,
-          characterId:
-            (card.characterId as Id<"characters"> | undefined) ?? resourceCharacterId,
+          characterIds: cardCharIds?.length ? cardCharIds : resourceCharacterIds,
           includeText: true,
           aspect: "1:1",
           status: "pending",
@@ -644,13 +641,13 @@ function extractImageItems(
       const placement = ["backgrounds", "icons", "both", "none"].includes(rawPlacement)
         ? rawPlacement
         : "backgrounds";
-      const charForBg =
+      const charIdsForBg =
         placement === "backgrounds" || placement === "both"
-          ? resourceCharacterId
+          ? resourceCharacterIds
           : undefined;
-      const charForIcon =
+      const charIdsForIcon =
         placement === "icons" || placement === "both"
-          ? resourceCharacterId
+          ? resourceCharacterIds
           : undefined;
 
       // One ImageItem per background
@@ -664,10 +661,10 @@ function extractImageItems(
             `CARD BACKGROUND for a printable card game. ${bgPrompt}. ` +
             "This image is ONLY the card itself — fill the entire image edge-to-edge with the design, no borders, margins, padding, or surrounding space. " +
             "Keep the center area relatively clear and simple so that icons and text can be overlaid on top. " +
-            (charForBg ? "If a character is included, place them along the edges or corners of the card — NOT in the center. The center must stay clear for overlay elements. " : "") +
+            (charIdsForBg ? "If a character is included, place them along the edges or corners of the card — NOT in the center. The center must stay clear for overlay elements. " : "") +
             "Do NOT use a white background — the image IS the full card background. Use a 3:4 portrait aspect ratio.",
           label: (bg.label as string) || "Background",
-          characterId: charForBg,
+          characterIds: charIdsForBg,
           includeText: false,
           aspect: "3:4",
           group: "Backgrounds",
@@ -675,7 +672,7 @@ function extractImageItems(
         });
       });
 
-      // One ImageItem per icon (green screen)
+      // One ImageItem per icon (green screen) — icons use first character only
       icons.forEach((icon) => {
         const id = icon.id as string;
         items.push({
@@ -683,7 +680,7 @@ function extractImageItems(
           assetType: "card_icon",
           prompt: (icon.imagePrompt as string) || `Card icon: ${icon.label as string}`,
           label: (icon.label as string) || "Icon",
-          characterId: charForIcon,
+          characterIds: charIdsForIcon,
           includeText: false,
           aspect: "1:1",
           greenScreen: true,
@@ -718,7 +715,7 @@ function extractImageItems(
         assetKey: "board_main",
         assetType: "board_image",
         prompt: `Board game illustration: ${boardPrompt}`,
-        characterId: resourceCharacterId,
+        characterIds: resourceCharacterIds,
         includeText: true,
         aspect: "1:1",
         status: "pending",
@@ -753,4 +750,20 @@ export function applyWorldContext(
     ...item,
     prompt: worldPrefix + item.prompt,
   }));
+}
+
+/** Build an accumulating map from appearsOn keys to character ID arrays.
+ *  Shared by all wizards that link detected characters to content items. */
+export function buildCharacterMap(
+  results: Array<{ characterId: string; appearsOn: string[] }>,
+): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const r of results) {
+    for (const key of r.appearsOn) {
+      const existing = map.get(key) || [];
+      existing.push(r.characterId);
+      map.set(key, existing);
+    }
+  }
+  return map;
 }

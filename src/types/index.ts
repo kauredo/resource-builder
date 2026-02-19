@@ -90,7 +90,7 @@ export interface EmotionCard {
   emotion: string;
   description: string;
   imageStorageId?: string;
-  characterId?: string;
+  characterIds?: string[];
 }
 
 export interface EmotionCardLayout {
@@ -161,6 +161,7 @@ export interface GeneratedAssetParams {
     illustrationStyle: string;
   };
   characterId?: string;
+  characterIds?: string[];
   includeText?: boolean;
   layout?: Record<string, unknown>;
   editState?: Record<string, unknown>;
@@ -206,7 +207,7 @@ export interface FlashcardContentItem {
   imagePrompt?: string;
   frontImageAssetKey?: AssetKey;
   backImageAssetKey?: AssetKey;
-  characterId?: string;
+  characterIds?: string[];
 }
 
 export interface FlashcardsContent {
@@ -251,7 +252,7 @@ export interface WorksheetBlock {
   caption?: string;
   imagePrompt?: string;
   imageAssetKey?: AssetKey;
-  characterId?: string;
+  characterIds?: string[];
 }
 
 export interface WorksheetContent {
@@ -282,13 +283,13 @@ export interface BoardGameContent {
     name: string;
     color?: string;
     assetKey?: AssetKey;
-    characterId?: string;
+    characterIds?: string[];
   }[];
   cards?: {
     title: string;
     text: string;
     assetKey?: AssetKey;
-    characterId?: string;
+    characterIds?: string[];
   }[];
   characters?: CharacterSelection;
 }
@@ -373,7 +374,7 @@ export interface LegacyCardGameContent {
     count: number;
     imagePrompt?: string;
     imageAssetKey?: AssetKey;
-    characterId?: string;
+    characterIds?: string[];
   }[];
   characters?: CharacterSelection;
 }
@@ -403,7 +404,7 @@ export interface BookPage {
   text: string;
   imagePrompt?: string;
   imageAssetKey?: AssetKey;
-  characterId?: string;
+  characterIds?: string[];
 }
 
 export interface BookCover {

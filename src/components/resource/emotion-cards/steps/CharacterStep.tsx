@@ -39,7 +39,7 @@ export function CharacterStep({
 
   const handleCharacterSelect = (id: Id<"characters"> | null) => {
     setDismissedStyleHint(false);
-    onUpdate({ characterId: id });
+    onUpdate({ characterIds: id ? [id] : null });
   };
 
   const handleApplyCharacterStyle = () => {

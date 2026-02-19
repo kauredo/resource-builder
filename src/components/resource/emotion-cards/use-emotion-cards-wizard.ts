@@ -24,7 +24,7 @@ export interface WizardState {
   originalEmotions: string[];
 
   // Step 3: Character (optional, in Options step)
-  characterId: Id<"characters"> | null;
+  characterIds: Id<"characters">[] | null;
 
   // Step 3: Layout (in Options step)
   layout: EmotionCardLayout;
@@ -49,7 +49,7 @@ export const INITIAL_STATE: WizardState = {
   stylePreset: null,
   selectedEmotions: [],
   originalEmotions: [],
-  characterId: null,
+  characterIds: null,
   layout: {
     cardsPerPage: 6,
     cardSize: "medium",
@@ -225,8 +225,8 @@ export function useEmotionCardsWizard({
         stylePreset,
         selectedEmotions: emotions,
         originalEmotions: emotions,
-        characterId:
-          (content.cards[0]?.characterId as Id<"characters"> | null) ?? null,
+        characterIds:
+          (content.cards[0]?.characterIds as Id<"characters">[] | undefined) ?? null,
         layout: content.layout,
         includeTextInImage: false, // Default to no text in images
         resourceId: existingResource._id,
@@ -291,7 +291,7 @@ export function useEmotionCardsWizard({
       cards: state.selectedEmotions.map(emotion => ({
         emotion,
         description: "",
-        characterId: state.characterId ?? undefined,
+        characterIds: state.characterIds ?? undefined,
       })),
       layout: state.layout,
     };

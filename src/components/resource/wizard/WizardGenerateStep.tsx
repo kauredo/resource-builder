@@ -86,7 +86,7 @@ export function WizardGenerateStep({
                 : undefined;
 
               if (item.greenScreen) {
-                // Route to green screen icon generation
+                // Route to green screen icon generation (single character only)
                 await generateIconImage({
                   ownerType: "resource",
                   ownerId: state.resourceId!,
@@ -94,7 +94,7 @@ export function WizardGenerateStep({
                   assetKey: item.assetKey,
                   prompt: item.prompt,
                   style: styleArg,
-                  characterId: item.characterId,
+                  characterId: item.characterIds?.[0],
                 });
               } else {
                 await generateImage({
@@ -104,7 +104,7 @@ export function WizardGenerateStep({
                   assetKey: item.assetKey,
                   prompt: item.prompt,
                   style: styleArg,
-                  characterId: item.characterId,
+                  characterIds: item.characterIds,
                   includeText: item.includeText,
                   aspect: item.aspect,
                 });
@@ -154,9 +154,7 @@ export function WizardGenerateStep({
       if (!state.styleId) return;
       const charIds = [
         ...new Set(
-          indices
-            .map((i) => state.imageItems[i]?.characterId)
-            .filter((id): id is NonNullable<typeof id> => !!id),
+          indices.flatMap((i) => state.imageItems[i]?.characterIds ?? []),
         ),
       ];
       if (charIds.length === 0) return;

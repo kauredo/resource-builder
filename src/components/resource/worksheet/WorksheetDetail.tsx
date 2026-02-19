@@ -150,7 +150,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           assetKey: block.imageAssetKey,
           prompt: `Worksheet illustration: ${block.imagePrompt}`,
           styleId: resource.styleId as Id<"styles"> | undefined,
-          characterId: block.characterId as Id<"characters"> | undefined,
+          characterIds: block.characterIds?.map((id) => id as Id<"characters">),
           aspect: "4:3",
         });
       } finally {

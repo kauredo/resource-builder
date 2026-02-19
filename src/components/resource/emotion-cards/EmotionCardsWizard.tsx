@@ -78,7 +78,7 @@ export function EmotionCardsWizard({
             {hasCharacters && (
               <>
                 <CharacterStep
-                  characterId={state.characterId}
+                  characterId={state.characterIds?.[0] ?? null}
                   styleId={state.styleId}
                   onUpdate={updateState}
                 />

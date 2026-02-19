@@ -166,7 +166,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
           resourceId: state.resourceId,
           emotion,
           style: styleArg,
-          characterId: state.characterId ?? undefined,
+          characterId: state.characterIds?.[0] ?? undefined,
           includeText: state.includeTextInImage,
         });
 
@@ -191,7 +191,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         });
       }
     },
-    [state.resourceId, state.stylePreset, state.characterId, state.includeTextInImage, generateCard]
+    [state.resourceId, state.stylePreset, state.characterIds, state.includeTextInImage, generateCard]
   );
 
   const startGeneration = useCallback(async () => {
@@ -252,7 +252,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               resourceId: state.resourceId!,
               emotion,
               style: styleArg,
-              characterId: state.characterId ?? undefined,
+              characterId: state.characterIds?.[0] ?? undefined,
               includeText: state.includeTextInImage,
             });
 
@@ -285,7 +285,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
   }, [
     state.resourceId,
     state.stylePreset,
-    state.characterId,
+    state.characterIds,
     state.includeTextInImage,
     state.selectedEmotions,
     results,
@@ -346,7 +346,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               resourceId: state.resourceId!,
               emotion,
               style: styleArg,
-              characterId: state.characterId ?? undefined,
+              characterId: state.characterIds?.[0] ?? undefined,
               includeText: state.includeTextInImage,
             });
 
@@ -379,7 +379,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
   }, [
     state.resourceId,
     state.stylePreset,
-    state.characterId,
+    state.characterIds,
     state.includeTextInImage,
     state.selectedEmotions,
     generateCard,

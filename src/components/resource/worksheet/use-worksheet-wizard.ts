@@ -14,6 +14,7 @@ import type {
 } from "@/types";
 import {
   applyWorldContext,
+  buildCharacterMap,
   type ImageItem,
 } from "@/components/resource/wizard/use-ai-wizard";
 
@@ -284,16 +285,11 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
           });
 
           // Link characters to image blocks
-          const keyToChar = new Map<string, string>();
-          for (const r of charResults) {
-            for (const key of r.appearsOn) {
-              keyToChar.set(key, r.characterId);
-            }
-          }
+          const keyToChars = buildCharacterMap(charResults);
           blocks = blocks.map((block, i) => {
-            const charId = keyToChar.get(`block_${i}`);
-            return charId && block.type === "image"
-              ? { ...block, characterId: charId }
+            const charIds = keyToChars.get(`block_${i}`);
+            return charIds && block.type === "image"
+              ? { ...block, characterIds: charIds }
               : block;
           });
 
@@ -394,11 +390,11 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
         const remaining = prev.detectedCharacters.filter(
           (c) => c.characterId !== characterId,
         );
-        const blocks = prev.blocks.map((b) =>
-          b.characterId === characterId
-            ? { ...b, characterId: undefined }
-            : b,
-        );
+        const blocks = prev.blocks.map((b) => {
+          if (!b.characterIds) return b;
+          const filtered = b.characterIds.filter((id) => id !== characterId);
+          return { ...b, characterIds: filtered.length > 0 ? filtered : undefined };
+        });
         const charSelection =
           remaining.length > 0
             ? {
@@ -692,21 +688,20 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
 /** Extract image items from worksheet content for generation */
 function extractWorksheetImageItems(content: WorksheetContent): ImageItem[] {
   const items: ImageItem[] = [];
-  const resourceCharacterId =
+  const resourceCharacterIds =
     content.characters?.characterIds &&
     content.characters.characterIds.length > 0
-      ? (content.characters.characterIds[0] as Id<"characters">)
+      ? content.characters.characterIds.map((id) => id as Id<"characters">)
       : undefined;
 
   content.blocks.forEach((block, i) => {
     if (block.type !== "image" || !block.imagePrompt) return;
+    const blockCharIds = block.characterIds?.map((id) => id as Id<"characters">);
     items.push({
       assetKey: block.imageAssetKey || `worksheet_block_${i}`,
       assetType: "worksheet_block_image",
       prompt: `Worksheet illustration: ${block.imagePrompt}`,
-      characterId:
-        (block.characterId as Id<"characters"> | undefined) ??
-        resourceCharacterId,
+      characterIds: blockCharIds?.length ? blockCharIds : resourceCharacterIds,
       includeText: false,
       aspect: "4:3",
       label: block.caption || `Image ${items.length + 1}`,
