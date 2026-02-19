@@ -343,14 +343,14 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                         : "opacity-0 pointer-events-none"
                     }`}
                   >
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 min-w-[140px]">
                       <Button
                         size="sm"
                         variant="secondary"
                         onClick={() =>
                           setEditingKey(content.cover!.imageAssetKey!)
                         }
-                        className="gap-1.5"
+                        className="w-full gap-1.5"
                       >
                         <Pencil className="size-3.5" aria-hidden="true" />
                         Edit
@@ -363,6 +363,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                           assetKey: content.cover!.imageAssetKey!,
                         }}
                         triggerLabel="History"
+                        triggerClassName="w-full"
                       />
                     </div>
                   </div>
@@ -440,14 +441,14 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                                 : "opacity-0 pointer-events-none"
                             }`}
                           >
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2 min-w-[140px]">
                               <Button
                                 size="sm"
                                 variant="secondary"
                                 onClick={() =>
                                   setEditingKey(page.imageAssetKey!)
                                 }
-                                className="gap-1.5"
+                                className="w-full gap-1.5"
                               >
                                 <Pencil className="size-3.5" aria-hidden="true" />
                                 Edit
@@ -460,6 +461,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                                   assetKey: page.imageAssetKey!,
                                 }}
                                 triggerLabel="History"
+                                triggerClassName="w-full"
                               />
                             </div>
                           </div>

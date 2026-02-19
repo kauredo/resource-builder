@@ -362,12 +362,12 @@ function BlockPreview({
                       : "opacity-0 pointer-events-none"
                   }`}
                 >
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 min-w-[140px]">
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={() => onEditImage(block.imageAssetKey!)}
-                      className="gap-1.5"
+                      className="w-full gap-1.5"
                     >
                       <Pencil className="size-3.5" aria-hidden="true" />
                       Edit
@@ -380,6 +380,7 @@ function BlockPreview({
                         assetKey: block.imageAssetKey!,
                       }}
                       triggerLabel="History"
+                      triggerClassName="w-full"
                     />
                   </div>
                 </div>

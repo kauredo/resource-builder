@@ -262,12 +262,12 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
                             isHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                           }`}
                         >
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 min-w-[140px]">
                             <Button
                               size="sm"
                               variant="secondary"
                               onClick={() => setEditingKey(card.frontImageAssetKey!)}
-                              className="gap-1.5"
+                              className="w-full gap-1.5"
                             >
                               <Pencil className="size-3.5" aria-hidden="true" />
                               Edit
@@ -280,6 +280,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
                                 assetKey: card.frontImageAssetKey!,
                               }}
                               triggerLabel="History"
+                              triggerClassName="w-full"
                             />
                           </div>
                         </div>

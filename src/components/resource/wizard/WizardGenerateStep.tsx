@@ -4,7 +4,9 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Wand2, RefreshCw, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Wand2, RefreshCw, Check, AlertCircle, Loader2, Pencil } from "lucide-react";
+import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
+import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import type { AIWizardState, ImageItem, StateUpdater } from "./use-ai-wizard";
 
 interface WizardGenerateStepProps {
@@ -355,6 +357,7 @@ export function WizardGenerateStep({
                       imageUrl={imageUrl}
                       isGeneratingAll={isGenerating}
                       onRegenerate={() => generateSingle(index)}
+                      resourceId={state.resourceId ?? null}
                     />
                   );
                 })}
@@ -375,6 +378,7 @@ export function WizardGenerateStep({
                 imageUrl={imageUrl}
                 isGeneratingAll={isGenerating}
                 onRegenerate={() => generateSingle(index)}
+                resourceId={state.resourceId ?? null}
               />
             );
           })}
@@ -408,12 +412,16 @@ function ImageItemCard({
   imageUrl,
   isGeneratingAll,
   onRegenerate,
+  resourceId,
 }: {
   item: ImageItem;
   imageUrl: string | null;
   isGeneratingAll: boolean;
   onRegenerate: () => void;
+  resourceId: string | null;
 }) {
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const hasAsset = !!resourceId && !!imageUrl;
   // Checkerboard background for transparent icons
   const bgStyle = item.greenScreen
     ? {
@@ -469,18 +477,43 @@ function ImageItemCard({
           </div>
         )}
 
-        {/* Regenerate overlay on hover */}
+        {/* Action overlay on hover */}
         {item.status === "complete" && !isGeneratingAll && (
           <div className="absolute inset-0 bg-black/0 hover:bg-black/40 focus-within:bg-black/40 transition-colors duration-150 motion-reduce:transition-none flex items-center justify-center opacity-0 hover:opacity-100 focus-within:opacity-100">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onRegenerate}
-              className="gap-1.5"
-            >
-              <RefreshCw className="size-3" aria-hidden="true" />
-              Regenerate
-            </Button>
+            <div className="flex flex-col gap-2 min-w-[140px]">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onRegenerate}
+                className="w-full gap-1.5"
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                Regenerate
+              </Button>
+              {hasAsset && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsEditorOpen(true)}
+                    className="w-full gap-1.5"
+                  >
+                    <Pencil className="size-3.5" aria-hidden="true" />
+                    Edit
+                  </Button>
+                  <AssetHistoryDialog
+                    assetRef={{
+                      ownerType: "resource",
+                      ownerId: resourceId!,
+                      assetType: item.assetType as any,
+                      assetKey: item.assetKey,
+                    }}
+                    triggerLabel="History"
+                    triggerClassName="w-full"
+                  />
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -502,6 +535,25 @@ function ImageItemCard({
           </button>
         )}
       </div>
+
+      {hasAsset && (
+        <ImageEditorModal
+          open={isEditorOpen}
+          onOpenChange={setIsEditorOpen}
+          assetRef={{
+            ownerType: "resource",
+            ownerId: resourceId!,
+            assetType: item.assetType as any,
+            assetKey: item.assetKey,
+          }}
+          imageUrl={imageUrl!}
+          aspectRatio={
+            item.aspect
+              ? Number(item.aspect.split(":")[0]) / Number(item.aspect.split(":")[1])
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

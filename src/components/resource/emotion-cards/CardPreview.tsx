@@ -192,13 +192,13 @@ export function CardPreview({
                     : "opacity-0 pointer-events-none",
                 )}
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 min-w-[140px]">
                   {onRegenerate && (
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={onRegenerate}
-                      className="gap-1.5"
+                      className="w-full gap-1.5"
                     >
                       <RefreshCw className="size-3.5" aria-hidden="true" />
                       Regenerate
@@ -210,7 +210,7 @@ export function CardPreview({
                         size="sm"
                         variant="secondary"
                         onClick={() => setIsEditorOpen(true)}
-                        className="gap-1.5"
+                        className="w-full gap-1.5"
                       >
                         <Pencil className="size-3.5" aria-hidden="true" />
                         Edit
@@ -218,6 +218,7 @@ export function CardPreview({
                       <AssetHistoryDialog
                         assetRef={assetRef}
                         triggerLabel="History"
+                        triggerClassName="w-full"
                       />
                     </>
                   )}

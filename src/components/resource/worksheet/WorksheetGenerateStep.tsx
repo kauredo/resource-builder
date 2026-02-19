@@ -11,7 +11,10 @@ import {
   AlertCircle,
   Loader2,
   FileText,
+  Pencil,
 } from "lucide-react";
+import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
+import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import type {
   WorksheetWizardState,
   WorksheetStateUpdater,
@@ -28,6 +31,7 @@ export function WorksheetGenerateStep({
   onUpdate,
 }: WorksheetGenerateStepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const generateImage = useAction(api.images.generateStyledImage);
   const ensureCharacterRef = useAction(
     api.characterActions.ensureCharacterReference,
@@ -393,18 +397,43 @@ export function WorksheetGenerateStep({
                       )}
                       {item.status === "complete" && !isGenerating && (
                         <div className="absolute inset-0 bg-black/0 hover:bg-black/40 focus-within:bg-black/40 transition-colors duration-150 motion-reduce:transition-none flex items-center justify-center opacity-0 hover:opacity-100 focus-within:opacity-100">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => generateSingle(index)}
-                            className="gap-1.5"
-                          >
-                            <RefreshCw
-                              className="size-3"
-                              aria-hidden="true"
-                            />
-                            Regenerate
-                          </Button>
+                          <div className="flex flex-col gap-2 min-w-[140px]">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => generateSingle(index)}
+                              className="w-full gap-1.5"
+                            >
+                              <RefreshCw
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                              Regenerate
+                            </Button>
+                            {state.resourceId && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setEditingKey(item.assetKey)}
+                                  className="w-full gap-1.5"
+                                >
+                                  <Pencil className="size-3.5" aria-hidden="true" />
+                                  Edit
+                                </Button>
+                                <AssetHistoryDialog
+                                  assetRef={{
+                                    ownerType: "resource",
+                                    ownerId: state.resourceId,
+                                    assetType: item.assetType as any,
+                                    assetKey: item.assetKey,
+                                  }}
+                                  triggerLabel="History"
+                                  triggerClassName="w-full"
+                                />
+                              </>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -432,6 +461,32 @@ export function WorksheetGenerateStep({
           </div>
         ))}
       </div>
+
+      {/* Image editor modal */}
+      {editingKey && state.resourceId && (() => {
+        const item = state.imageItems.find((i) => i.assetKey === editingKey);
+        const asset = assets?.find((a) => a.assetKey === editingKey);
+        const url = asset?.currentVersion?.url;
+        if (!item || !url) return null;
+        return (
+          <ImageEditorModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setEditingKey(null); }}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: state.resourceId!,
+              assetType: item.assetType as any,
+              assetKey: item.assetKey,
+            }}
+            imageUrl={url}
+            aspectRatio={
+              item.aspect
+                ? Number(item.aspect.split(":")[0]) / Number(item.aspect.split(":")[1])
+                : undefined
+            }
+          />
+        );
+      })()}
     </div>
   );
 }
