@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { StylePicker } from "@/components/resource/emotion-cards/StylePicker";
 import { CharacterPicker } from "@/components/resource/wizard/CharacterPicker";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BookOpen, FileText, Newspaper } from "lucide-react";
+import { BookOpen, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BookWizardState, BookCreationMode } from "./use-book-wizard";
 import type { StylePreset, CharacterSelection, BookLayout } from "@/types";
@@ -34,12 +34,6 @@ const LAYOUT_OPTIONS: {
     label: "Illustrated Text",
     description: "Text-heavy pages with a smaller illustration at the top.",
     icon: FileText,
-  },
-  {
-    value: "booklet",
-    label: "Booklet",
-    description: "Print, fold, and staple. Two pages per sheet, ready to bind.",
-    icon: Newspaper,
   },
 ];
 

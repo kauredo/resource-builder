@@ -19,6 +19,8 @@ import type { BookContent, BookPage, BookCover } from "@/types";
 interface BookPDFOptions {
   content: BookContent;
   assetMap: Map<string, string>;
+  /** Export as saddle-stitch booklet (landscape A4, two pages per sheet) */
+  booklet?: boolean;
   style?: {
     colors: {
       primary: string;
@@ -55,6 +57,7 @@ const DEFAULT_STYLE = {
 export async function generateBookPDF({
   content,
   assetMap,
+  booklet,
   style,
 }: BookPDFOptions): Promise<Blob> {
   const effectiveStyle = style
@@ -84,7 +87,7 @@ export async function generateBookPDF({
   const fontOpts = { headingFontFamily, bodyFontFamily, colors: effectiveStyle.colors };
 
   // Booklet uses a completely different rendering path
-  if (content.layout === "booklet") {
+  if (booklet) {
     return generateBookletLayout(content, assetMap, fontOpts);
   }
 

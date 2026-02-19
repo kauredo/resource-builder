@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Download, Check, Loader2 } from "lucide-react";
+import { Download, Check, Loader2, Newspaper } from "lucide-react";
 import { generateBookPDF } from "@/lib/pdf-book";
 import type { BookWizardState } from "./use-book-wizard";
 import type { BookContent } from "@/types";
@@ -14,7 +14,7 @@ interface BookExportStepProps {
 }
 
 export function BookExportStep({ state }: BookExportStepProps) {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExporting] = useState<"book" | "booklet" | null>(null);
   const [exported, setExported] = useState(false);
   const updateResource = useMutation(api.resources.updateResource);
 
@@ -25,9 +25,9 @@ export function BookExportStep({ state }: BookExportStepProps) {
       : "skip",
   );
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async (booklet?: boolean) => {
     if (!assets || !state.resourceId) return;
-    setIsExporting(true);
+    setIsExporting(booklet ? "booklet" : "book");
 
     try {
       const assetMap = new Map<string, string>();
@@ -47,6 +47,7 @@ export function BookExportStep({ state }: BookExportStepProps) {
       const blob = await generateBookPDF({
         content,
         assetMap,
+        booklet,
         style: state.stylePreset
           ? {
               colors: state.stylePreset.colors,
@@ -55,10 +56,11 @@ export function BookExportStep({ state }: BookExportStepProps) {
           : undefined,
       });
 
+      const suffix = booklet ? "-booklet" : "";
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${state.name || "book"}.pdf`;
+      link.download = `${state.name || "book"}${suffix}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -71,9 +73,9 @@ export function BookExportStep({ state }: BookExportStepProps) {
 
       setExported(true);
     } finally {
-      setIsExporting(false);
+      setIsExporting(null);
     }
-  };
+  }, [assets, state, updateResource]);
 
   const completedImages = state.imageItems.filter(
     (i) => i.status === "complete",
@@ -93,17 +95,30 @@ export function BookExportStep({ state }: BookExportStepProps) {
             <p className="text-sm text-muted-foreground mb-4">
               Your book is ready for printing.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setExported(false);
-                handleExport();
-              }}
-              className="gap-2"
-            >
-              <Download className="size-4" aria-hidden="true" />
-              Download Again
-            </Button>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setExported(false);
+                  handleExport();
+                }}
+                className="gap-2"
+              >
+                <Download className="size-4" aria-hidden="true" />
+                Download Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setExported(false);
+                  handleExport(true);
+                }}
+                className="gap-2"
+              >
+                <Newspaper className="size-4" aria-hidden="true" />
+                Download as Booklet
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -114,26 +129,49 @@ export function BookExportStep({ state }: BookExportStepProps) {
               {state.hasCover ? " + cover" : ""} and {completedImages}{" "}
               illustration{completedImages !== 1 ? "s" : ""}.
             </p>
-            <Button
-              onClick={handleExport}
-              className="btn-coral mt-4 gap-2"
-              disabled={isExporting || completedImages === 0}
-            >
-              {isExporting ? (
-                <>
-                  <Loader2
-                    className="size-4 animate-spin motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                  Generating PDF...
-                </>
-              ) : (
-                <>
-                  <Download className="size-4" aria-hidden="true" />
-                  Download PDF
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 mt-4">
+              <Button
+                onClick={() => handleExport()}
+                className="btn-coral gap-2"
+                disabled={!!isExporting || completedImages === 0}
+              >
+                {isExporting === "book" ? (
+                  <>
+                    <Loader2
+                      className="size-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="size-4" aria-hidden="true" />
+                    Download Book
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExport(true)}
+                disabled={!!isExporting || completedImages === 0}
+                className="gap-2"
+              >
+                {isExporting === "booklet" ? (
+                  <>
+                    <Loader2
+                      className="size-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Newspaper className="size-4" aria-hidden="true" />
+                    Download as Booklet
+                  </>
+                )}
+              </Button>
+            </div>
           </>
         )}
       </div>
@@ -152,9 +190,7 @@ export function BookExportStep({ state }: BookExportStepProps) {
             <dd className="font-medium capitalize">
               {state.layout === "picture_book"
                 ? "Picture Book"
-                : state.layout === "booklet"
-                  ? "Booklet"
-                  : "Illustrated Text"}
+                : "Illustrated Text"}
             </dd>
           </div>
           <div className="flex justify-between">

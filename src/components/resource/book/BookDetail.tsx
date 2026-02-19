@@ -25,6 +25,7 @@ import { generateBookPDF } from "@/lib/pdf-book";
 import {
   ArrowLeft,
   Download,
+  Newspaper,
   Pencil,
   Trash2,
   Loader2,
@@ -38,7 +39,7 @@ interface BookDetailProps {
 }
 
 export function BookDetail({ resourceId }: BookDetailProps) {
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<"book" | "booklet" | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [hoveredPage, setHoveredPage] = useState<string | null>(null);
@@ -75,14 +76,15 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     return map;
   }, [assets]);
 
-  const handleDownloadPDF = useCallback(async () => {
+  const handleDownloadPDF = useCallback(async (booklet?: boolean) => {
     if (!resource) return;
     const content = resource.content as BookContent;
-    setIsGeneratingPDF(true);
+    setIsGeneratingPDF(booklet ? "booklet" : "book");
     try {
       const blob = await generateBookPDF({
         content,
         assetMap,
+        booklet,
         style: style
           ? {
               colors: style.colors,
@@ -90,10 +92,11 @@ export function BookDetail({ resourceId }: BookDetailProps) {
             }
           : undefined,
       });
+      const suffix = booklet ? "-booklet" : "";
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${resource.name || "book"}.pdf`;
+      link.download = `${resource.name || "book"}${suffix}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -103,7 +106,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         await updateResource({ resourceId: resource._id, status: "complete" });
       }
     } finally {
-      setIsGeneratingPDF(false);
+      setIsGeneratingPDF(null);
     }
   }, [resource, assetMap, updateResource, style]);
 
@@ -237,11 +240,11 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleDownloadPDF}
+              onClick={() => handleDownloadPDF()}
               className="btn-coral gap-1.5"
-              disabled={isGeneratingPDF}
+              disabled={!!isGeneratingPDF}
             >
-              {isGeneratingPDF ? (
+              {isGeneratingPDF === "book" ? (
                 <Loader2
                   className="size-4 animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
@@ -249,7 +252,23 @@ export function BookDetail({ resourceId }: BookDetailProps) {
               ) : (
                 <Download className="size-4" aria-hidden="true" />
               )}
-              Download PDF
+              Download Book
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleDownloadPDF(true)}
+              disabled={!!isGeneratingPDF}
+              className="gap-1.5"
+            >
+              {isGeneratingPDF === "booklet" ? (
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Newspaper className="size-4" aria-hidden="true" />
+              )}
+              Booklet
             </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>

@@ -397,7 +397,7 @@ export interface FreePromptContent {
 }
 
 // Book resource types
-export type BookLayout = "picture_book" | "illustrated_text" | "booklet";
+export type BookLayout = "picture_book" | "illustrated_text";
 
 export interface BookPage {
   id: string;
