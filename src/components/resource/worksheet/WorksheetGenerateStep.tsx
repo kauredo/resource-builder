@@ -201,6 +201,9 @@ export function WorksheetGenerateStep({
   const failedCount = state.imageItems.filter(
     (i) => i.status === "error",
   ).length;
+  const pendingCount = state.imageItems.filter(
+    (i) => i.status === "pending",
+  ).length;
   const totalCount = state.imageItems.length;
   const hasStarted = state.imageItems.some((i) => i.status !== "pending");
 
@@ -323,6 +326,12 @@ export function WorksheetGenerateStep({
 
       {!isGenerating && (
         <div className="flex justify-center gap-3">
+          {pendingCount > 0 && (
+            <Button onClick={generateAll} className="btn-coral gap-2">
+              <Wand2 className="size-4" aria-hidden="true" />
+              Generate Remaining ({pendingCount})
+            </Button>
+          )}
           {failedCount > 0 && (
             <Button variant="outline" onClick={generateAll} className="gap-2">
               <RefreshCw className="size-4" aria-hidden="true" />
@@ -384,7 +393,19 @@ export function WorksheetGenerateStep({
                           </p>
                         </div>
                       )}
-                      {item.status === "pending" && (
+                      {item.status === "pending" && !isGenerating && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Button
+                            size="sm"
+                            onClick={() => generateSingle(index)}
+                            className="btn-coral gap-1.5"
+                          >
+                            <Wand2 className="size-3.5" aria-hidden="true" />
+                            Generate
+                          </Button>
+                        </div>
+                      )}
+                      {item.status === "pending" && isGenerating && (
                         <div
                           className="absolute inset-0 flex items-center justify-center"
                           role="status"
