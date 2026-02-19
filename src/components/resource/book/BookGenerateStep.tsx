@@ -402,6 +402,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                                   }}
                                   triggerLabel="History"
                                   triggerClassName="w-full"
+                                  aspectRatio={item.aspect === "1:1" ? "1/1" : item.aspect === "4:3" ? "4/3" : "3/4"}
                                 />
                               </>
                             )}

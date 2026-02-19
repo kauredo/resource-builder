@@ -163,13 +163,18 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
-        {imageUrl ? (
-          <img src={imageUrl} alt="Generated" className="w-full rounded-xl border border-border/60" />
-        ) : (
-          <div className="h-64 rounded-xl border border-dashed border-border/60 bg-muted/20 flex items-center justify-center text-sm text-muted-foreground">
-            No image generated yet
-          </div>
-        )}
+        <div
+          className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden"
+          style={{ aspectRatio: content.output.aspect === "1:1" ? "1/1" : content.output.aspect === "4:3" ? "4/3" : "3/4" }}
+        >
+          {imageUrl ? (
+            <img src={imageUrl} alt="Generated" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+              No image generated yet
+            </div>
+          )}
+        </div>
         <div>
           <p className="text-sm font-medium text-foreground mb-2">Prompt</p>
           <PromptEditor
@@ -210,6 +215,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
             assetKey: "prompt_main",
           }}
           triggerLabel="History"
+          aspectRatio={content.output.aspect === "1:1" ? "1/1" : content.output.aspect === "4:3" ? "4/3" : "3/4"}
         />
         {imageUrl && (
           <Button variant="outline" onClick={() => setIsEditorOpen(true)}>

@@ -281,6 +281,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
                               }}
                               triggerLabel="History"
                               triggerClassName="w-full"
+                              aspectRatio="1/1"
                             />
                           </div>
                         </div>

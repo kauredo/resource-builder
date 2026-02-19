@@ -445,7 +445,7 @@ function ImageItemCard({
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div
-        className={`relative bg-muted/30 ${item.aspect === "1:1" ? "aspect-square" : "aspect-[3/4]"}`}
+        className={`relative bg-muted/30 ${item.aspect === "1:1" ? "aspect-square" : item.aspect === "4:3" ? "aspect-[4/3]" : "aspect-[3/4]"}`}
         style={bgStyle}
       >
         {item.status === "complete" && imageUrl && (
@@ -529,6 +529,7 @@ function ImageItemCard({
                     }}
                     triggerLabel="History"
                     triggerClassName="w-full"
+                    aspectRatio={item.aspect === "1:1" ? "1/1" : item.aspect === "4:3" ? "4/3" : "3/4"}
                   />
                 </>
               )}

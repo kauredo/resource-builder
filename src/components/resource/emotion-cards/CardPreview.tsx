@@ -219,6 +219,7 @@ export function CardPreview({
                         assetRef={assetRef}
                         triggerLabel="History"
                         triggerClassName="w-full"
+                        aspectRatio="3/4"
                       />
                     </>
                   )}

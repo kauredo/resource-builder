@@ -161,13 +161,19 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
-        {boardAsset?.currentVersion?.url && (
-          <img
-            src={boardAsset.currentVersion.url}
-            alt="Board background"
-            className="w-full rounded-xl border border-border/60"
-          />
-        )}
+        <div className="aspect-square rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
+          {boardAsset?.currentVersion?.url ? (
+            <img
+              src={boardAsset.currentVersion.url}
+              alt="Board background"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+              No image generated yet
+            </div>
+          )}
+        </div>
         {content.boardImagePrompt && (
           <PromptEditor
             prompt={content.boardImagePrompt}
@@ -214,6 +220,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
             assetKey: "board_main",
           }}
           triggerLabel="History"
+          aspectRatio="1/1"
         />
         {boardAsset?.currentVersion?.url && (
           <Button variant="outline" onClick={() => setIsEditorOpen(true)}>

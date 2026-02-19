@@ -371,6 +371,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                         }}
                         triggerLabel="History"
                         triggerClassName="w-full"
+                        aspectRatio="3/4"
                       />
                     </div>
                   </div>

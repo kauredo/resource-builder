@@ -460,6 +460,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
                 assetKey: "prompt_main",
               }}
               triggerLabel="History"
+              aspectRatio={state.aspect === "1:1" ? "1/1" : state.aspect === "4:3" ? "4/3" : "3/4"}
             />
           )}
           {asset?.currentVersion?.url && (

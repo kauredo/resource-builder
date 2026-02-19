@@ -189,17 +189,19 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
         <div className="rounded-2xl border border-border/60 bg-card p-6">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={content.headline}
-              className="w-full rounded-xl border border-border/60 mb-6"
-            />
-          ) : (
-            <div className="h-72 rounded-xl border border-dashed border-border/60 bg-muted/20 flex items-center justify-center text-sm text-muted-foreground mb-6">
-              No image generated yet
-            </div>
-          )}
+          <div className="aspect-[3/4] rounded-xl border border-border/60 bg-muted/20 overflow-hidden mb-6">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={content.headline}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                No image generated yet
+              </div>
+            )}
+          </div>
           <h2 className="font-serif text-2xl font-medium text-foreground">
             {content.headline}
           </h2>
@@ -238,6 +240,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
                   assetKey: "poster_main",
                 }}
                 triggerLabel="History"
+                aspectRatio="3/4"
               />
             </div>
           </div>

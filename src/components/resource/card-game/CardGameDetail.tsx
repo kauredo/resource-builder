@@ -290,7 +290,7 @@ function LegacyCardList({
             key={card.id ?? card.title}
             className="rounded-xl border border-border/60 p-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4"
           >
-            <div className="h-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
+            <div className="aspect-[3/4] w-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -321,6 +321,7 @@ function LegacyCardList({
                         assetKey: card.imageAssetKey,
                       }}
                       triggerLabel="History"
+                      aspectRatio="3/4"
                     />
                     {imageUrl && (
                       <Button
@@ -591,6 +592,7 @@ function AssetCard({
               assetKey,
             }}
             triggerLabel="History"
+            aspectRatio="3/4"
           />
           {imageUrl && (
             <Button variant="outline" size="sm" onClick={onEdit}>

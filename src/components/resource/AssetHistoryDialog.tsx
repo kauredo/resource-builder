@@ -40,6 +40,7 @@ interface AssetHistoryDialogProps {
   description?: string;
   triggerLabel?: string;
   triggerClassName?: string;
+  aspectRatio?: string;
 }
 
 function VersionPrompt({ prompt }: { prompt?: string }) {
@@ -89,6 +90,7 @@ function SourceBadge({ source }: { source: string }) {
 function VersionCard({
   version,
   isCurrent,
+  aspectRatio = "4/3",
   onSetCurrent,
   onPin,
   onDelete,
@@ -102,6 +104,7 @@ function VersionCard({
     pinned?: boolean;
   };
   isCurrent: boolean;
+  aspectRatio?: string;
   onSetCurrent: () => void;
   onPin: () => void;
   onDelete: () => void;
@@ -114,7 +117,7 @@ function VersionCard({
       )}
     >
       {/* Image preview */}
-      <div className="relative overflow-hidden rounded-lg bg-muted aspect-[4/3]">
+      <div className="relative overflow-hidden rounded-lg bg-muted" style={{ aspectRatio }}>
         {version.url ? (
           <img
             src={version.url}
@@ -230,6 +233,7 @@ export function AssetHistoryDialog({
   description,
   triggerLabel = "History",
   triggerClassName,
+  aspectRatio = "4/3",
 }: AssetHistoryDialogProps) {
   const asset = useQuery(api.assets.getAsset, {
     ownerType: assetRef.ownerType,
@@ -295,6 +299,7 @@ export function AssetHistoryDialog({
                 <VersionCard
                   version={currentVersion}
                   isCurrent={true}
+                  aspectRatio={aspectRatio}
                   onSetCurrent={() => {}}
                   onPin={() =>
                     pinVersion({
@@ -324,6 +329,7 @@ export function AssetHistoryDialog({
                         key={version._id}
                         version={version}
                         isCurrent={false}
+                        aspectRatio={aspectRatio}
                         onSetCurrent={() =>
                           setCurrent({
                             assetId: asset?._id as any,
