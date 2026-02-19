@@ -352,7 +352,7 @@ function renderContentPage(
     );
   }
 
-  // Page number
+  // Page number — centered at bottom for picture books, right-aligned for illustrated text
   const pageNum = index + 1;
   children.push(
     createElement(

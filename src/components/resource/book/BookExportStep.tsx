@@ -172,6 +172,9 @@ export function BookExportStep({ state }: BookExportStepProps) {
                 )}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Booklet: print double-sided (flip on short edge), fold, and staple.
+            </p>
           </>
         )}
       </div>
