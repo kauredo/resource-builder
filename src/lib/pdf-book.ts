@@ -333,7 +333,6 @@ function renderContentPage(
           style: {
             width: "100%",
             height: "100%",
-            objectFit: "cover",
           },
         }),
       ),
@@ -584,7 +583,7 @@ function renderBookletCover(
         },
         createElement(Image, {
           src: coverUrl,
-          style: { width: "100%", height: "100%", objectFit: "cover" },
+          style: { width: "100%", height: "100%" },
         }),
       ),
     );
@@ -669,7 +668,7 @@ function renderBookletPage(
         },
         createElement(Image, {
           src: imageUrl,
-          style: { width: "100%", height: "100%", objectFit: "cover" },
+          style: { width: "100%", height: "100%" },
         }),
       ),
     );
