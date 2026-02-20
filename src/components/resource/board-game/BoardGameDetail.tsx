@@ -21,7 +21,8 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { BoardGameContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -35,6 +36,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isImproveOpen, setIsImproveOpen] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -233,22 +235,48 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
             Edit board background
           </Button>
         )}
+        {boardAsset?.currentVersion && (
+          <Button variant="outline" onClick={() => setIsImproveOpen(true)} className="gap-1.5">
+            <Paintbrush className="size-4" aria-hidden="true" />
+            Improve
+          </Button>
+        )}
       </div>
 
       {boardAsset?.currentVersion?.url && (
-        <ImageEditorModal
-          open={isEditorOpen}
-          onOpenChange={setIsEditorOpen}
-          assetRef={{
-            ownerType: "resource",
-            ownerId: resourceId,
-            assetType: "board_image",
-            assetKey: "board_main",
-          }}
-          imageUrl={boardAsset.currentVersion.url}
-          aspectRatio={1}
-          title="Edit board background"
-        />
+        <>
+          <ImageEditorModal
+            open={isEditorOpen}
+            onOpenChange={setIsEditorOpen}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: "board_image",
+              assetKey: "board_main",
+            }}
+            imageUrl={boardAsset.currentVersion.url}
+            aspectRatio={1}
+            title="Edit board background"
+          />
+          {boardAsset.currentVersion && (
+            <ImproveImageModal
+              open={isImproveOpen}
+              onOpenChange={setIsImproveOpen}
+              imageUrl={boardAsset.currentVersion.url}
+              originalPrompt={boardAsset.currentVersion.prompt}
+              assetRef={{
+                ownerType: "resource",
+                ownerId: resourceId,
+                assetType: "board_image",
+                assetKey: "board_main",
+              }}
+              currentStorageId={boardAsset.currentVersion.storageId}
+              currentVersionId={boardAsset.currentVersion._id}
+              styleId={resource?.styleId as Id<"styles"> | undefined}
+              aspect="1:1"
+            />
+          )}
+        </>
       )}
     </div>
   );

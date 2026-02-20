@@ -39,6 +39,7 @@ import {
 import { getEmotionDescription } from "@/lib/emotions";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { EmotionCardContent } from "@/types";
 import { toast } from "sonner";
 
@@ -52,6 +53,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const [pdfReady, setPdfReady] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [regeneratingEmotions, setRegeneratingEmotions] = useState<Set<string>>(new Set());
+  const [improvingEmotion, setImprovingEmotion] = useState<string | null>(null);
 
   const resource = useQuery(api.resources.getResourceWithImages, {
     resourceId,
@@ -459,10 +461,37 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
             layout={content.layout}
             style={style}
             onRegenerate={handleRegenerate}
+            onImprove={setImprovingEmotion}
             regeneratingEmotions={regeneratingEmotions}
           />
         )}
       </div>
+
+      {improvingEmotion && (() => {
+        const assetKey = `emotion:${improvingEmotion}`;
+        const asset = assets?.find((a) => a.assetKey === assetKey);
+        const cv = asset?.currentVersion;
+        const url = cv?.url;
+        if (!cv || !url) return null;
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingEmotion(null); }}
+            imageUrl={url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resource._id,
+              assetType: "emotion_card_image",
+              assetKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={resource.styleId as Id<"styles"> | undefined}
+            aspect="1:1"
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -476,6 +505,7 @@ interface StyledCardGridProps {
   resourceId: Id<"resources">;
   layout: EmotionCardContent["layout"];
   onRegenerate: (emotion: string) => void;
+  onImprove: (emotion: string) => void;
   regeneratingEmotions: Set<string>;
   style?: {
     colors: {
@@ -508,6 +538,7 @@ function StyledCardGrid({
   resourceId,
   layout,
   onRegenerate,
+  onImprove,
   regeneratingEmotions,
   style,
 }: StyledCardGridProps) {
@@ -524,6 +555,7 @@ function StyledCardGrid({
             isGenerating={regeneratingEmotions.has(card.emotion)}
             hasError={false}
             onRegenerate={() => onRegenerate(card.emotion)}
+            onImprove={() => onImprove(card.emotion)}
             showLabel={layout.showLabels}
             showDescription={layout.showDescriptions}
             description={card.description}

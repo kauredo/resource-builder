@@ -22,7 +22,8 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateFlashcardsPDF } from "@/lib/pdf-flashcards";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { FlashcardsContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -35,6 +36,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [regeneratingCards, setRegeneratingCards] = useState<Set<string>>(new Set());
 
@@ -274,6 +276,15 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
                               <Pencil className="size-3.5" aria-hidden="true" />
                               Edit
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setImprovingKey(card.frontImageAssetKey!)}
+                              className="w-full gap-1.5"
+                            >
+                              <Paintbrush className="size-3.5" aria-hidden="true" />
+                              Improve
+                            </Button>
                             <AssetHistoryDialog
                               assetRef={{
                                 ownerType: "resource",
@@ -336,6 +347,31 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
           title="Edit flashcard image"
         />
       )}
+
+      {improvingKey && (() => {
+        const asset = assets?.find((a) => a.assetKey === improvingKey);
+        const cv = asset?.currentVersion;
+        const url = cv?.url;
+        if (!cv || !url) return null;
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingKey(null); }}
+            imageUrl={url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: "flashcard_front_image",
+              assetKey: improvingKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={resource?.styleId as Id<"styles"> | undefined}
+            aspect="1:1"
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -29,7 +29,9 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  Paintbrush,
 } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -43,6 +45,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<"book" | "booklet" | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const [hoveredPage, setHoveredPage] = useState<string | null>(null);
   const [hoveredCover, setHoveredCover] = useState(false);
   const [regeneratingCover, setRegeneratingCover] = useState(false);
@@ -383,6 +386,17 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                         <Pencil className="size-3.5" aria-hidden="true" />
                         Edit
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          setImprovingKey(content.cover!.imageAssetKey!)
+                        }
+                        className="w-full gap-1.5"
+                      >
+                        <Paintbrush className="size-3.5" aria-hidden="true" />
+                        Improve
+                      </Button>
                       <AssetHistoryDialog
                         assetRef={{
                           ownerType: "resource",
@@ -482,6 +496,17 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                                 <Pencil className="size-3.5" aria-hidden="true" />
                                 Edit
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() =>
+                                  setImprovingKey(page.imageAssetKey!)
+                                }
+                                className="w-full gap-1.5"
+                              >
+                                <Paintbrush className="size-3.5" aria-hidden="true" />
+                                Improve
+                              </Button>
                               <AssetHistoryDialog
                                 assetRef={{
                                   ownerType: "resource",
@@ -551,6 +576,32 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           title="Edit book image"
         />
       )}
+
+      {improvingKey && (() => {
+        const asset = assets?.find((a) => a.assetKey === improvingKey);
+        const cv = asset?.currentVersion;
+        const url = cv?.url;
+        if (!cv || !url) return null;
+        const isCover = asset?.assetType === "book_cover_image";
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingKey(null); }}
+            imageUrl={url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: isCover ? "book_cover_image" : "book_page_image",
+              assetKey: improvingKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={resource?.styleId as Id<"styles"> | undefined}
+            aspect="3:4"
+          />
+        );
+      })()}
     </div>
   );
 }

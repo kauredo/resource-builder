@@ -21,7 +21,8 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { FreePromptContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -35,6 +36,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isImproveOpen, setIsImproveOpen] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -228,22 +230,48 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
             Edit image
           </Button>
         )}
+        {asset?.currentVersion && imageUrl && (
+          <Button variant="outline" onClick={() => setIsImproveOpen(true)} className="gap-1.5">
+            <Paintbrush className="size-4" aria-hidden="true" />
+            Improve
+          </Button>
+        )}
       </div>
 
       {imageUrl && (
-        <ImageEditorModal
-          open={isEditorOpen}
-          onOpenChange={setIsEditorOpen}
-          assetRef={{
-            ownerType: "resource",
-            ownerId: resourceId,
-            assetType: "free_prompt_image",
-            assetKey: "prompt_main",
-          }}
-          imageUrl={imageUrl}
-          aspectRatio={content.output.aspect === "3:4" ? 3/4 : content.output.aspect === "4:3" ? 4/3 : 1}
-          title="Edit image"
-        />
+        <>
+          <ImageEditorModal
+            open={isEditorOpen}
+            onOpenChange={setIsEditorOpen}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: "free_prompt_image",
+              assetKey: "prompt_main",
+            }}
+            imageUrl={imageUrl}
+            aspectRatio={content.output.aspect === "3:4" ? 3/4 : content.output.aspect === "4:3" ? 4/3 : 1}
+            title="Edit image"
+          />
+          {asset?.currentVersion && (
+            <ImproveImageModal
+              open={isImproveOpen}
+              onOpenChange={setIsImproveOpen}
+              imageUrl={imageUrl}
+              originalPrompt={asset.currentVersion.prompt}
+              assetRef={{
+                ownerType: "resource",
+                ownerId: resourceId,
+                assetType: "free_prompt_image",
+                assetKey: "prompt_main",
+              }}
+              currentStorageId={asset.currentVersion.storageId}
+              currentVersionId={asset.currentVersion._id}
+              styleId={resource?.styleId as Id<"styles"> | undefined}
+              aspect={content.output.aspect}
+            />
+          )}
+        </>
       )}
     </div>
   );

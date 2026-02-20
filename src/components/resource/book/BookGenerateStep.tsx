@@ -4,11 +4,13 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Wand2, RefreshCw, Check, AlertCircle, Loader2, Pencil } from "lucide-react";
+import { Wand2, RefreshCw, Check, AlertCircle, Loader2, Pencil, Paintbrush } from "lucide-react";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { BookWizardState, BookStateUpdater } from "./use-book-wizard";
 import type { ImageItem } from "@/components/resource/wizard/use-ai-wizard";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 interface BookGenerateStepProps {
   state: BookWizardState;
@@ -18,6 +20,7 @@ interface BookGenerateStepProps {
 export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const generateImage = useAction(api.images.generateStyledImage);
   const ensureCharacterRef = useAction(api.characterActions.ensureCharacterReference);
 
@@ -393,6 +396,17 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                                   <Pencil className="size-3.5" aria-hidden="true" />
                                   Edit
                                 </Button>
+                                {asset?.currentVersion && (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setImprovingKey(item.assetKey)}
+                                    className="w-full gap-1.5"
+                                  >
+                                    <Paintbrush className="size-3.5" aria-hidden="true" />
+                                    Improve
+                                  </Button>
+                                )}
                                 <AssetHistoryDialog
                                   assetRef={{
                                     ownerType: "resource",
@@ -457,6 +471,32 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                 ? Number(item.aspect.split(":")[0]) / Number(item.aspect.split(":")[1])
                 : undefined
             }
+          />
+        );
+      })()}
+
+      {/* Improve image modal */}
+      {improvingKey && state.resourceId && (() => {
+        const item = state.imageItems.find((i) => i.assetKey === improvingKey);
+        const asset = assets?.find((a) => a.assetKey === improvingKey);
+        const cv = asset?.currentVersion;
+        if (!item || !cv?.url) return null;
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingKey(null); }}
+            imageUrl={cv.url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: state.resourceId! as Id<"resources">,
+              assetType: item.assetType,
+              assetKey: item.assetKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={state.styleId as Id<"styles"> | undefined}
+            aspect={item.aspect}
           />
         );
       })()}

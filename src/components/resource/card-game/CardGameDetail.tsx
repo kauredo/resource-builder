@@ -21,7 +21,8 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type {
   AssetType,
   CardGameContent,
@@ -38,6 +39,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [improvingKey, setImprovingKey] = useState<string | null>(null);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -243,6 +245,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           assetMap={assetMap}
           resourceId={resourceId}
           onEditKey={setEditingKey}
+          onImproveKey={setImprovingKey}
         />
       ) : (
         <TemplateCardDetail
@@ -250,6 +253,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           assetMap={assetMap}
           resourceId={resourceId}
           onEditKey={setEditingKey}
+          onImproveKey={setImprovingKey}
         />
       )}
 
@@ -268,6 +272,38 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           title="Edit card image"
         />
       )}
+
+      {improvingKey && (() => {
+        const asset = assets?.find((a) => a.assetKey === improvingKey);
+        const cv = asset?.currentVersion;
+        const url = cv?.url;
+        if (!cv || !url) return null;
+        const improveAssetType: AssetType = improvingKey.startsWith("card_bg:")
+          ? "card_bg"
+          : improvingKey.startsWith("card_icon:")
+            ? "card_icon"
+            : improvingKey === "card_back"
+              ? "card_back"
+              : "card_image";
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingKey(null); }}
+            imageUrl={url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: improveAssetType,
+              assetKey: improvingKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={resource?.styleId as Id<"styles"> | undefined}
+            aspect="3:4"
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -279,11 +315,13 @@ function LegacyCardList({
   assetMap,
   resourceId,
   onEditKey,
+  onImproveKey,
 }: {
   content: LegacyCardGameContent;
   assetMap: Map<string, string>;
   resourceId: Id<"resources">;
   onEditKey: (key: string) => void;
+  onImproveKey: (key: string) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -330,13 +368,24 @@ function LegacyCardList({
                       aspectRatio="3/4"
                     />
                     {imageUrl && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEditKey(card.imageAssetKey!)}
-                      >
-                        Edit
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEditKey(card.imageAssetKey!)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onImproveKey(card.imageAssetKey!)}
+                          className="gap-1"
+                        >
+                          <Paintbrush className="size-3.5" aria-hidden="true" />
+                          Improve
+                        </Button>
+                      </>
                     )}
                   </div>
                 )}
@@ -357,11 +406,13 @@ function TemplateCardDetail({
   assetMap,
   resourceId,
   onEditKey,
+  onImproveKey,
 }: {
   content: CardGameContent;
   assetMap: Map<string, string>;
   resourceId: Id<"resources">;
   onEditKey: (key: string) => void;
+  onImproveKey: (key: string) => void;
 }) {
   const totalCards = content.cards.reduce((sum, c) => sum + c.count, 0);
 
@@ -407,6 +458,7 @@ function TemplateCardDetail({
                 resourceId={resourceId}
                 color={bg.color}
                 onEdit={() => url && onEditKey(bg.imageAssetKey)}
+                onImprove={() => url && onImproveKey(bg.imageAssetKey)}
               />
             );
           })}
@@ -432,6 +484,7 @@ function TemplateCardDetail({
                   resourceId={resourceId}
                   isTransparent
                   onEdit={() => url && onEditKey(icon.imageAssetKey)}
+                  onImprove={() => url && onImproveKey(icon.imageAssetKey)}
                 />
               );
             })}
@@ -455,6 +508,10 @@ function TemplateCardDetail({
               onEdit={() => {
                 const url = assetMap.get(content.cardBack!.imageAssetKey);
                 if (url) onEditKey(content.cardBack!.imageAssetKey);
+              }}
+              onImprove={() => {
+                const url = assetMap.get(content.cardBack!.imageAssetKey);
+                if (url) onImproveKey(content.cardBack!.imageAssetKey);
               }}
             />
           </div>
@@ -541,6 +598,7 @@ function AssetCard({
   color,
   isTransparent,
   onEdit,
+  onImprove,
 }: {
   label: string;
   imageUrl?: string;
@@ -550,6 +608,7 @@ function AssetCard({
   color?: string;
   isTransparent?: boolean;
   onEdit: () => void;
+  onImprove?: () => void;
 }) {
   const checkerboardStyle = isTransparent
     ? {
@@ -601,9 +660,17 @@ function AssetCard({
             aspectRatio="3/4"
           />
           {imageUrl && (
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              Edit
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                Edit
+              </Button>
+              {onImprove && (
+                <Button variant="outline" size="sm" onClick={onImprove} className="gap-1">
+                  <Paintbrush className="size-3" aria-hidden="true" />
+                  Improve
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -20,7 +20,8 @@ import {
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw, Paintbrush } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { PosterContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -35,6 +36,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isImproveOpen, setIsImproveOpen] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -234,6 +236,12 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
                   Edit image
                 </Button>
               )}
+              {asset?.currentVersion && imageUrl && (
+                <Button variant="outline" onClick={() => setIsImproveOpen(true)} className="gap-1.5">
+                  <Paintbrush className="size-4" aria-hidden="true" />
+                  Improve
+                </Button>
+              )}
               <AssetHistoryDialog
                 assetRef={{
                   ownerType: "resource",
@@ -250,19 +258,39 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
       </div>
 
       {imageUrl && (
-        <ImageEditorModal
-          open={isEditorOpen}
-          onOpenChange={setIsEditorOpen}
-          assetRef={{
-            ownerType: "resource",
-            ownerId: resourceId,
-            assetType: "poster_image",
-            assetKey: "poster_main",
-          }}
-          imageUrl={imageUrl}
-          aspectRatio={3 / 4}
-          title="Edit poster image"
-        />
+        <>
+          <ImageEditorModal
+            open={isEditorOpen}
+            onOpenChange={setIsEditorOpen}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: "poster_image",
+              assetKey: "poster_main",
+            }}
+            imageUrl={imageUrl}
+            aspectRatio={3 / 4}
+            title="Edit poster image"
+          />
+          {asset?.currentVersion && (
+            <ImproveImageModal
+              open={isImproveOpen}
+              onOpenChange={setIsImproveOpen}
+              imageUrl={imageUrl}
+              originalPrompt={asset.currentVersion.prompt}
+              assetRef={{
+                ownerType: "resource",
+                ownerId: resourceId,
+                assetType: "poster_image",
+                assetKey: "poster_main",
+              }}
+              currentStorageId={asset.currentVersion.storageId}
+              currentVersionId={asset.currentVersion._id}
+              styleId={resource?.styleId as Id<"styles"> | undefined}
+              aspect="3:4"
+            />
+          )}
+        </>
       )}
     </div>
   );

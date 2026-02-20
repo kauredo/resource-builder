@@ -651,6 +651,125 @@ function getAssetContext(assetType: string): string {
   }
 }
 
+// Improve an existing image with a modification instruction
+export const improveImage = action({
+  args: {
+    ownerType: v.union(v.literal("resource"), v.literal("style")),
+    ownerId: v.union(v.id("resources"), v.id("styles")),
+    assetType: v.string(),
+    assetKey: v.string(),
+    currentStorageId: v.id("_storage"),
+    currentVersionId: v.optional(v.id("assetVersions")),
+    originalPrompt: v.string(),
+    instruction: v.string(),
+    styleId: v.optional(v.id("styles")),
+    aspect: v.optional(v.union(v.literal("1:1"), v.literal("3:4"), v.literal("4:3"))),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_AI_API_KEY not configured");
+
+    // Fetch the current image from storage → base64
+    const imageUrl = await ctx.storage.getUrl(args.currentStorageId);
+    if (!imageUrl) throw new Error("Current image not found in storage");
+
+    const resp = await fetch(imageUrl);
+    const buf = await resp.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const imageBase64 = btoa(binary);
+
+    // Optionally load style data
+    let styleContext = "";
+    if (args.styleId) {
+      const style = await ctx.runQuery(api.styles.getStyle, { styleId: args.styleId });
+      if (style) {
+        styleContext = `\nStyle: ${style.illustrationStyle}. Colors: ${style.colors.primary} (primary), ${style.colors.secondary} (secondary), ${style.colors.accent} (accent).`;
+      }
+    }
+
+    const aspect = args.aspect ?? "1:1";
+
+    // Build the improvement prompt
+    const prompt = [
+      `MODIFICATION REQUEST: ${args.instruction}`,
+      "",
+      "Modify the provided image according to the request above.",
+      "Keep everything else exactly the same — same characters, same composition, same style, same background.",
+      "Only change what was specifically requested.",
+      "",
+      `Original image description: ${args.originalPrompt}`,
+      styleContext,
+      `Output a single image with aspect ratio ${aspect}.`,
+    ].join("\n");
+
+    // Send to Gemini with the current image as reference
+    const response = await fetch(
+      `${GEMINI_API_BASE}/${MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType: "image/png", data: imageBase64 } },
+            ],
+          }],
+          generationConfig: { responseModalities: ["image", "text"] },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(friendlyGeminiError(response.status, errorData.error?.message || ""));
+    }
+
+    const data = await response.json();
+    const candidates = data.candidates;
+    if (!candidates || candidates.length === 0) throw new Error("No image generated");
+
+    const parts = candidates[0].content?.parts;
+    if (!parts) throw new Error("Invalid response format");
+
+    const imagePart = parts.find(
+      (part: { inlineData?: { data: string; mimeType: string } }) => part.inlineData,
+    );
+    if (!imagePart?.inlineData) throw new Error("No image in response");
+
+    const imageData = imagePart.inlineData.data;
+    const mimeType = imagePart.inlineData.mimeType || "image/png";
+
+    const binaryString = atob(imageData);
+    const outBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      outBytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([outBytes], { type: mimeType });
+    const storageId = await ctx.storage.store(blob);
+
+    // Store as edited version with lineage
+    await ctx.runMutation(api.assetVersions.createFromGeneration, {
+      ownerType: args.ownerType,
+      ownerId: args.ownerId,
+      assetType: args.assetType,
+      assetKey: args.assetKey,
+      storageId,
+      prompt: args.originalPrompt,
+      params: {
+        model: MODEL,
+        improvement: args.instruction,
+      },
+      source: "edited",
+      sourceVersionId: args.currentVersionId,
+    });
+
+    return { success: true, storageId };
+  },
+});
+
 function buildGenericPrompt({
   prompt,
   style,

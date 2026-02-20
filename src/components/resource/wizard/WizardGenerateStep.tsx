@@ -4,10 +4,12 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Wand2, RefreshCw, Check, AlertCircle, Loader2, Pencil } from "lucide-react";
+import { Wand2, RefreshCw, Check, AlertCircle, Loader2, Pencil, Paintbrush } from "lucide-react";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { AIWizardState, ImageItem, StateUpdater } from "./use-ai-wizard";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 interface WizardGenerateStepProps {
   state: AIWizardState;
@@ -362,9 +364,11 @@ export function WizardGenerateStep({
                       key={item.assetKey}
                       item={item}
                       imageUrl={imageUrl}
+                      asset={asset}
                       isGeneratingAll={isGenerating}
                       onRegenerate={() => generateSingle(index)}
                       resourceId={state.resourceId ?? null}
+                      styleId={state.styleId ?? null}
                     />
                   );
                 })}
@@ -383,9 +387,11 @@ export function WizardGenerateStep({
                 key={item.assetKey}
                 item={item}
                 imageUrl={imageUrl}
+                asset={asset}
                 isGeneratingAll={isGenerating}
                 onRegenerate={() => generateSingle(index)}
                 resourceId={state.resourceId ?? null}
+                styleId={state.styleId ?? null}
               />
             );
           })}
@@ -417,17 +423,22 @@ function ItemPreviewRow({ item }: { item: ImageItem }) {
 function ImageItemCard({
   item,
   imageUrl,
+  asset,
   isGeneratingAll,
   onRegenerate,
   resourceId,
+  styleId,
 }: {
   item: ImageItem;
   imageUrl: string | null;
+  asset?: { currentVersion?: { storageId: Id<"_storage">; _id: Id<"assetVersions">; prompt: string; url: string | null } | null } | null;
   isGeneratingAll: boolean;
   onRegenerate: () => void;
   resourceId: string | null;
+  styleId: string | null;
 }) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isImproveOpen, setIsImproveOpen] = useState(false);
   const hasAsset = !!resourceId && !!imageUrl;
   // Checkerboard background for transparent icons
   const bgStyle = item.greenScreen
@@ -520,6 +531,17 @@ function ImageItemCard({
                     <Pencil className="size-3.5" aria-hidden="true" />
                     Edit
                   </Button>
+                  {asset?.currentVersion && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setIsImproveOpen(true)}
+                      className="w-full gap-1.5"
+                    >
+                      <Paintbrush className="size-3.5" aria-hidden="true" />
+                      Improve
+                    </Button>
+                  )}
                   <AssetHistoryDialog
                     assetRef={{
                       ownerType: "resource",
@@ -557,22 +579,42 @@ function ImageItemCard({
       </div>
 
       {hasAsset && (
-        <ImageEditorModal
-          open={isEditorOpen}
-          onOpenChange={setIsEditorOpen}
-          assetRef={{
-            ownerType: "resource",
-            ownerId: resourceId!,
-            assetType: item.assetType as any,
-            assetKey: item.assetKey,
-          }}
-          imageUrl={imageUrl!}
-          aspectRatio={
-            item.aspect
-              ? Number(item.aspect.split(":")[0]) / Number(item.aspect.split(":")[1])
-              : undefined
-          }
-        />
+        <>
+          <ImageEditorModal
+            open={isEditorOpen}
+            onOpenChange={setIsEditorOpen}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId!,
+              assetType: item.assetType as any,
+              assetKey: item.assetKey,
+            }}
+            imageUrl={imageUrl!}
+            aspectRatio={
+              item.aspect
+                ? Number(item.aspect.split(":")[0]) / Number(item.aspect.split(":")[1])
+                : undefined
+            }
+          />
+          {asset?.currentVersion && (
+            <ImproveImageModal
+              open={isImproveOpen}
+              onOpenChange={setIsImproveOpen}
+              imageUrl={imageUrl!}
+              originalPrompt={asset.currentVersion.prompt}
+              assetRef={{
+                ownerType: "resource",
+                ownerId: resourceId! as Id<"resources">,
+                assetType: item.assetType,
+                assetKey: item.assetKey,
+              }}
+              currentStorageId={asset.currentVersion.storageId}
+              currentVersionId={asset.currentVersion._id}
+              styleId={styleId as Id<"styles"> | undefined}
+              aspect={item.aspect}
+            />
+          )}
+        </>
       )}
     </div>
   );

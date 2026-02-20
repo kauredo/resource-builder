@@ -29,7 +29,9 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  Paintbrush,
 } from "lucide-react";
+import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { WorksheetContent, WorksheetBlock } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -42,6 +44,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const [regeneratingBlocks, setRegeneratingBlocks] = useState<Set<string>>(
     new Set(),
   );
@@ -277,6 +280,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
             onPromptChange={handleBlockPromptChange}
             onRegenerate={handleBlockRegenerate}
             onEditImage={setEditingKey}
+            onImproveImage={setImprovingKey}
           />
         ))}
       </div>
@@ -296,6 +300,31 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           title="Edit worksheet image"
         />
       )}
+
+      {improvingKey && (() => {
+        const asset = assets?.find((a) => a.assetKey === improvingKey);
+        const cv = asset?.currentVersion;
+        const url = cv?.url;
+        if (!cv || !url) return null;
+        return (
+          <ImproveImageModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setImprovingKey(null); }}
+            imageUrl={url}
+            originalPrompt={cv.prompt}
+            assetRef={{
+              ownerType: "resource",
+              ownerId: resourceId,
+              assetType: "worksheet_block_image",
+              assetKey: improvingKey,
+            }}
+            currentStorageId={cv.storageId}
+            currentVersionId={cv._id}
+            styleId={resource?.styleId as Id<"styles"> | undefined}
+            aspect="4:3"
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -309,6 +338,7 @@ function BlockPreview({
   onPromptChange,
   onRegenerate,
   onEditImage,
+  onImproveImage,
 }: {
   block: WorksheetBlock;
   index: number;
@@ -318,6 +348,7 @@ function BlockPreview({
   onPromptChange: (blockId: string, newPrompt: string) => Promise<void>;
   onRegenerate: (blockId: string) => Promise<void>;
   onEditImage: (assetKey: string) => void;
+  onImproveImage: (assetKey: string) => void;
 }) {
   const imageUrl = block.imageAssetKey
     ? assetMap.get(block.imageAssetKey)
@@ -374,6 +405,15 @@ function BlockPreview({
                     >
                       <Pencil className="size-3.5" aria-hidden="true" />
                       Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => onImproveImage(block.imageAssetKey!)}
+                      className="w-full gap-1.5"
+                    >
+                      <Paintbrush className="size-3.5" aria-hidden="true" />
+                      Improve
                     </Button>
                     <AssetHistoryDialog
                       assetRef={{

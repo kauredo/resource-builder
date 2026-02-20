@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { RefreshCw, Loader2, AlertCircle, Pencil } from "lucide-react";
+import { RefreshCw, Loader2, AlertCircle, Pencil, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleFonts } from "@/lib/fonts";
@@ -22,6 +22,7 @@ interface CardPreviewProps {
   showDescription?: boolean;
   description?: string;
   onRegenerate?: () => void;
+  onImprove?: () => void;
   assetRef?: AssetRef;
   // Layout for correct proportions
   cardsPerPage?: 4 | 6 | 9;
@@ -61,6 +62,7 @@ export function CardPreview({
   showDescription = false,
   description,
   onRegenerate,
+  onImprove,
   assetRef,
   cardsPerPage = 6,
   style,
@@ -215,6 +217,17 @@ export function CardPreview({
                         <Pencil className="size-3.5" aria-hidden="true" />
                         Edit
                       </Button>
+                      {onImprove && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={onImprove}
+                          className="w-full gap-1.5"
+                        >
+                          <Paintbrush className="size-3.5" aria-hidden="true" />
+                          Improve
+                        </Button>
+                      )}
                       <AssetHistoryDialog
                         assetRef={assetRef}
                         triggerLabel="History"
