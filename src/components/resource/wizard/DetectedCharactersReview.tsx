@@ -55,7 +55,7 @@ export function DetectedCharactersReview({
       <div className="rounded-xl border border-border/60 bg-card p-5 space-y-3" role="status">
         <div className="flex items-center gap-2.5">
           <Loader2 className="size-4 animate-spin motion-reduce:animate-none text-coral" aria-hidden="true" />
-          <span className="text-sm font-medium">Finding characters in your content...</span>
+          <span className="text-sm font-medium">Creating characters...</span>
         </div>
         <div className="space-y-2">
           <div className="h-10 rounded-lg bg-muted/50 animate-pulse motion-reduce:animate-none" />

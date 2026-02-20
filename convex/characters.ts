@@ -24,7 +24,7 @@ export const getUserCharactersWithThumbnails = query({
       characters.map(async (character) => {
         let thumbnailUrl: string | null = null;
         const primaryId =
-          character.primaryImageId ?? character.referenceImages[0];
+          character.primaryImageId ?? character.referenceImages[0] ?? character.styledReferenceImageId;
         if (primaryId) {
           thumbnailUrl = await ctx.storage.getUrl(primaryId);
         }
@@ -47,7 +47,7 @@ export const getCharactersByStyle = query({
       characters.map(async (character) => {
         let thumbnailUrl: string | null = null;
         const primaryId =
-          character.primaryImageId ?? character.referenceImages[0];
+          character.primaryImageId ?? character.referenceImages[0] ?? character.styledReferenceImageId;
         if (primaryId) {
           thumbnailUrl = await ctx.storage.getUrl(primaryId);
         }

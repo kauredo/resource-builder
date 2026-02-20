@@ -298,19 +298,6 @@ export const createDetectedCharacters = action({
             promptFragment: char.visualDescription,
           });
         }
-        // Generate styled reference if style provided and missing/stale
-        if (
-          args.styleId &&
-          (!match.styledReferenceImageId ||
-            match.styledReferenceStyleId !== args.styleId)
-        ) {
-          try {
-            await ctx.runAction(api.characterActions.ensureCharacterReference, {
-              characterId: match._id,
-              styleId: args.styleId,
-            });
-          } catch { /* non-blocking */ }
-        }
         // Suggest updated description when AI provides a different one
         const suggested =
           char.visualDescription &&
@@ -340,15 +327,6 @@ export const createDetectedCharacters = action({
           personality: char.personality,
           promptFragment: char.visualDescription,
         });
-        // Generate styled reference immediately for new characters
-        if (args.styleId) {
-          try {
-            await ctx.runAction(api.characterActions.ensureCharacterReference, {
-              characterId: charId,
-              styleId: args.styleId,
-            });
-          } catch { /* non-blocking */ }
-        }
         results.push({
           name: char.name,
           characterId: charId,
@@ -450,6 +428,13 @@ export const ensureCharacterReference = action({
         characterId: args.characterId,
         styledReferenceImageId: storageId,
         styledReferenceStyleId: args.styleId,
+      });
+
+      // Also add to referenceImages array so it shows on the character page,
+      // and set as primaryImageId if none exists yet
+      await ctx.runMutation(api.characters.addReferenceImage, {
+        characterId: args.characterId,
+        storageId,
       });
 
       return { storageId };

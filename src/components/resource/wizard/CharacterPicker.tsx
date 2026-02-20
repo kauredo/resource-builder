@@ -73,29 +73,19 @@ export function CharacterPicker({
 
     const isSelected = selection.characterIds.includes(charId);
 
-    if (selection.mode === "resource") {
-      if (isSelected) {
-        // Deselect → no character
+    // Both modes: toggle character in the list
+    if (isSelected) {
+      const remaining = selection.characterIds.filter((id) => id !== charId);
+      if (remaining.length === 0) {
         onChange(null);
       } else {
-        // Replace selection
-        onChange({ mode: "resource", characterIds: [charId] });
+        onChange({ ...selection, characterIds: remaining });
       }
     } else {
-      // per_item mode — toggle in list
-      if (isSelected) {
-        const remaining = selection.characterIds.filter((id) => id !== charId);
-        if (remaining.length === 0) {
-          onChange(null);
-        } else {
-          onChange({ ...selection, characterIds: remaining });
-        }
-      } else {
-        onChange({
-          ...selection,
-          characterIds: [...selection.characterIds, charId],
-        });
-      }
+      onChange({
+        ...selection,
+        characterIds: [...selection.characterIds, charId],
+      });
     }
   };
 
@@ -107,18 +97,14 @@ export function CharacterPicker({
   const handleToggleMode = () => {
     if (!selection) return;
     const newMode = selection.mode === "resource" ? "per_item" : "resource";
-    const newIds =
-      newMode === "resource"
-        ? [selection.characterIds[0]]
-        : selection.characterIds;
-    onChange({ mode: newMode, characterIds: newIds });
+    onChange({ mode: newMode, characterIds: selection.characterIds });
   };
 
   if (!characters) return null;
   if (characters.length === 0) {
     return (
       <div className="space-y-2">
-        <Label className="text-base font-medium">Character (optional)</Label>
+        <Label className="text-base font-medium">Characters (optional)</Label>
         <div className="rounded-xl border-2 border-dashed border-border/60 bg-muted/30 p-6 text-center">
           <User
             className="size-8 text-muted-foreground/50 mx-auto mb-2"
@@ -143,7 +129,7 @@ export function CharacterPicker({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-base font-medium">Character (optional)</Label>
+        <Label className="text-base font-medium">Characters (optional)</Label>
         {allowPerItem && selection && (
           <button
             type="button"

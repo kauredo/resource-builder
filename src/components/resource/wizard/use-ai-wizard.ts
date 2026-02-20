@@ -309,6 +309,18 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
             })),
             detectedCharactersStatus: "ready",
           });
+
+          // Fire off portrait generation in the background — CharacterThumbnail
+          // uses reactive queries so images will appear as they complete
+          if (state.styleId) {
+            for (const r of charResults) {
+              ensureCharacterRef({
+                characterId: r.characterId as Id<"characters">,
+                styleId: state.styleId,
+              }).catch(() => {}); // Non-blocking
+            }
+          }
+
           return;
         } catch {
           // Non-blocking: proceed without character linking
