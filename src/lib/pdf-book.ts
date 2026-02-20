@@ -315,27 +315,17 @@ function renderContentPage(
   // Image
   if (imageUrl) {
     children.push(
-      createElement(
-        View,
-        {
-          key: "img-wrapper",
-          style: {
-            width: imageWidth,
-            height: imageHeight,
-            borderRadius: 8,
-            overflow: "hidden",
-            marginBottom: 16,
-            alignSelf: "center",
-          },
+      createElement(Image, {
+        key: "img",
+        src: imageUrl,
+        style: {
+          width: imageWidth,
+          height: imageHeight,
+          borderRadius: 8,
+          marginBottom: 16,
+          alignSelf: "center",
         },
-        createElement(Image, {
-          src: imageUrl,
-          style: {
-            width: "100%",
-            height: "100%",
-          },
-        }),
-      ),
+      }),
     );
   }
 
@@ -568,24 +558,17 @@ function renderBookletCover(
     const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight * 0.75);
     const imageWidth = imageHeight * (3 / 4);
     children.push(
-      createElement(
-        View,
-        {
-          key: "cover-img-wrap",
-          style: {
-            width: imageWidth,
-            height: imageHeight,
-            borderRadius: 6,
-            overflow: "hidden",
-            marginBottom: 10,
-            alignSelf: "center",
-          },
+      createElement(Image, {
+        key: "cover-img",
+        src: coverUrl,
+        style: {
+          width: imageWidth,
+          height: imageHeight,
+          borderRadius: 6,
+          marginBottom: 10,
+          alignSelf: "center",
         },
-        createElement(Image, {
-          src: coverUrl,
-          style: { width: "100%", height: "100%" },
-        }),
-      ),
+      }),
     );
   }
 
@@ -653,24 +636,17 @@ function renderBookletPage(
       ? imageHeight * (3 / 4)
       : opts.usableWidth;
     children.push(
-      createElement(
-        View,
-        {
-          key: "img-wrap",
-          style: {
-            width: imageWidth,
-            height: imageHeight,
-            borderRadius: 6,
-            overflow: "hidden",
-            marginBottom: 8,
-            alignSelf: "center",
-          },
+      createElement(Image, {
+        key: "img",
+        src: imageUrl,
+        style: {
+          width: imageWidth,
+          height: imageHeight,
+          borderRadius: 6,
+          marginBottom: 8,
+          alignSelf: "center",
         },
-        createElement(Image, {
-          src: imageUrl,
-          style: { width: "100%", height: "100%" },
-        }),
-      ),
+      }),
     );
   }
 
