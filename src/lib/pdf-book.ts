@@ -2,7 +2,7 @@
  * PDF generator for Book resources.
  *
  * Three layout modes:
- * - picture_book: Large image (~65% of page) + text below (~35%)
+ * - picture_book: Full-height image with text overlaid at the bottom (semi-transparent band)
  * - illustrated_text: Smaller image (~30% of page) at top + text below
  * - booklet: Saddle-stitch booklet — landscape A4, two book pages per sheet,
  *   pages reordered for print-and-fold imposition.
@@ -45,7 +45,6 @@ const A4_HEIGHT = 29.7 * CM; // 841.89
 const MARGIN = 1.3 * CM;     // ~36pt — 0.5in per print guidelines
 
 // Minimum space reserved below image for text + page number
-const TEXT_RESERVE_PICTURE_BOOK = 3 * CM;  // ~85pt — room for 3-4 lines at 16pt
 const TEXT_RESERVE_ILLUSTRATED  = 8 * CM;  // ~227pt — text-heavy layout
 // Booklet has smaller pages; reserve less
 const TEXT_RESERVE_BOOKLET = 2.5 * CM;     // ~71pt
@@ -245,64 +244,158 @@ function renderContentPage(
     ? assetMap.get(page.imageAssetKey)
     : undefined;
 
-  // Page images are 3:4 (portrait). Use full usable width for picture books,
-  // only capping height to leave room for text + page number.
-  const textReserve = opts.isPictureBook
-    ? TEXT_RESERVE_PICTURE_BOOK
-    : TEXT_RESERVE_ILLUSTRATED;
-  const maxImageHeight = opts.usableHeight - textReserve;
-  const naturalHeight = opts.usableWidth * (4 / 3);
-  const imageHeight = imageUrl ? Math.min(naturalHeight, maxImageHeight) : 0;
-  // Derive width from height to keep 3:4 ratio
-  const imageWidth = imageHeight * (3 / 4);
-
   const children: ReturnType<typeof createElement>[] = [];
 
-  // Image
-  if (imageUrl) {
-    children.push(
-      createElement(Image, {
-        key: "img",
-        src: imageUrl,
-        style: {
-          width: imageWidth,
-          height: imageHeight,
-          borderRadius: 8,
-          marginBottom: 16,
-          alignSelf: "center",
-        },
-      }),
-    );
-  }
+  if (opts.isPictureBook) {
+    // Picture book: large image with text overlaid at the bottom
+    const pageNumSpace = 0.8 * CM;
+    const maxImageHeight = opts.usableHeight - pageNumSpace;
+    const naturalHeight = opts.usableWidth * (4 / 3);
+    const imageHeight = imageUrl ? Math.min(naturalHeight, maxImageHeight) : 0;
+    const imageWidth = imageHeight * (3 / 4);
 
-  // Text
-  if (page.text) {
-    children.push(
-      createElement(
-        View,
-        {
-          key: "text-wrapper",
+    if (imageUrl) {
+      const containerChildren: ReturnType<typeof createElement>[] = [
+        createElement(Image, {
+          key: "img",
+          src: imageUrl,
           style: {
-            flex: 1,
+            width: imageWidth,
+            height: imageHeight,
           },
-        },
+        }),
+      ];
+
+      if (page.text) {
+        containerChildren.push(
+          createElement(
+            View,
+            {
+              key: "text-overlay",
+              style: {
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+              },
+            },
+            // Semi-transparent background layer
+            createElement(View, {
+              key: "overlay-bg",
+              style: {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "#FFFFFF",
+                opacity: 0.85,
+              },
+            }),
+            // Text content (full opacity)
+            createElement(
+              Text,
+              {
+                key: "overlay-text",
+                style: {
+                  fontFamily: opts.bodyFontFamily,
+                  fontSize: 16,
+                  lineHeight: 1.6,
+                  color: opts.colors.text,
+                },
+              },
+              page.text,
+            ),
+          ),
+        );
+      }
+
+      children.push(
         createElement(
-          Text,
+          View,
           {
+            key: "image-container",
             style: {
-              fontFamily: opts.bodyFontFamily,
-              fontSize: opts.isPictureBook ? 16 : 12,
-              lineHeight: opts.isPictureBook ? 1.6 : 1.5,
-              color: opts.colors.text,
+              position: "relative",
+              width: imageWidth,
+              height: imageHeight,
+              alignSelf: "center",
+              borderRadius: 8,
+              overflow: "hidden",
             },
           },
-          page.text,
+          ...containerChildren,
         ),
-      ),
-    );
+      );
+    } else if (page.text) {
+      // No image — show text standalone
+      children.push(
+        createElement(
+          View,
+          { key: "text-wrapper", style: { flex: 1 } },
+          createElement(
+            Text,
+            {
+              style: {
+                fontFamily: opts.bodyFontFamily,
+                fontSize: 16,
+                lineHeight: 1.6,
+                color: opts.colors.text,
+              },
+            },
+            page.text,
+          ),
+        ),
+      );
+    }
+  } else {
+    // Illustrated text: smaller image + text below
+    const maxImageHeight = opts.usableHeight - TEXT_RESERVE_ILLUSTRATED;
+    const naturalHeight = opts.usableWidth * (4 / 3);
+    const imageHeight = imageUrl ? Math.min(naturalHeight, maxImageHeight) : 0;
+    const imageWidth = imageHeight * (3 / 4);
+
+    if (imageUrl) {
+      children.push(
+        createElement(Image, {
+          key: "img",
+          src: imageUrl,
+          style: {
+            width: imageWidth,
+            height: imageHeight,
+            borderRadius: 8,
+            marginBottom: 16,
+            alignSelf: "center",
+          },
+        }),
+      );
+    }
+
+    if (page.text) {
+      children.push(
+        createElement(
+          View,
+          { key: "text-wrapper", style: { flex: 1 } },
+          createElement(
+            Text,
+            {
+              style: {
+                fontFamily: opts.bodyFontFamily,
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: opts.colors.text,
+              },
+            },
+            page.text,
+          ),
+        ),
+      );
+    }
   }
 
-  // Page number — centered at bottom for picture books, right-aligned for illustrated text
+  // Page number
   const pageNum = index + 1;
   children.push(
     createElement(
