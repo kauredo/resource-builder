@@ -36,9 +36,19 @@ interface BookPDFOptions {
   };
 }
 
-const A4_WIDTH = 595.28;
-const A4_HEIGHT = 841.89;
-const MARGIN = 36;
+// 1cm = 28.3465 PDF points
+const CM = 28.3465;
+
+// A4 = 21cm × 29.7cm
+const A4_WIDTH = 21 * CM;   // 595.28
+const A4_HEIGHT = 29.7 * CM; // 841.89
+const MARGIN = 1.3 * CM;     // ~36pt — 0.5in per print guidelines
+
+// Minimum space reserved below image for text + page number
+const TEXT_RESERVE_PICTURE_BOOK = 3 * CM;  // ~85pt — room for 3-4 lines at 16pt
+const TEXT_RESERVE_ILLUSTRATED  = 18 * CM; // ~510pt — text-heavy layout
+// Booklet has smaller pages; reserve less
+const TEXT_RESERVE_BOOKLET = 2.5 * CM;     // ~71pt
 
 const DEFAULT_STYLE = {
   colors: {
@@ -299,16 +309,16 @@ function renderContentPage(
     ? assetMap.get(page.imageAssetKey)
     : undefined;
 
-  // Page images are 3:4 (portrait). Cap height by layout so text always fits,
-  // then derive width from capped height to maintain aspect ratio.
+  // Page images are 3:4 (portrait). Use full usable width for picture books,
+  // only capping height to leave room for text + page number.
+  const textReserve = opts.isPictureBook
+    ? TEXT_RESERVE_PICTURE_BOOK
+    : TEXT_RESERVE_ILLUSTRATED;
+  const maxImageHeight = opts.usableHeight - textReserve;
   const naturalHeight = opts.usableWidth * (4 / 3);
-  const maxHeight = opts.isPictureBook
-    ? opts.usableHeight * 0.65
-    : opts.usableHeight * 0.35;
-  const imageHeight = imageUrl ? Math.min(naturalHeight, maxHeight) : 0;
-  const imageWidth = imageHeight < naturalHeight
-    ? imageHeight * (3 / 4)
-    : opts.usableWidth;
+  const imageHeight = imageUrl ? Math.min(naturalHeight, maxImageHeight) : 0;
+  // Derive width from height to keep 3:4 ratio
+  const imageWidth = imageHeight * (3 / 4);
 
   const children: ReturnType<typeof createElement>[] = [];
 
@@ -554,8 +564,8 @@ function renderBookletCover(
   const children: ReturnType<typeof createElement>[] = [];
 
   if (coverUrl) {
-    // Cover images are 3:4 portrait — derive height from width
-    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight * 0.75);
+    // Cover images are 3:4 portrait — leave room for title below
+    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight - 3 * CM);
     const imageWidth = imageHeight * (3 / 4);
     children.push(
       createElement(Image, {
@@ -627,14 +637,12 @@ function renderBookletPage(
   const imageUrl = page.imageAssetKey ? assetMap.get(page.imageAssetKey) : undefined;
   const children: ReturnType<typeof createElement>[] = [];
 
-  // Page images are 3:4 (portrait) — cap height so text fits,
-  // then derive width from capped height to maintain aspect ratio.
+  // Page images are 3:4 (portrait) — cap height to leave room for text.
   if (imageUrl) {
+    const maxImageHeight = opts.usableHeight - TEXT_RESERVE_BOOKLET;
     const naturalHeight = opts.usableWidth * (4 / 3);
-    const imageHeight = Math.min(naturalHeight, opts.usableHeight * 0.6);
-    const imageWidth = imageHeight < naturalHeight
-      ? imageHeight * (3 / 4)
-      : opts.usableWidth;
+    const imageHeight = Math.min(naturalHeight, maxImageHeight);
+    const imageWidth = imageHeight * (3 / 4);
     children.push(
       createElement(Image, {
         key: "img",
