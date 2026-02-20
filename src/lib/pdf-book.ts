@@ -46,7 +46,7 @@ const MARGIN = 1.3 * CM;     // ~36pt — 0.5in per print guidelines
 
 // Minimum space reserved below image for text + page number
 const TEXT_RESERVE_PICTURE_BOOK = 3 * CM;  // ~85pt — room for 3-4 lines at 16pt
-const TEXT_RESERVE_ILLUSTRATED  = 18 * CM; // ~510pt — text-heavy layout
+const TEXT_RESERVE_ILLUSTRATED  = 8 * CM;  // ~227pt — text-heavy layout
 // Booklet has smaller pages; reserve less
 const TEXT_RESERVE_BOOKLET = 2.5 * CM;     // ~71pt
 
@@ -150,143 +150,79 @@ function renderCoverPage(
     ? assetMap.get(cover.imageAssetKey)
     : undefined;
 
+  // Same approach as booklet cover — centered image + title below
+  const children: ReturnType<typeof createElement>[] = [];
+
   if (coverUrl) {
-    // Wrap everything in a single View so absolute children don't overflow
-    // into a second page in @react-pdf
-    const wrapper = createElement(
-      View,
-      {
-        key: "cover-wrapper",
-        style: {
-          width: A4_WIDTH,
-          height: A4_HEIGHT,
-          position: "relative",
-        },
-      },
-      // Full-bleed cover image
+    // Cover images are 3:4 portrait — leave room for title below
+    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight - 4 * CM);
+    const imageWidth = imageHeight * (3 / 4);
+    children.push(
       createElement(Image, {
         key: "cover-img",
         src: coverUrl,
         style: {
-          width: A4_WIDTH,
-          height: A4_HEIGHT,
-          objectFit: "cover",
-          position: "absolute",
-          top: 0,
-          left: 0,
+          width: imageWidth,
+          height: imageHeight,
+          borderRadius: 8,
+          marginBottom: 16,
+          alignSelf: "center",
         },
       }),
-      // Semi-transparent scrim at bottom for text readability
-      createElement(View, {
-        key: "cover-scrim",
-        style: {
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: A4_HEIGHT * 0.35,
-          backgroundColor: "rgba(0,0,0,0.5)",
-        },
-      }),
-      // Title overlay
-      createElement(
-        View,
-        {
-          key: "cover-text",
-          style: {
-            position: "absolute",
-            bottom: MARGIN * 2,
-            left: MARGIN,
-            right: MARGIN,
-          },
-        },
-        createElement(
-          Text,
-          {
-            style: {
-              fontFamily: opts.headingFontFamily,
-              fontSize: 36,
-              color: "#FFFFFF",
-              marginBottom: 8,
-            },
-          },
-          cover.title,
-        ),
-        cover.subtitle
-          ? createElement(
-              Text,
-              {
-                style: {
-                  fontFamily: opts.bodyFontFamily,
-                  fontSize: 18,
-                  color: "rgba(255,255,255,0.85)",
-                },
-              },
-              cover.subtitle,
-            )
-          : null,
-      ),
-    );
-
-    return createElement(
-      Page,
-      {
-        key: "cover",
-        size: "A4",
-        style: { backgroundColor: "#FFFFFF" },
-      },
-      wrapper,
     );
   }
 
-  // No cover image — simple text cover
+  // Title
+  children.push(
+    createElement(
+      Text,
+      {
+        key: "cover-title",
+        style: {
+          fontFamily: opts.headingFontFamily,
+          fontSize: 32,
+          color: opts.colors.text,
+          textAlign: "center",
+          marginBottom: 8,
+        },
+      },
+      cover.title,
+    ),
+  );
+
+  if (cover.subtitle) {
+    children.push(
+      createElement(
+        Text,
+        {
+          key: "cover-subtitle",
+          style: {
+            fontFamily: opts.bodyFontFamily,
+            fontSize: 16,
+            color: opts.colors.text,
+            textAlign: "center",
+            opacity: 0.6,
+          },
+        },
+        cover.subtitle,
+      ),
+    );
+  }
+
   return createElement(
     Page,
     {
       key: "cover",
       size: "A4",
-      style: { backgroundColor: "#FFFFFF" },
-    },
-    createElement(
-      View,
-      {
-        key: "cover-text-only",
-        style: {
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: MARGIN * 2,
-        },
+      style: {
+        padding: MARGIN,
+        backgroundColor: "#FFFFFF",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
       },
-      createElement(
-        Text,
-        {
-          style: {
-            fontFamily: opts.headingFontFamily,
-            fontSize: 36,
-            color: opts.colors.text,
-            textAlign: "center",
-            marginBottom: 12,
-          },
-        },
-        cover.title,
-      ),
-      cover.subtitle
-        ? createElement(
-            Text,
-            {
-              style: {
-                fontFamily: opts.bodyFontFamily,
-                fontSize: 18,
-                color: opts.colors.text,
-                textAlign: "center",
-                opacity: 0.7,
-              },
-            },
-            cover.subtitle,
-          )
-        : null,
-    ),
+    },
+    ...children,
   );
 }
 
