@@ -94,6 +94,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           : undefined,
         headerImageUrl,
         assetMap,
+        orientation: content.orientation,
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -387,7 +388,7 @@ function BlockPreview({
                   src={imageUrl}
                   alt={block.caption || `Block ${index + 1} image`}
                   fill
-                  className="object-cover"
+                  className="object-contain bg-muted/10"
                 />
                 <div
                   className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-200 motion-reduce:transition-none ${

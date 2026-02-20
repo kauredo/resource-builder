@@ -193,6 +193,7 @@ Given a description, generate worksheet content as JSON:
 {
   "name": "worksheet name",
   "title": "Title displayed at the top of the worksheet",
+  "orientation": "portrait",
   "blocks": [
     { "type": "heading", "text": "Section heading" },
     { "type": "prompt", "text": "Instructions or questions for the child" },
@@ -205,12 +206,14 @@ Given a description, generate worksheet content as JSON:
     { "type": "matching", "leftItems": ["Feeling", "Thought"], "rightItems": ["Body clue", "Coping skill"] },
     { "type": "fill_in_blank", "text": "When I feel ___ I can try ___" },
     { "type": "multiple_choice", "question": "Which is a coping skill?", "options": ["Deep breathing", "Yelling", "Counting to 10"] },
-    { "type": "image", "caption": "My safe place", "imagePrompt": "a warm cozy room with soft blankets and fairy lights" },
+    { "type": "image", "caption": "My safe place", "imagePrompt": "a warm cozy room with soft blankets and fairy lights", "imageLayout": "inline", "imageAspect": "4:3" },
+    { "type": "image", "imagePrompt": "a friendly cartoon bear sitting peacefully in a meadow", "imageLayout": "background", "imageAspect": "1:1" },
     { "type": "table", "headers": ["Situation", "Feeling", "Thought", "Action"], "tableRows": [["", "", "", ""], ["", "", "", ""]] }
   ]
 }
 
 IMPORTANT GUIDELINES:
+- Choose "orientation": "portrait" or "landscape" based on the content. Use landscape for timelines, wide tables, board-style activities, or content that benefits from horizontal space. Use portrait for standard worksheets, journals, and vertically-flowing content. Default to portrait when unsure.
 - Use a MIX of block types to create an engaging, interactive worksheet. Don't just use text and lines.
 - Generate 6-15 blocks depending on the topic complexity.
 - Keep text age-appropriate and therapeutic in tone.
@@ -219,7 +222,10 @@ IMPORTANT GUIDELINES:
 - Use matching for connecting concepts (feelings to body sensations, situations to coping skills).
 - Use fill_in_blank for sentence completion exercises.
 - Use multiple_choice for psychoeducation review.
-- Use image blocks sparingly (0-2) — only when a visual illustration adds real value (e.g., a calming scene, an example scenario).
+- Always include at least 1 image block. Use 1-3 image blocks — visual illustrations make worksheets more engaging for children. Even a simple background watermark adds warmth.
+- Each image block must include "imageLayout" and "imageAspect":
+  - imageLayout: "inline" (full-width content block — for instructional illustrations, scenarios to discuss), "accent" (compact right-aligned image — for character references, small decorative visuals), or "background" (subtle low-opacity watermark centered behind all content — for mood-setting, thematic atmosphere). Use at most one "background" image per worksheet.
+  - imageAspect: "4:3" (landscape — scenes, environments), "3:4" (portrait — characters, people), or "1:1" (square — icons, emotion faces, simple objects).
 - Use table for structured tracking (thought records, mood logs, etc.).
 - The worksheet should flow logically: introduction → activity → reflection.
 - Use headings to create clear sections.

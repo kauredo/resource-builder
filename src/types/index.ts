@@ -252,6 +252,8 @@ export interface WorksheetBlock {
   caption?: string;
   imagePrompt?: string;
   imageAssetKey?: AssetKey;
+  imageLayout?: "inline" | "accent" | "background";
+  imageAspect?: "1:1" | "4:3" | "3:4";
   characterIds?: string[];
 }
 
@@ -259,6 +261,7 @@ export interface WorksheetContent {
   title: string;
   blocks: WorksheetBlock[];
   creationMode?: "ai" | "manual";
+  orientation?: "portrait" | "landscape";
   imageAssetKey?: AssetKey;
   imagePrompt?: string;
   headerImagePrompt?: string;

@@ -22,6 +22,8 @@ interface WorksheetPDFOptions {
   headerImageUrl?: string;
   /** Asset key → URL map for block images */
   assetMap?: Map<string, string>;
+  /** Page orientation — defaults to portrait */
+  orientation?: "portrait" | "landscape";
 }
 
 const DEFAULT_STYLE = {
@@ -217,7 +219,20 @@ function renderBlock(
         ? assetMap?.get(block.imageAssetKey)
         : undefined;
       if (!imageUrl) return null;
+      // Background images are rendered at the page level, not as blocks
+      if (block.imageLayout === "background") return null;
       const caption = block.caption;
+      if (block.imageLayout === "accent") {
+        return createElement(
+          View,
+          { style: styles.imageBlockAccent },
+          createElement(Image, { src: imageUrl, style: styles.blockImageAccent }),
+          caption
+            ? createElement(Text, { style: styles.imageCaptionAccent }, caption)
+            : null,
+        );
+      }
+      // Default: inline
       return createElement(
         View,
         { style: styles.imageBlock },
@@ -281,6 +296,7 @@ export async function generateWorksheetPDF({
   style,
   headerImageUrl,
   assetMap,
+  orientation,
 }: WorksheetPDFOptions): Promise<Blob> {
   const effectiveStyle = style
     ? {
@@ -326,7 +342,7 @@ export async function generateWorksheetPDF({
       height: 160,
       borderRadius: 8,
       marginBottom: 16,
-      objectFit: "cover" as const,
+      objectFit: "contain" as const,
     },
     blockHeading: {
       fontFamily: headingFontFamily,
@@ -503,7 +519,7 @@ export async function generateWorksheetPDF({
       borderRadius: 5,
       border: `1.5px solid ${textColor}`,
     },
-    // Image
+    // Image — inline (full-width content block)
     imageBlock: {
       marginVertical: 8,
       alignItems: "center",
@@ -512,7 +528,7 @@ export async function generateWorksheetPDF({
       width: "100%",
       maxHeight: 200,
       borderRadius: 8,
-      objectFit: "cover" as const,
+      objectFit: "contain" as const,
     },
     imageCaption: {
       fontFamily: bodyFontFamily,
@@ -521,6 +537,38 @@ export async function generateWorksheetPDF({
       opacity: 0.6,
       marginTop: 4,
       textAlign: "center",
+    },
+    // Image — accent (compact, right-aligned)
+    imageBlockAccent: {
+      marginVertical: 4,
+      alignItems: "flex-end",
+    },
+    blockImageAccent: {
+      width: "35%",
+      maxHeight: 140,
+      borderRadius: 6,
+      objectFit: "contain" as const,
+    },
+    imageCaptionAccent: {
+      fontFamily: bodyFontFamily,
+      fontSize: 10,
+      color: textColor,
+      opacity: 0.5,
+      marginTop: 2,
+      textAlign: "right",
+    },
+    // Image — background (absolute watermark, centered)
+    imageBlockBackground: {
+      position: "absolute" as const,
+      top: "25%",
+      left: "25%",
+      width: "50%",
+      maxHeight: "50%",
+      opacity: 0.08,
+    },
+    blockImageBackground: {
+      width: "100%",
+      objectFit: "contain" as const,
     },
     // Table
     table: {
@@ -565,12 +613,26 @@ export async function generateWorksheetPDF({
     },
   };
 
+  // Collect background images for absolute positioning
+  const backgroundImages = content.blocks
+    .filter((b) => b.type === "image" && b.imageLayout === "background" && b.imageAssetKey)
+    .map((b) => assetMap?.get(b.imageAssetKey!))
+    .filter(Boolean) as string[];
+
   const document = createElement(
     Document,
     {},
     createElement(
       Page,
-      { size: "A4", style: styles.page, wrap: true },
+      { size: "A4", orientation: orientation === "landscape" ? "landscape" : "portrait", style: styles.page, wrap: true },
+      // Background watermark images (absolute positioned, behind content)
+      ...backgroundImages.map((url, i) =>
+        createElement(
+          View,
+          { key: `bg-${i}`, style: styles.imageBlockBackground },
+          createElement(Image, { src: url, style: styles.blockImageBackground }),
+        ),
+      ),
       createElement(Text, { style: styles.title }, content.title),
       headerImageUrl
         ? createElement(Image, {

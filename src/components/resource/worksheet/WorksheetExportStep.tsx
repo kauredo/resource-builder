@@ -43,6 +43,7 @@ export function WorksheetExportStep({ state }: WorksheetExportStepProps) {
         title: state.title,
         blocks: state.blocks,
         creationMode: state.creationMode,
+        orientation: state.orientation,
       };
 
       const blob = await generateWorksheetPDF({
@@ -54,6 +55,7 @@ export function WorksheetExportStep({ state }: WorksheetExportStepProps) {
             }
           : undefined,
         assetMap,
+        orientation: state.orientation,
       });
 
       const url = URL.createObjectURL(blob);

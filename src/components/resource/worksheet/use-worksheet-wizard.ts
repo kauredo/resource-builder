@@ -34,6 +34,7 @@ export interface WorksheetWizardState {
   contentStatus: "idle" | "generating" | "ready" | "error";
   contentError?: string;
   title: string;
+  orientation: "portrait" | "landscape";
   blocks: WorksheetBlock[];
   // Generation
   imageItems: ImageItem[];
@@ -126,6 +127,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
     description: "",
     contentStatus: "idle",
     title: "",
+    orientation: "portrait",
     blocks: [],
     imageItems: [],
     resourceId: null,
@@ -189,6 +191,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
           : null,
         resourceId: existingResource._id,
         title: content.title,
+        orientation: content.orientation || "portrait",
         blocks,
         contentStatus: "ready",
         isEditMode: true,
@@ -288,6 +291,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
       const name =
         (content.name as string) || state.name || state.description.slice(0, 50);
       const title = (content.title as string) || name;
+      const orientation = (content.orientation as "portrait" | "landscape") === "landscape" ? "landscape" : "portrait";
       let blocks = (content.blocks as WorksheetBlock[]) || [];
 
       let charSelection = state.characterSelection;
@@ -300,6 +304,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
           name,
           title,
           blocks,
+          orientation,
         });
         try {
           const charResults = await createDetectedCharacters({
@@ -380,6 +385,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
         title,
         blocks,
         imageItems,
+        orientation,
       });
     } catch (error) {
       updateState({
@@ -458,6 +464,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
       title: state.title,
       blocks: state.blocks,
       creationMode: state.creationMode,
+      orientation: state.orientation,
       characters: state.characterSelection || undefined,
     };
   }, [state]);
@@ -730,13 +737,14 @@ function extractWorksheetImageItems(content: WorksheetContent): ImageItem[] {
   content.blocks.forEach((block, i) => {
     if (block.type !== "image" || !block.imagePrompt) return;
     const blockCharIds = block.characterIds?.map((id) => id as Id<"characters">);
+    const aspect = block.imageAspect === "3:4" ? "3:4" : block.imageAspect === "1:1" ? "1:1" : "4:3";
     items.push({
       assetKey: block.imageAssetKey || `worksheet_block_${i}`,
       assetType: "worksheet_block_image",
       prompt: `Worksheet illustration: ${block.imagePrompt}`,
       characterIds: blockCharIds?.length ? blockCharIds : resourceCharacterIds,
       includeText: false,
-      aspect: "4:3",
+      aspect,
       label: block.caption || `Image ${items.length + 1}`,
       group: "Worksheet Images",
       status: "pending",
