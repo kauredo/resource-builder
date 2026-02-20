@@ -299,12 +299,16 @@ function renderContentPage(
     ? assetMap.get(page.imageAssetKey)
     : undefined;
 
-  // Page images are 3:4 (portrait). Cap height by layout so text always fits.
+  // Page images are 3:4 (portrait). Cap height by layout so text always fits,
+  // then derive width from capped height to maintain aspect ratio.
   const naturalHeight = opts.usableWidth * (4 / 3);
   const maxHeight = opts.isPictureBook
     ? opts.usableHeight * 0.65
     : opts.usableHeight * 0.35;
   const imageHeight = imageUrl ? Math.min(naturalHeight, maxHeight) : 0;
+  const imageWidth = imageHeight < naturalHeight
+    ? imageHeight * (3 / 4)
+    : opts.usableWidth;
 
   const children: ReturnType<typeof createElement>[] = [];
 
@@ -316,11 +320,12 @@ function renderContentPage(
         {
           key: "img-wrapper",
           style: {
-            width: opts.usableWidth,
+            width: imageWidth,
             height: imageHeight,
             borderRadius: 8,
             overflow: "hidden",
             marginBottom: 16,
+            alignSelf: "center",
           },
         },
         createElement(Image, {
@@ -640,20 +645,26 @@ function renderBookletPage(
   const imageUrl = page.imageAssetKey ? assetMap.get(page.imageAssetKey) : undefined;
   const children: ReturnType<typeof createElement>[] = [];
 
-  // Page images are 3:4 (portrait) — cap height so text fits
+  // Page images are 3:4 (portrait) — cap height so text fits,
+  // then derive width from capped height to maintain aspect ratio.
   if (imageUrl) {
-    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight * 0.6);
+    const naturalHeight = opts.usableWidth * (4 / 3);
+    const imageHeight = Math.min(naturalHeight, opts.usableHeight * 0.6);
+    const imageWidth = imageHeight < naturalHeight
+      ? imageHeight * (3 / 4)
+      : opts.usableWidth;
     children.push(
       createElement(
         View,
         {
           key: "img-wrap",
           style: {
-            width: opts.usableWidth,
+            width: imageWidth,
             height: imageHeight,
             borderRadius: 6,
             overflow: "hidden",
             marginBottom: 8,
+            alignSelf: "center",
           },
         },
         createElement(Image, {
