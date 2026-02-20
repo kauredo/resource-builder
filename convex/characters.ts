@@ -232,3 +232,29 @@ export const removeReferenceImage = mutation({
     await ctx.storage.delete(args.storageId);
   },
 });
+
+// One-time migration: copy styledReferenceImageId into referenceImages[]
+// and set as primaryImageId for characters that have a styled reference
+// but an empty referenceImages array. Safe to run multiple times.
+export const migrateStyledReferencesToReferenceImages = mutation({
+  handler: async (ctx) => {
+    const characters = await ctx.db.query("characters").collect();
+    let migrated = 0;
+
+    for (const character of characters) {
+      if (
+        character.styledReferenceImageId &&
+        character.referenceImages.length === 0
+      ) {
+        await ctx.db.patch(character._id, {
+          referenceImages: [character.styledReferenceImageId],
+          primaryImageId: character.primaryImageId ?? character.styledReferenceImageId,
+          updatedAt: Date.now(),
+        });
+        migrated++;
+      }
+    }
+
+    return { total: characters.length, migrated };
+  },
+});
