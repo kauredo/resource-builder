@@ -22,8 +22,9 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateFlashcardsPDF } from "@/lib/pdf-flashcards";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { FlashcardsContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -34,6 +35,7 @@ interface FlashcardsDetailProps {
 
 export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
@@ -64,22 +66,27 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
     return map;
   }, [assets]);
 
+  const buildPdfBlob = useCallback(async () => {
+    if (!resource) throw new Error("Resource not loaded");
+    const content = resource.content as FlashcardsContent;
+    const cards = content.cards.map((card) => ({
+      frontText: card.frontText,
+      backText: card.backText,
+      imageUrl: card.frontImageAssetKey ? assetMap.get(card.frontImageAssetKey) : undefined,
+    }));
+    return generateFlashcardsPDF({
+      cards,
+      cardsPerPage: content.layout?.cardsPerPage ?? 6,
+      bodyFont: style?.typography?.bodyFont,
+      headingFont: style?.typography?.headingFont,
+    });
+  }, [resource, assetMap, style]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
-    const content = resource.content as FlashcardsContent;
     setIsGeneratingPDF(true);
     try {
-      const cards = content.cards.map((card) => ({
-        frontText: card.frontText,
-        backText: card.backText,
-        imageUrl: card.frontImageAssetKey ? assetMap.get(card.frontImageAssetKey) : undefined,
-      }));
-      const blob = await generateFlashcardsPDF({
-        cards,
-        cardsPerPage: content.layout?.cardsPerPage ?? 6,
-        bodyFont: style?.typography?.bodyFont,
-        headingFont: style?.typography?.headingFont,
-      });
+      const blob = await buildPdfBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -95,7 +102,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, assetMap, updateResource, style]);
+  }, [resource, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -189,6 +196,14 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
               )}
               Download PDF
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -231,6 +246,17 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
+          </div>
+        </div>
       </div>
 
       {/* Visual card grid */}

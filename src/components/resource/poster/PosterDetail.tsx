@@ -20,8 +20,9 @@ import {
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw, Paintbrush } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw, Paintbrush, Eye, EyeOff } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { PosterContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -37,6 +38,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isImproveOpen, setIsImproveOpen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -75,14 +77,19 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
     }
   }, [resource, generateStyledImage]);
 
+  const buildPdfBlob = useCallback(async () => {
+    if (!asset?.currentVersion?.url) throw new Error("No image");
+    return generateImagePagesPDF({
+      images: [asset.currentVersion.url],
+      layout: "full_page",
+    });
+  }, [asset]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!resource || !asset?.currentVersion?.url) return;
     setIsGeneratingPDF(true);
     try {
-      const blob = await generateImagePagesPDF({
-        images: [asset.currentVersion.url],
-        layout: "full_page",
-      });
+      const blob = await buildPdfBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -98,7 +105,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, asset, updateResource]);
+  }, [resource, asset, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -147,6 +154,14 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
               )}
               Download PDF
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -182,6 +197,17 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={imageUrl ? buildPdfBlob : null} visible={showPreview} />
           </div>
         </div>
       </div>

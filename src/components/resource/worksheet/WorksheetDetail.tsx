@@ -30,8 +30,11 @@ import {
   Trash2,
   Loader2,
   Paintbrush,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { WorksheetContent, WorksheetBlock } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -48,6 +51,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const [regeneratingBlocks, setRegeneratingBlocks] = useState<Set<string>>(
     new Set(),
   );
+  const [showPreview, setShowPreview] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
@@ -76,26 +80,30 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
     return map;
   }, [assets]);
 
+  const buildPdfBlob = useCallback(async () => {
+    if (!resource) throw new Error("No resource");
+    const content = resource.content as WorksheetContent;
+    const headerAsset = assets?.find(
+      (a) => a.assetKey === "worksheet_header",
+    );
+    const headerImageUrl = headerAsset?.currentVersion?.url ?? undefined;
+
+    return generateWorksheetPDF({
+      content,
+      style: style
+        ? { colors: style.colors, typography: style.typography }
+        : undefined,
+      headerImageUrl,
+      assetMap,
+      orientation: content.orientation,
+    });
+  }, [resource, assets, assetMap, style]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
-    const content = resource.content as WorksheetContent;
     setIsGeneratingPDF(true);
     try {
-      // Legacy header image support
-      const headerAsset = assets?.find(
-        (a) => a.assetKey === "worksheet_header",
-      );
-      const headerImageUrl = headerAsset?.currentVersion?.url ?? undefined;
-
-      const blob = await generateWorksheetPDF({
-        content,
-        style: style
-          ? { colors: style.colors, typography: style.typography }
-          : undefined,
-        headerImageUrl,
-        assetMap,
-        orientation: content.orientation,
-      });
+      const blob = await buildPdfBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -111,7 +119,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, assets, assetMap, updateResource, style]);
+  }, [resource, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -209,6 +217,14 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
               )}
               Download PDF
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -251,6 +267,17 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
           </div>
         </div>
       </div>

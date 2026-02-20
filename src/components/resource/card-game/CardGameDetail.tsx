@@ -21,7 +21,8 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type {
   AssetType,
@@ -37,6 +38,7 @@ interface CardGameDetailProps {
 
 export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
@@ -72,42 +74,43 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
     return map;
   }, [assets]);
 
+  const buildPdfBlob = useCallback(async () => {
+    if (!resource) throw new Error("Resource not loaded");
+
+    if (!isLegacy) {
+      const content = resource.content as unknown as CardGameContent;
+      return generateCardGamePDF({
+        content,
+        assetMap,
+        cardsPerPage: 9,
+        includeCardBacks: !!content.cardBack,
+      });
+    } else {
+      const content = resource.content as LegacyCardGameContent;
+      const imageUrls = content.cards.flatMap((card) => {
+        const cardUrl = card.imageAssetKey
+          ? assetMap.get(card.imageAssetKey)
+          : undefined;
+        return cardUrl
+          ? Array.from({ length: card.count }, () => cardUrl)
+          : [];
+      });
+      if (imageUrls.length === 0) throw new Error("No card images");
+
+      return generateImagePagesPDF({
+        images: imageUrls,
+        layout: "grid",
+        cardsPerPage: 9,
+      });
+    }
+  }, [resource, assetMap, isLegacy]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
     setIsGeneratingPDF(true);
 
     try {
-      let blob: Blob;
-
-      if (!isLegacy) {
-        // Template-based composition
-        const content = resource.content as unknown as CardGameContent;
-        blob = await generateCardGamePDF({
-          content,
-          assetMap,
-          cardsPerPage: 9,
-          includeCardBacks: !!content.cardBack,
-        });
-      } else {
-        // Legacy: image-per-card
-        const content = resource.content as LegacyCardGameContent;
-        const imageUrls = content.cards.flatMap((card) => {
-          const cardUrl = card.imageAssetKey
-            ? assetMap.get(card.imageAssetKey)
-            : undefined;
-          return cardUrl
-            ? Array.from({ length: card.count }, () => cardUrl)
-            : [];
-        });
-        if (imageUrls.length === 0) return;
-
-        blob = await generateImagePagesPDF({
-          images: imageUrls,
-          layout: "grid",
-          cardsPerPage: 9,
-        });
-      }
-
+      const blob = await buildPdfBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -126,7 +129,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, assetMap, isLegacy, updateResource]);
+  }, [resource, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -185,6 +188,14 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
               )}
               Download PDF
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -237,6 +248,17 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           tags={resource.tags ?? []}
         />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
+          </div>
+        </div>
       </div>
 
       {isLegacy ? (

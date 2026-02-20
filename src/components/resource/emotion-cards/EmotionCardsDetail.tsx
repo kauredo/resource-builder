@@ -22,6 +22,8 @@ import {
 import {
   ArrowLeft,
   Download,
+  Eye,
+  EyeOff,
   Pencil,
   Trash2,
   Loader2,
@@ -37,6 +39,7 @@ import {
   PDFFrameOptions,
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
@@ -50,6 +53,7 @@ interface EmotionCardsDetailProps {
 export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const router = useRouter();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [regeneratingEmotions, setRegeneratingEmotions] = useState<Set<string>>(new Set());
@@ -113,6 +117,54 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
     return map;
   }, [assets]);
 
+  const buildPdfBlob = useCallback(async () => {
+    if (!resource) throw new Error("Resource not loaded");
+    const content = resource.content as EmotionCardContent;
+    const cards = content.cards.map(card => {
+      const assetUrl = assetImageMap.get(card.emotion);
+      const image = resource.images.find(
+        img => img.description === card.emotion,
+      );
+      return {
+        emotion: card.emotion,
+        description: card.description || getEmotionDescription(card.emotion),
+        imageUrl: assetUrl || image?.url || undefined,
+      };
+    });
+
+    const options: PDFLayoutOptions = {
+      cardsPerPage: content.layout.cardsPerPage,
+      cardSize: content.layout.cardSize,
+      showLabels: content.layout.showLabels,
+      showDescriptions: content.layout.showDescriptions,
+      showCutLines: true,
+      useFrames: content.layout.useFrames,
+      cardLayout: style?.cardLayout ?? undefined,
+    };
+
+    const styleOptions: PDFStyleOptions | undefined = style
+      ? {
+          colors: style.colors,
+          typography: style.typography,
+        }
+      : undefined;
+
+    const frameOptions: PDFFrameOptions | undefined =
+      style?.frameUrls && content.layout.useFrames
+        ? {
+            borderUrl: style.frameUrls.border ?? undefined,
+            fullCardUrl: style.frameUrls.fullCard ?? undefined,
+          }
+        : undefined;
+
+    return generateEmotionCardsPDF(
+      cards,
+      options,
+      styleOptions,
+      frameOptions,
+    );
+  }, [resource, assetImageMap, style]);
+
   const handleDownloadPDF = useCallback(async () => {
     if (!resource) return;
 
@@ -120,55 +172,9 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
     setPdfReady(false);
 
     try {
-      const content = resource.content as EmotionCardContent;
-      const cards = content.cards.map(card => {
-        const assetUrl = assetImageMap.get(card.emotion);
-        const image = resource.images.find(
-          img => img.description === card.emotion,
-        );
-        return {
-          emotion: card.emotion,
-          description: card.description || getEmotionDescription(card.emotion),
-          imageUrl: assetUrl || image?.url || undefined,
-        };
-      });
-
-      const options: PDFLayoutOptions = {
-        cardsPerPage: content.layout.cardsPerPage,
-        cardSize: content.layout.cardSize,
-        showLabels: content.layout.showLabels,
-        showDescriptions: content.layout.showDescriptions,
-        showCutLines: true,
-        useFrames: content.layout.useFrames,
-        cardLayout: style?.cardLayout ?? undefined,
-      };
-
-      // Build style options from queried style
-      const styleOptions: PDFStyleOptions | undefined = style
-        ? {
-            colors: style.colors,
-            typography: style.typography,
-          }
-        : undefined;
-
-      // Build frame options from resolved URLs
-      const frameOptions: PDFFrameOptions | undefined =
-        style?.frameUrls && content.layout.useFrames
-          ? {
-              borderUrl: style.frameUrls.border ?? undefined,
-              fullCardUrl: style.frameUrls.fullCard ?? undefined,
-            }
-          : undefined;
-
-      const blob = await generateEmotionCardsPDF(
-        cards,
-        options,
-        styleOptions,
-        frameOptions,
-      );
+      const blob = await buildPdfBlob();
       const url = URL.createObjectURL(blob);
 
-      // Trigger download
       const link = document.createElement("a");
       link.href = url;
       link.download = `${resource.name || "emotion-cards"}.pdf`;
@@ -177,7 +183,6 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Mark resource as complete after successful download
       if (resource.status === "draft") {
         await updateResource({
           resourceId: resource._id,
@@ -192,7 +197,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [resource, style, updateResource]);
+  }, [resource, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -360,6 +365,15 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
               )}
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
+
             <Button asChild className="btn-coral gap-2">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -411,6 +425,17 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
+          </div>
+        </div>
       </div>
 
       {/* Success banner for complete decks */}

@@ -300,6 +300,15 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
             )}
           </div>
 
+          {/* Inline PDF preview */}
+          {pdfUrl && (
+            <iframe
+              src={pdfUrl}
+              className="w-full h-[600px] border border-border/60 rounded-xl bg-white"
+              title="PDF Preview"
+            />
+          )}
+
           {/* Error state */}
           {pdfError && (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">

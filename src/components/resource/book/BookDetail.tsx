@@ -25,12 +25,15 @@ import { generateBookPDF } from "@/lib/pdf-book";
 import {
   ArrowLeft,
   Download,
+  Eye,
+  EyeOff,
   Newspaper,
   Pencil,
   Trash2,
   Loader2,
   Paintbrush,
 } from "lucide-react";
+import { PDFPreview } from "@/components/resource/PDFPreview";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
@@ -43,6 +46,7 @@ interface BookDetailProps {
 
 export function BookDetail({ resourceId }: BookDetailProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<"book" | "booklet" | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
@@ -80,22 +84,29 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     return map;
   }, [assets]);
 
+  const buildPdfBlob = useCallback(async (booklet?: boolean) => {
+    if (!resource) throw new Error("Resource not loaded");
+    const content = resource.content as BookContent;
+    return generateBookPDF({
+      content,
+      assetMap,
+      booklet,
+      style: style
+        ? {
+            colors: style.colors,
+            typography: style.typography,
+          }
+        : undefined,
+    });
+  }, [resource, assetMap, style]);
+
+  const buildPreviewBlob = useCallback(() => buildPdfBlob(false), [buildPdfBlob]);
+
   const handleDownloadPDF = useCallback(async (booklet?: boolean) => {
     if (!resource) return;
-    const content = resource.content as BookContent;
     setIsGeneratingPDF(booklet ? "booklet" : "book");
     try {
-      const blob = await generateBookPDF({
-        content,
-        assetMap,
-        booklet,
-        style: style
-          ? {
-              colors: style.colors,
-              typography: style.typography,
-            }
-          : undefined,
-      });
+      const blob = await buildPdfBlob(booklet);
       const suffix = booklet ? "-booklet" : "";
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -112,7 +123,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     } finally {
       setIsGeneratingPDF(null);
     }
-  }, [resource, assetMap, updateResource, style]);
+  }, [resource, buildPdfBlob, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -274,6 +285,14 @@ export function BookDetail({ resourceId }: BookDetailProps) {
               )}
               Booklet
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 cursor-pointer"
+            >
+              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              {showPreview ? "Hide Preview" : "Preview"}
+            </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -323,6 +342,17 @@ export function BookDetail({ resourceId }: BookDetailProps) {
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
+      </div>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-6">
+            <PDFPreview generatePdf={resource ? buildPreviewBlob : null} visible={showPreview} />
+          </div>
+        </div>
       </div>
 
       {/* Cover */}
