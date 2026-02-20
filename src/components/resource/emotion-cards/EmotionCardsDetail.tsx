@@ -28,10 +28,6 @@ import {
   Check,
   Calendar,
   Layers,
-  Lock,
-  Frame,
-  Type,
-  ChevronRight,
   FileText,
 } from "lucide-react";
 import {
@@ -42,7 +38,8 @@ import {
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import type { EmotionCardContent, StyleFrames } from "@/types";
+import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import type { EmotionCardContent } from "@/types";
 import { toast } from "sonner";
 
 interface EmotionCardsDetailProps {
@@ -409,8 +406,14 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
+        <ResourceStyleChanger
+          resourceId={resourceId}
+          currentStyleId={resource.styleId as Id<"styles"> | undefined}
+          userId={resource.userId}
+          content={resource.content as Record<string, unknown>}
+        />
       </div>
 
       {/* Success banner for complete decks */}
@@ -429,15 +432,6 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Style Specification */}
-      {style && (
-        <StyleSpecification
-          style={style}
-          layout={content.layout}
-          resourceStyleId={resource.styleId!}
-        />
       )}
 
       {/* Card grid */}
@@ -478,249 +472,6 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   );
 }
 
-// Style Specification Component
-interface StyleSpecificationProps {
-  style: {
-    _id: Id<"styles">;
-    name: string;
-    isPreset: boolean;
-    colors: {
-      primary: string;
-      secondary: string;
-      accent: string;
-      background: string;
-      text: string;
-    };
-    typography: {
-      headingFont: string;
-      bodyFont: string;
-    };
-    illustrationStyle: string;
-    frames?: StyleFrames;
-    frameUrls?: {
-      border?: string | null;
-      fullCard?: string | null;
-    };
-  };
-  layout: EmotionCardContent["layout"];
-  resourceStyleId: Id<"styles">;
-}
-
-function StyleSpecification({
-  style,
-  layout,
-  resourceStyleId,
-}: StyleSpecificationProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Count active frames
-  const frameCount = [style.frames?.border, style.frames?.fullCard].filter(
-    Boolean,
-  ).length;
-
-  // Count frames enabled on this resource
-  const enabledFrameCount = layout.useFrames
-    ? [
-        layout.useFrames.border && style.frames?.border,
-        layout.useFrames.fullCard && style.frames?.fullCard,
-      ].filter(Boolean).length
-    : 0;
-
-  const colorEntries = [
-    { label: "Primary", value: style.colors.primary },
-    { label: "Secondary", value: style.colors.secondary },
-    { label: "Accent", value: style.colors.accent },
-    { label: "Background", value: style.colors.background },
-    { label: "Text", value: style.colors.text },
-  ];
-
-  return (
-    <div className="mb-8">
-      {/* Compact clickable header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left group cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded-lg"
-        aria-expanded={isExpanded}
-        aria-controls="style-details"
-      >
-        <div className="flex items-center gap-4 py-3">
-          {/* Color strip */}
-          <div
-            className="flex h-8 w-28 rounded-md overflow-hidden shrink-0 ring-1 ring-border/50"
-            role="img"
-            aria-label={`${style.name} color palette`}
-          >
-            {colorEntries.map(({ label, value }) => (
-              <div
-                key={label}
-                className="flex-1"
-                style={{ backgroundColor: value }}
-                title={`${label}: ${value}`}
-              />
-            ))}
-          </div>
-
-          {/* Style info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-foreground truncate">
-                {style.name}
-              </span>
-              {style.isPreset && (
-                <Lock
-                  className="size-3 text-muted-foreground shrink-0"
-                  aria-label="Preset style"
-                />
-              )}
-              {enabledFrameCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-                  <Frame className="size-3" aria-hidden="true" />
-                  {enabledFrameCount}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground truncate">
-              {style.typography.headingFont} / {style.typography.bodyFont}
-            </p>
-          </div>
-
-          {/* Expand indicator */}
-          <ChevronRight
-            className={`size-4 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none ${
-              isExpanded ? "rotate-90" : ""
-            }`}
-            aria-hidden="true"
-          />
-        </div>
-      </button>
-
-      {/* Expanded details */}
-      {isExpanded && (
-        <div
-          id="style-details"
-          className="border rounded-lg p-4 mt-2 space-y-4 animate-in slide-in-from-top-2 duration-150 motion-reduce:animate-none"
-          style={{
-            backgroundColor: `color-mix(in oklch, ${style.colors.background} 30%, transparent)`,
-          }}
-        >
-          {/* Colors with labels */}
-          <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Color Palette
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {colorEntries.map(({ label, value }) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div
-                    className="size-6 rounded ring-1 ring-border/50"
-                    style={{ backgroundColor: value }}
-                  />
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="ml-1.5 font-mono text-xs text-foreground/70">
-                      {value}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Typography */}
-          <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Typography
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Type
-                  className="size-4 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <span className="text-sm">
-                  <span className="font-medium">
-                    {style.typography.headingFont}
-                  </span>
-                  <span className="text-muted-foreground"> headings</span>
-                </span>
-              </div>
-              <span className="text-muted-foreground/50">·</span>
-              <span className="text-sm">
-                <span className="font-medium">{style.typography.bodyFont}</span>
-                <span className="text-muted-foreground"> body</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Frames */}
-          {frameCount > 0 && (
-            <div>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Frame Assets
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {style.frames?.border && (
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
-                      layout.useFrames?.border
-                        ? "bg-teal/10 text-teal"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {layout.useFrames?.border && (
-                      <Check className="size-3" aria-hidden="true" />
-                    )}
-                    Border
-                  </span>
-                )}
-                {style.frames?.fullCard && (
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
-                      layout.useFrames?.fullCard
-                        ? "bg-teal/10 text-teal"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {layout.useFrames?.fullCard && (
-                      <Check className="size-3" aria-hidden="true" />
-                    )}
-                    Full Card
-                  </span>
-                )}
-              </div>
-              {enabledFrameCount === 0 && frameCount > 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  Frames available but not enabled for this deck
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Illustration style */}
-          <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Illustration Style
-            </h3>
-            <p className="text-sm text-foreground/80 leading-relaxed">
-              {style.illustrationStyle}
-            </p>
-          </div>
-
-          {/* Link to style */}
-          <div className="pt-2 border-t border-border/50">
-            <Link
-              href={`/dashboard/styles/${resourceStyleId}`}
-              className="inline-flex items-center gap-1 text-sm text-coral hover:text-coral/80 transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-            >
-              View full style
-              <ChevronRight className="size-3.5" aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Styled Card Grid Component - uses CardPreview for consistent rendering
 interface StyledCardGridProps {

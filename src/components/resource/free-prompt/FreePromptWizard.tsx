@@ -365,7 +365,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
             {state.isEditMode ? (
               <p className="text-sm text-muted-foreground">
                 {state.stylePreset
-                  ? `Style is locked after creation (${state.stylePreset.name}).`
+                  ? `Using ${state.stylePreset.name}. You can change the style later from the resource page.`
                   : "No style — the AI chooses colors and illustrations freely."}
               </p>
             ) : (

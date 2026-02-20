@@ -140,11 +140,20 @@ function renderCoverPage(
     ? assetMap.get(cover.imageAssetKey)
     : undefined;
 
-  const children: ReturnType<typeof createElement>[] = [];
-
   if (coverUrl) {
-    // Full-bleed cover image
-    children.push(
+    // Wrap everything in a single View so absolute children don't overflow
+    // into a second page in @react-pdf
+    const wrapper = createElement(
+      View,
+      {
+        key: "cover-wrapper",
+        style: {
+          width: A4_WIDTH,
+          height: A4_HEIGHT,
+          position: "relative",
+        },
+      },
+      // Full-bleed cover image
       createElement(Image, {
         key: "cover-img",
         src: coverUrl,
@@ -157,10 +166,7 @@ function renderCoverPage(
           left: 0,
         },
       }),
-    );
-
-    // Semi-transparent scrim at bottom for text readability
-    children.push(
+      // Semi-transparent scrim at bottom for text readability
       createElement(View, {
         key: "cover-scrim",
         style: {
@@ -172,10 +178,7 @@ function renderCoverPage(
           backgroundColor: "rgba(0,0,0,0.5)",
         },
       }),
-    );
-
-    // Title overlay
-    children.push(
+      // Title overlay
       createElement(
         View,
         {
@@ -214,63 +217,66 @@ function renderCoverPage(
           : null,
       ),
     );
-  } else {
-    // No cover image — simple text cover
-    children.push(
-      createElement(
-        View,
-        {
-          key: "cover-text-only",
-          style: {
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: MARGIN * 2,
-          },
-        },
-        createElement(
-          Text,
-          {
-            style: {
-              fontFamily: opts.headingFontFamily,
-              fontSize: 36,
-              color: opts.colors.text,
-              textAlign: "center",
-              marginBottom: 12,
-            },
-          },
-          cover.title,
-        ),
-        cover.subtitle
-          ? createElement(
-              Text,
-              {
-                style: {
-                  fontFamily: opts.bodyFontFamily,
-                  fontSize: 18,
-                  color: opts.colors.text,
-                  textAlign: "center",
-                  opacity: 0.7,
-                },
-              },
-              cover.subtitle,
-            )
-          : null,
-      ),
+
+    return createElement(
+      Page,
+      {
+        key: "cover",
+        size: "A4",
+        style: { backgroundColor: "#FFFFFF" },
+      },
+      wrapper,
     );
   }
 
+  // No cover image — simple text cover
   return createElement(
     Page,
     {
       key: "cover",
       size: "A4",
-      style: {
-        backgroundColor: "#FFFFFF",
-        position: "relative",
-      },
+      style: { backgroundColor: "#FFFFFF" },
     },
-    ...children,
+    createElement(
+      View,
+      {
+        key: "cover-text-only",
+        style: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: MARGIN * 2,
+        },
+      },
+      createElement(
+        Text,
+        {
+          style: {
+            fontFamily: opts.headingFontFamily,
+            fontSize: 36,
+            color: opts.colors.text,
+            textAlign: "center",
+            marginBottom: 12,
+          },
+        },
+        cover.title,
+      ),
+      cover.subtitle
+        ? createElement(
+            Text,
+            {
+              style: {
+                fontFamily: opts.bodyFontFamily,
+                fontSize: 18,
+                color: opts.colors.text,
+                textAlign: "center",
+                opacity: 0.7,
+              },
+            },
+            cover.subtitle,
+          )
+        : null,
+    ),
   );
 }
 
@@ -293,8 +299,12 @@ function renderContentPage(
     ? assetMap.get(page.imageAssetKey)
     : undefined;
 
-  // Page images are 4:3 — derive height from width to match the actual ratio
-  const imageHeight = imageUrl ? opts.usableWidth * (3 / 4) : 0;
+  // Page images are 3:4 (portrait). Cap height by layout so text always fits.
+  const naturalHeight = opts.usableWidth * (4 / 3);
+  const maxHeight = opts.isPictureBook
+    ? opts.usableHeight * 0.65
+    : opts.usableHeight * 0.35;
+  const imageHeight = imageUrl ? Math.min(naturalHeight, maxHeight) : 0;
 
   const children: ReturnType<typeof createElement>[] = [];
 
@@ -630,9 +640,9 @@ function renderBookletPage(
   const imageUrl = page.imageAssetKey ? assetMap.get(page.imageAssetKey) : undefined;
   const children: ReturnType<typeof createElement>[] = [];
 
-  // Page images are 4:3 — same ratio as standard layout
+  // Page images are 3:4 (portrait) — cap height so text fits
   if (imageUrl) {
-    const imageHeight = opts.usableWidth * (3 / 4);
+    const imageHeight = Math.min(opts.usableWidth * (4 / 3), opts.usableHeight * 0.6);
     children.push(
       createElement(
         View,

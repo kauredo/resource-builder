@@ -84,7 +84,7 @@ export function NameStyleStep({
             {stylePreset ? (
               <>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Style is locked after creation. Changing it would require regenerating all images.
+                  You can change the style later from the resource page.
                 </p>
                 <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
                   <div className="flex gap-1.5">

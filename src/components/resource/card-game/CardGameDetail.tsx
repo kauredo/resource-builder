@@ -28,6 +28,7 @@ import type {
   LegacyCardGameContent,
 } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
+import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
 
 interface CardGameDetailProps {
   resourceId: Id<"resources">;
@@ -224,10 +225,16 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor
           resourceId={resourceId}
           tags={resource.tags ?? []}
+        />
+        <ResourceStyleChanger
+          resourceId={resourceId}
+          currentStyleId={resource.styleId as Id<"styles"> | undefined}
+          userId={resource.userId}
+          content={resource.content as Record<string, unknown>}
         />
       </div>
 

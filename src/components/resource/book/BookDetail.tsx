@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
+import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
 import { toast } from "sonner";
 
 interface BookDetailProps {
@@ -157,7 +158,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           prompt: page.imagePrompt ?? page.text,
           styleId: resource.styleId as Id<"styles"> | undefined,
           characterIds: charIds,
-          aspect: "4:3",
+          aspect: "3:4",
         });
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Image generation failed. Please try again.");
@@ -316,8 +317,14 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
+        <ResourceStyleChanger
+          resourceId={resourceId}
+          currentStyleId={resource.styleId as Id<"styles"> | undefined}
+          userId={resource.userId}
+          content={resource.content as Record<string, unknown>}
+        />
       </div>
 
       {/* Cover */}
@@ -439,7 +446,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                   {/* Image */}
                   {page.imageAssetKey && (
                     <div
-                      className="relative w-full sm:w-64 shrink-0 aspect-[4/3] sm:aspect-auto sm:min-h-[180px] bg-muted/20"
+                      className="relative w-full sm:w-64 shrink-0 aspect-[3/4] sm:aspect-auto sm:min-h-[180px] bg-muted/20"
                       onMouseEnter={() => setHoveredPage(page.id)}
                       onMouseLeave={() => setHoveredPage(null)}
                     >

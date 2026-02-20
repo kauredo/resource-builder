@@ -197,6 +197,7 @@ export const updateResource = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     content: v.optional(v.any()),
+    styleId: v.optional(v.id("styles")),
     status: v.optional(v.union(v.literal("draft"), v.literal("complete"))),
     pdfStorageId: v.optional(v.id("_storage")),
     tags: v.optional(v.array(v.string())),

@@ -274,6 +274,7 @@ export const generateStyledImage = action({
       characterContexts,
       includeText: args.includeText ?? false,
       aspect: args.aspect ?? "1:1",
+      assetType: args.assetType,
     });
 
     const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -614,18 +615,56 @@ export const generateImageBatch = action({
   },
 });
 
+// Asset types that represent full scenes (with backgrounds/environments)
+const SCENE_ASSET_TYPES = new Set([
+  "book_page_image",
+  "book_cover_image",
+  "free_prompt_image",
+]);
+
+function getAssetContext(assetType: string): string {
+  switch (assetType) {
+    case "poster_image":
+      return "This illustration will be used as a therapy poster. Generate only the illustration — no borders, frames, or text overlays.";
+    case "flashcard_front_image":
+      return "This illustration will be placed on a flashcard. Generate only the illustration — no card borders, rounded corners, or text overlays.";
+    case "emotion_card_image":
+      return "This illustration will be placed on an emotion card. Generate only the illustration — no card borders, frames, or text labels.";
+    case "card_bg":
+      return "This is a background pattern for a card game card. Generate only the pattern — no card borders or frames.";
+    case "card_icon":
+      return "This is an icon illustration for a card game card. Generate only the icon — no card borders or frames.";
+    case "card_back":
+      return "This is a card back design for a card game. Generate only the design — no card borders or frames.";
+    case "board_image":
+      return "This illustration will be used on a board game. Generate only the illustration — no borders or frames.";
+    case "worksheet_block_image":
+      return "This illustration will be placed in a worksheet. Generate only the illustration — no borders, frames, or text overlays.";
+    case "book_page_image":
+      return "This is a full scene illustration for a children's book page. Fill the entire frame with the scene, including background and environment details. Do not leave blank or white space — the illustration should be rich and immersive.";
+    case "book_cover_image":
+      return "This is a book cover illustration. Fill the entire frame with a visually striking scene. Do not leave blank or white space.";
+    case "free_prompt_image":
+      return "Generate the illustration as described. Fill the entire frame — no borders, frames, or unnecessary white space.";
+    default:
+      return "Generate only the illustration — no borders, frames, or text overlays.";
+  }
+}
+
 function buildGenericPrompt({
   prompt,
   style,
   characterContexts,
   includeText,
   aspect,
+  assetType,
 }: {
   prompt: string;
   style?: { colors: { primary: string; secondary: string; accent: string }; illustrationStyle: string };
   characterContexts?: Array<{ promptFragment?: string; description?: string }>;
   includeText: boolean;
   aspect: "1:1" | "3:4" | "4:3";
+  assetType: string;
 }) {
   const parts: string[] = [];
 
@@ -654,6 +693,9 @@ function buildGenericPrompt({
     });
   }
 
+  // Asset-type context so the model knows what this image is for
+  parts.push(getAssetContext(assetType));
+
   parts.push(prompt);
 
   if (style) {
@@ -672,9 +714,16 @@ function buildGenericPrompt({
     parts.push("Do NOT include any text in the image.");
   }
 
-  parts.push(
-    `Create a single cohesive illustration with a clean white background and an aspect ratio of ${aspect}. Keep the subject centered and print-friendly.`,
-  );
+  const isScene = SCENE_ASSET_TYPES.has(assetType);
+  if (isScene) {
+    parts.push(
+      `Create a single cohesive illustration that fills the entire frame with an aspect ratio of ${aspect}.`,
+    );
+  } else {
+    parts.push(
+      `Create a single cohesive illustration with a clean white background and an aspect ratio of ${aspect}. Keep the subject centered and print-friendly.`,
+    );
+  }
 
   return parts.join(" ");
 }

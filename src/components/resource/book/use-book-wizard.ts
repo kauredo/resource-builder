@@ -683,7 +683,7 @@ function extractBookImageItems(content: BookContent): ImageItem[] {
       prompt: page.imagePrompt,
       characterIds: pageCharIds,
       includeText: false,
-      aspect: "4:3",
+      aspect: "3:4",
       label: `Page ${i + 1}`,
       group: "Pages",
       status: "pending",

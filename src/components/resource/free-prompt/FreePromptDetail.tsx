@@ -24,6 +24,7 @@ import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { FreePromptContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
+import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
 
 interface FreePromptDetailProps {
   resourceId: Id<"resources">;
@@ -158,8 +159,14 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
+        <ResourceStyleChanger
+          resourceId={resourceId}
+          currentStyleId={resource.styleId as Id<"styles"> | undefined}
+          userId={resource.userId}
+          content={resource.content as Record<string, unknown>}
+        />
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
