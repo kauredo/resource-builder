@@ -12,6 +12,7 @@ import type {
   WorksheetContent,
   DetectedCharacterResult,
 } from "@/types";
+import { toast } from "sonner";
 import {
   applyWorldContext,
   buildCharacterMap,
@@ -102,6 +103,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
   const createDetectedCharacters = useAction(
     api.characterActions.createDetectedCharacters,
   );
+  const ensureCharacterRef = useAction(api.characterActions.ensureCharacterReference);
   const updateCharacterMut = useMutation(api.characters.updateCharacter);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -225,6 +227,36 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
       return { ...prev, ...updates };
     });
   }, []);
+
+  // Handle style change — persist + ensure character references in edit mode
+  const handleStyleChange = useCallback(async (
+    styleId: Id<"styles"> | null,
+    stylePreset: StylePreset | null,
+  ) => {
+    updateState({ styleId, stylePreset });
+
+    if (!styleId || !state.isEditMode || !state.resourceId) return;
+
+    await updateResource({ resourceId: state.resourceId, styleId });
+
+    const characterIds = state.characterSelection?.characterIds ?? [];
+    if (characterIds.length > 0) {
+      Promise.allSettled(
+        characterIds.map((id) =>
+          ensureCharacterRef({
+            characterId: id as Id<"characters">,
+            styleId,
+          }),
+        ),
+      );
+    }
+
+    toast.success(
+      state.imageItems.length > 0
+        ? "Style updated. Regenerate images to apply the new style."
+        : "Style updated.",
+    );
+  }, [state.isEditMode, state.resourceId, state.characterSelection, state.imageItems.length, updateResource, ensureCharacterRef, updateState]);
 
   // Generate AI content
   const handleGenerateContent = useCallback(async () => {
@@ -667,6 +699,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
     handleBack,
     handleCancel,
     handleGenerateContent,
+    handleStyleChange,
     handleUpdateCharacterPrompt,
     handleRemoveDetectedCharacter,
     saveDraft,

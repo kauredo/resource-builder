@@ -25,7 +25,7 @@ import { generateFlashcardsPDF } from "@/lib/pdf-flashcards";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { FlashcardsContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 
 interface FlashcardsDetailProps {
   resourceId: Id<"resources">;
@@ -228,12 +228,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
 
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       {/* Visual card grid */}

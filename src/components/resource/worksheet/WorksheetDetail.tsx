@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import type { WorksheetContent, WorksheetBlock } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 
 interface WorksheetDetailProps {
   resourceId: Id<"resources">;
@@ -256,12 +256,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           resourceId={resourceId}
           tags={resource.tags ?? []}
         />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       {/* Worksheet title */}

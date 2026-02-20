@@ -36,6 +36,7 @@ export function EmotionCardsWizard({
     canGoNext,
     isStepComplete,
     goToStep,
+    handleStyleChange,
     handleNext,
     handleBack,
     handleCancel,
@@ -58,8 +59,10 @@ export function EmotionCardsWizard({
             styleId={state.styleId}
             stylePreset={state.stylePreset}
             onUpdate={updateState}
+            onStyleChange={handleStyleChange}
             isFirstTimeUser={!user?.firstResourceCreatedAt}
             isEditMode={state.isEditMode}
+            hasGeneratedImages={state.generationStatus === "complete"}
           />
         );
       case 1:
@@ -158,7 +161,7 @@ export function EmotionCardsWizard({
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
               const isComplete = i < currentStep;
               const isCurrent = i === currentStep;
-              const canNavigate = i <= currentStep && isStepComplete(i);
+              const canNavigate = state.isEditMode || (i <= currentStep && isStepComplete(i));
               return (
                 <button
                   key={i}

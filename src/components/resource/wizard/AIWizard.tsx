@@ -83,6 +83,7 @@ export function AIWizard({ resourceType, resourceId }: AIWizardProps) {
         <WizardDescribeStep
           state={wizard.state}
           onUpdate={wizard.updateState}
+          onStyleChange={wizard.handleStyleChange}
           onGenerateContent={wizard.handleGenerateContent}
           userId={wizard.user!._id}
         />

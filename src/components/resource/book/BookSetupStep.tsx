@@ -14,6 +14,7 @@ import type { StylePreset, CharacterSelection, BookLayout } from "@/types";
 interface BookSetupStepProps {
   state: BookWizardState;
   onUpdate: (updates: Partial<BookWizardState>) => void;
+  onStyleChange: (styleId: Id<"styles"> | null, preset: StylePreset | null) => void;
   userId: Id<"users">;
 }
 
@@ -54,12 +55,12 @@ const MODE_OPTIONS: {
   },
 ];
 
-export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
+export function BookSetupStep({ state, onUpdate, onStyleChange, userId }: BookSetupStepProps) {
   const handleStyleSelect = (
     styleId: Id<"styles"> | null,
     preset: StylePreset | null,
   ) => {
-    onUpdate({ styleId, stylePreset: preset });
+    onStyleChange(styleId, preset);
   };
 
   const handleCharacterChange = (selection: CharacterSelection | null) => {
@@ -81,6 +82,34 @@ export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
           className="text-base"
         />
       </div>
+
+      {/* Visual style */}
+      <div className="space-y-2">
+        <Label className="text-base font-medium">Visual Style <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <p className="text-sm text-muted-foreground mb-4">
+          Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
+        </p>
+        {state.isEditMode && state.imageItems.length > 0 && (
+          <p className="text-sm text-muted-foreground/80 italic mb-4">
+            Changing the style won't update existing images — regenerate them in the Generate step.
+          </p>
+        )}
+        <StylePicker
+          selectedStyleId={state.styleId}
+          selectedPreset={state.stylePreset}
+          onSelect={handleStyleSelect}
+          userId={userId}
+        />
+      </div>
+
+      {/* Character */}
+      <CharacterPicker
+        selection={state.characterSelection}
+        onChange={handleCharacterChange}
+        styleId={state.styleId}
+        userId={userId}
+        onStyleChange={(id, preset) => onStyleChange(id, preset)}
+      />
 
       {/* Book type */}
       <div className="space-y-2">
@@ -198,41 +227,6 @@ export function BookSetupStep({ state, onUpdate, userId }: BookSetupStepProps) {
           })}
         </div>
       </div>
-
-      {/* Visual style */}
-      <div className="space-y-2">
-        <Label className="text-base font-medium">Visual Style <span className="text-muted-foreground font-normal">(optional)</span></Label>
-        {state.isEditMode ? (
-          <p className="text-sm text-muted-foreground">
-            {state.stylePreset
-              ? `Using ${state.stylePreset.name}. You can change the style later from the resource page.`
-              : "No style — the AI chooses colors and illustrations freely."}
-          </p>
-        ) : (
-          <>
-          <p className="text-sm text-muted-foreground mb-4">
-            Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
-          </p>
-          <StylePicker
-            selectedStyleId={state.styleId}
-            selectedPreset={state.stylePreset}
-            onSelect={handleStyleSelect}
-            userId={userId}
-          />
-          </>
-        )}
-      </div>
-
-      {/* Character */}
-      <CharacterPicker
-        selection={state.characterSelection}
-        onChange={handleCharacterChange}
-        styleId={state.styleId}
-        userId={userId}
-        onStyleChange={(id, preset) =>
-          onUpdate({ styleId: id, stylePreset: preset })
-        }
-      />
     </div>
   );
 }

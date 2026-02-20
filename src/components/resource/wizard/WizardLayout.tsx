@@ -78,7 +78,7 @@ export function WizardLayout({
               const isCurrent = i === currentStep;
               const canJumpTo =
                 !!onStepClick &&
-                (isStepComplete ? isStepComplete[i] : i < currentStep);
+                (isEditMode || (isStepComplete ? isStepComplete[i] : i < currentStep));
               return (
                 <li key={i}>
                   <button

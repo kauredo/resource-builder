@@ -38,7 +38,7 @@ import {
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 import type { EmotionCardContent } from "@/types";
 import { toast } from "sonner";
 
@@ -408,12 +408,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
 
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       {/* Success banner for complete decks */}

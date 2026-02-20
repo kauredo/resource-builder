@@ -24,7 +24,7 @@ import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { BoardGameContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 
 interface BoardGameDetailProps {
   resourceId: Id<"resources">;
@@ -37,6 +37,10 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
+  const style = useQuery(
+    api.styles.getStyle,
+    resource?.styleId ? { styleId: resource.styleId } : "skip",
+  );
   const boardAsset = useQuery(api.assets.getAsset, {
     ownerType: "resource",
     ownerId: resourceId,
@@ -159,12 +163,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
 
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">

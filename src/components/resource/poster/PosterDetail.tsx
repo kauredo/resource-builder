@@ -23,7 +23,7 @@ import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import type { PosterContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 import { toast } from "sonner";
 
 interface PosterDetailProps {
@@ -186,12 +186,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
 
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
@@ -251,14 +246,6 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
               />
             </div>
           </div>
-          {style && (
-            <div className="rounded-xl border border-border/60 bg-card p-4">
-              <p className="text-sm font-medium">Style</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                {style.name}
-              </p>
-            </div>
-          )}
         </aside>
       </div>
 

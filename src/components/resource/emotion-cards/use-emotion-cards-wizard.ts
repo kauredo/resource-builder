@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -10,6 +10,7 @@ import type {
   EmotionCardLayout,
   StylePreset,
 } from "@/types";
+import { toast } from "sonner";
 
 // Wizard state types
 export interface WizardState {
@@ -133,6 +134,7 @@ export function useEmotionCardsWizard({
   );
   const recordFirstResource = useMutation(api.users.recordFirstResource);
   const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
+  const ensureCharacterRef = useAction(api.characterActions.ensureCharacterReference);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
@@ -269,6 +271,33 @@ export function useEmotionCardsWizard({
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
+
+  // Handle style change — persist + ensure character references in edit mode
+  const handleStyleChange = useCallback(async (
+    styleId: Id<"styles"> | null,
+    stylePreset: StylePreset | null,
+  ) => {
+    updateState({ styleId, stylePreset });
+
+    if (!styleId || !state.isEditMode || !state.resourceId) return;
+
+    await updateResource({ resourceId: state.resourceId, styleId });
+
+    const charIds = state.characterIds ?? [];
+    if (charIds.length > 0) {
+      Promise.allSettled(
+        charIds.map((id) =>
+          ensureCharacterRef({ characterId: id, styleId }),
+        ),
+      );
+    }
+
+    toast.success(
+      state.generationStatus === "complete"
+        ? "Style updated. Regenerate images to apply the new style."
+        : "Style updated.",
+    );
+  }, [state.isEditMode, state.resourceId, state.characterIds, state.generationStatus, updateResource, ensureCharacterRef, updateState]);
 
   // Save draft to Convex after Step 1
   const saveDraft = useCallback(async () => {
@@ -468,6 +497,7 @@ export function useEmotionCardsWizard({
     canGoNext,
     isStepComplete,
     goToStep,
+    handleStyleChange,
     handleNext,
     handleBack,
     handleCancel,

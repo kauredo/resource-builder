@@ -13,6 +13,7 @@ import type { StylePreset, CharacterSelection } from "@/types";
 interface WizardDescribeStepProps {
   state: AIWizardState;
   onUpdate: (updates: Partial<AIWizardState>) => void;
+  onStyleChange: (styleId: Id<"styles"> | null, preset: StylePreset | null) => void;
   onGenerateContent: () => Promise<void>;
   userId: Id<"users">;
 }
@@ -31,6 +32,7 @@ const PLACEHOLDER_MAP: Record<string, string> = {
 export function WizardDescribeStep({
   state,
   onUpdate,
+  onStyleChange,
   onGenerateContent,
   userId,
 }: WizardDescribeStepProps) {
@@ -40,7 +42,7 @@ export function WizardDescribeStep({
     styleId: Id<"styles"> | null,
     preset: StylePreset | null,
   ) => {
-    onUpdate({ styleId, stylePreset: preset });
+    onStyleChange(styleId, preset);
   };
 
   const handleCharacterChange = (selection: CharacterSelection | null) => {
@@ -73,25 +75,20 @@ export function WizardDescribeStep({
       {/* Style */}
       <div className="space-y-2">
         <Label className="text-base font-medium">Visual Style <span className="text-muted-foreground font-normal">(optional)</span></Label>
-        {state.isEditMode ? (
-          <p className="text-sm text-muted-foreground">
-            {state.stylePreset
-              ? `Using ${state.stylePreset.name}. You can change the style later from the resource page.`
-              : "No style — the AI chooses colors and illustrations freely."}
+        <p className="text-sm text-muted-foreground mb-4">
+          Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
+        </p>
+        {state.isEditMode && state.imageItems.length > 0 && (
+          <p className="text-sm text-muted-foreground/80 italic mb-4">
+            Changing the style won't update existing images — regenerate them in the Generate step.
           </p>
-        ) : (
-          <>
-          <p className="text-sm text-muted-foreground mb-4">
-            Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
-          </p>
-          <StylePicker
-            selectedStyleId={state.styleId}
-            selectedPreset={state.stylePreset}
-            onSelect={handleStyleSelect}
-            userId={userId}
-          />
-          </>
         )}
+        <StylePicker
+          selectedStyleId={state.styleId}
+          selectedPreset={state.stylePreset}
+          onSelect={handleStyleSelect}
+          userId={userId}
+        />
       </div>
 
       {/* Character (optional) */}
@@ -100,7 +97,7 @@ export function WizardDescribeStep({
         onChange={handleCharacterChange}
         styleId={state.styleId}
         userId={userId}
-        onStyleChange={(id, preset) => onUpdate({ styleId: id, stylePreset: preset })}
+        onStyleChange={(id, preset) => onStyleChange(id, preset)}
       />
 
       {/* Generate button */}

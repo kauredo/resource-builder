@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { StylePicker } from "../StylePicker";
 import { StylePreset } from "@/types";
 import { HelpTip } from "@/components/onboarding/HelpTip";
-import { Lock } from "lucide-react";
 import type { WizardState } from "../use-emotion-cards-wizard";
 
 interface NameStyleStepProps {
@@ -16,8 +15,10 @@ interface NameStyleStepProps {
   styleId: Id<"styles"> | null;
   stylePreset: StylePreset | null;
   onUpdate: (updates: Partial<WizardState>) => void;
+  onStyleChange: (styleId: Id<"styles"> | null, preset: StylePreset | null) => void;
   isFirstTimeUser?: boolean;
   isEditMode?: boolean;
+  hasGeneratedImages?: boolean;
 }
 
 export function NameStyleStep({
@@ -25,8 +26,10 @@ export function NameStyleStep({
   styleId,
   stylePreset,
   onUpdate,
+  onStyleChange,
   isFirstTimeUser = true,
   isEditMode = false,
+  hasGeneratedImages = false,
 }: NameStyleStepProps) {
   const user = useQuery(api.users.currentUser);
 
@@ -34,7 +37,7 @@ export function NameStyleStep({
     selectedStyleId: Id<"styles"> | null,
     preset: StylePreset | null
   ) => {
-    onUpdate({ styleId: selectedStyleId, stylePreset: preset });
+    onStyleChange(selectedStyleId, preset);
   };
 
   if (!user) {
@@ -79,51 +82,20 @@ export function NameStyleStep({
         <Label className="text-base font-medium">
           Visual Style <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
-        {isEditMode ? (
-          <>
-            {stylePreset ? (
-              <>
-                <p className="text-sm text-muted-foreground mb-4">
-                  You can change the style later from the resource page.
-                </p>
-                <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
-                  <div className="flex gap-1.5">
-                    <div
-                      className="w-6 h-6 rounded-md shadow-sm"
-                      style={{ backgroundColor: stylePreset.colors.primary }}
-                    />
-                    <div
-                      className="w-6 h-6 rounded-md shadow-sm"
-                      style={{ backgroundColor: stylePreset.colors.secondary }}
-                    />
-                    <div
-                      className="w-6 h-6 rounded-md shadow-sm"
-                      style={{ backgroundColor: stylePreset.colors.accent }}
-                    />
-                  </div>
-                  <span className="font-medium">{stylePreset.name}</span>
-                  <Lock className="size-4 text-muted-foreground ml-auto" aria-hidden="true" />
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No style — the AI chooses colors and illustrations freely.
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground mb-4">
-              Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
-            </p>
-            <StylePicker
-              selectedStyleId={styleId}
-              selectedPreset={stylePreset}
-              onSelect={handleStyleSelect}
-              userId={user._id}
-            />
-          </>
+        <p className="text-sm text-muted-foreground mb-4">
+          Pick a style to keep colors, fonts, and illustrations consistent. Skip to let the AI choose freely.
+        </p>
+        {isEditMode && hasGeneratedImages && (
+          <p className="text-sm text-muted-foreground/80 italic mb-4">
+            Changing the style won't update existing images — regenerate them in the Generate step.
+          </p>
         )}
+        <StylePicker
+          selectedStyleId={styleId}
+          selectedPreset={stylePreset}
+          onSelect={handleStyleSelect}
+          userId={user._id}
+        />
       </div>
 
     </div>

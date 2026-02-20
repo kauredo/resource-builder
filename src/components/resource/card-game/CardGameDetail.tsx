@@ -28,7 +28,7 @@ import type {
   LegacyCardGameContent,
 } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
-import { ResourceStyleChanger } from "@/components/resource/ResourceStyleChanger";
+import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 
 interface CardGameDetailProps {
   resourceId: Id<"resources">;
@@ -40,6 +40,10 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
+  const style = useQuery(
+    api.styles.getStyle,
+    resource?.styleId ? { styleId: resource.styleId } : "skip",
+  );
   const assets = useQuery(api.assets.getByOwner, {
     ownerType: "resource",
     ownerId: resourceId,
@@ -230,12 +234,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           resourceId={resourceId}
           tags={resource.tags ?? []}
         />
-        <ResourceStyleChanger
-          resourceId={resourceId}
-          currentStyleId={resource.styleId as Id<"styles"> | undefined}
-          userId={resource.userId}
-          content={resource.content as Record<string, unknown>}
-        />
+        {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
       {isLegacy ? (

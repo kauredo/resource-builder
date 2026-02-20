@@ -70,6 +70,7 @@ export function BookWizard({ resourceId }: BookWizardProps) {
         <BookSetupStep
           state={wizard.state}
           onUpdate={wizard.updateState}
+          onStyleChange={wizard.handleStyleChange}
           userId={wizard.user!._id}
         />
       )}
