@@ -175,6 +175,7 @@ IMPORTANT GUIDELINES:
 - Each page should have a clear narrative beat or teaching point.
 - Keep page text concise and age-appropriate (2-4 sentences for picture books, 1-2 short paragraphs for text-heavy books).
 - Image prompts should depict the scene described in the text, be warm and therapeutic in tone, and avoid anything scary or overwhelming.
+- Image prompts must NEVER include speech bubbles, dialogue text, thought bubbles, or characters speaking/saying anything. Describe the visual scene and character actions/expressions only — all dialogue belongs in the page text, not the illustration.
 - The story should have a clear beginning, middle, and end with a positive or empowering conclusion.
 - If characters are provided or emerge from the story, include them on EVERY page and the cover. List ALL pages in each character's "appearsOn" array so illustrations stay consistent.
 - Each page's imagePrompt should mention the character by name so the illustrator knows to include them.
