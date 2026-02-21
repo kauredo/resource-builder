@@ -366,28 +366,6 @@ export interface CardGameContent {
   showText?: ShowTextMode;
 }
 
-/** Legacy card game content (pre-template system) */
-export interface LegacyCardGameContent {
-  deckName: string;
-  rules: string;
-  cards: {
-    id?: string;
-    title: string;
-    text: string;
-    count: number;
-    imagePrompt?: string;
-    imageAssetKey?: AssetKey;
-    characterIds?: string[];
-  }[];
-  characters?: CharacterSelection;
-}
-
-/** Type guard: returns true if content uses the old per-card-image format */
-export function isLegacyCardGameContent(
-  content: CardGameContent | LegacyCardGameContent,
-): content is LegacyCardGameContent {
-  return !("backgrounds" in content);
-}
 
 export interface FreePromptContent {
   prompt: string;

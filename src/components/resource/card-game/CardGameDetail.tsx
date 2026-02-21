@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
-import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
@@ -31,7 +30,6 @@ import {
 import type {
   AssetType,
   CardGameContent,
-  LegacyCardGameContent,
 } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -60,19 +58,13 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
 
-  // Detect whether this is the new template format or legacy
-  const isLegacy = useMemo(() => {
-    if (!resource) return true;
-    const content = resource.content as Record<string, unknown>;
-    return !("backgrounds" in content);
-  }, [resource]);
-
   const assetMap = useMemo(() => {
     const map = new Map<string, string>();
-    if (!assets) return map;
-    for (const asset of assets) {
-      if (asset.currentVersion?.url) {
-        map.set(asset.assetKey, asset.currentVersion.url);
+    if (assets) {
+      for (const asset of assets) {
+        if (asset.currentVersion?.url) {
+          map.set(asset.assetKey, asset.currentVersion.url);
+        }
       }
     }
     return map;
@@ -80,34 +72,14 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
 
   const buildPdfBlob = useCallback(async () => {
     if (!resource) throw new Error("Resource not loaded");
-
-    if (!isLegacy) {
-      const content = resource.content as unknown as CardGameContent;
-      return generateCardGamePDF({
-        content,
-        assetMap,
-        cardsPerPage: exportSettings?.cardsPerPage ?? 9,
-        includeCardBacks: exportSettings?.includeCardBacks ?? !!content.cardBack,
-      });
-    } else {
-      const content = resource.content as LegacyCardGameContent;
-      const imageUrls = content.cards.flatMap((card) => {
-        const cardUrl = card.imageAssetKey
-          ? assetMap.get(card.imageAssetKey)
-          : undefined;
-        return cardUrl
-          ? Array.from({ length: card.count }, () => cardUrl)
-          : [];
-      });
-      if (imageUrls.length === 0) throw new Error("No card images");
-
-      return generateImagePagesPDF({
-        images: imageUrls,
-        layout: "grid",
-        cardsPerPage: exportSettings?.cardsPerPage ?? 9,
-      });
-    }
-  }, [resource, assetMap, isLegacy, exportSettings]);
+    const content = resource.content as unknown as CardGameContent;
+    return generateCardGamePDF({
+      content,
+      assetMap,
+      cardsPerPage: exportSettings?.cardsPerPage ?? 9,
+      includeCardBacks: exportSettings?.includeCardBacks ?? !!content.cardBack,
+    });
+  }, [resource, assetMap, exportSettings]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -225,23 +197,13 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
       </div>
 
-      {isLegacy ? (
-        <LegacyCardList
-          content={resource.content as LegacyCardGameContent}
-          assetMap={assetMap}
-          resourceId={resourceId}
-          onEditKey={setEditingKey}
-          onImproveKey={setImprovingKey}
-        />
-      ) : (
-        <TemplateCardDetail
-          content={resource.content as unknown as CardGameContent}
-          assetMap={assetMap}
-          resourceId={resourceId}
-          onEditKey={setEditingKey}
-          onImproveKey={setImprovingKey}
-        />
-      )}
+      <TemplateCardDetail
+        content={resource.content as unknown as CardGameContent}
+        assetMap={assetMap}
+        resourceId={resourceId}
+        onEditKey={setEditingKey}
+        onImproveKey={setImprovingKey}
+      />
 
       <ExportModal
         open={exportOpen}
@@ -309,99 +271,6 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
     </div>
   );
 }
-
-// --- Legacy format ---
-
-function LegacyCardList({
-  content,
-  assetMap,
-  resourceId,
-  onEditKey,
-  onImproveKey,
-}: {
-  content: LegacyCardGameContent;
-  assetMap: Map<string, string>;
-  resourceId: Id<"resources">;
-  onEditKey: (key: string) => void;
-  onImproveKey: (key: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      {content.cards.map((card) => {
-        const imageUrl = card.imageAssetKey
-          ? assetMap.get(card.imageAssetKey)
-          : undefined;
-        return (
-          <div
-            key={card.id ?? card.title}
-            className="rounded-xl border border-border/60 p-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4"
-          >
-            <div className="aspect-[3/4] w-28 rounded-lg border border-border/60 bg-muted/20 overflow-hidden">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt="Card image"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                  No image
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium">{card.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Count: {card.count}
-                  </p>
-                </div>
-                {card.imageAssetKey && (
-                  <div className="flex items-center gap-2">
-                    <AssetHistoryDialog
-                      assetRef={{
-                        ownerType: "resource",
-                        ownerId: resourceId,
-                        assetType: "card_image",
-                        assetKey: card.imageAssetKey,
-                      }}
-                      triggerLabel="History"
-                      aspectRatio="3/4"
-                    />
-                    {imageUrl && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEditKey(card.imageAssetKey!)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onImproveKey(card.imageAssetKey!)}
-                          className="gap-1"
-                        >
-                          <Paintbrush className="size-3.5" aria-hidden="true" />
-                          Improve
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">{card.text}</p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// --- Template format ---
 
 function TemplateCardDetail({
   content,

@@ -19,7 +19,6 @@ interface WizardExportStepProps {
 function getLayoutMode(resourceType: string): "full_page" | "grid" {
   switch (resourceType) {
     case "flashcards":
-    case "card_game":
       return "grid";
     default:
       return "full_page";
@@ -42,12 +41,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
   const buildPdfBlob = useCallback(async (): Promise<Blob> => {
     if (!assets) throw new Error("Assets not loaded");
 
-    if (
-      state.resourceType === "card_game" &&
-      state.generatedContent &&
-      "backgrounds" in state.generatedContent
-    ) {
-      // Template-based card game: use composition PDF
+    if (state.resourceType === "card_game" && state.generatedContent) {
       const assetMap = new Map<string, string>();
       for (const asset of assets) {
         if (asset.currentVersion?.url) {
@@ -63,25 +57,11 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
       });
     }
 
-    // Legacy card game or other resource types
     const imageUrls: string[] = [];
-    if (state.resourceType === "card_game" && state.generatedContent) {
-      const cards = (state.generatedContent.cards as Array<{ count?: number }>) ?? [];
-      for (const item of state.imageItems) {
-        const asset = assets.find((a) => a.assetKey === item.assetKey);
-        if (!asset?.currentVersion?.url) continue;
-        const cardIndex = parseInt(item.assetKey.replace("card_", ""), 10);
-        const count = (!isNaN(cardIndex) && cards[cardIndex]?.count) || 1;
-        for (let c = 0; c < count; c++) {
-          imageUrls.push(asset.currentVersion.url);
-        }
-      }
-    } else {
-      for (const item of state.imageItems) {
-        const asset = assets.find((a) => a.assetKey === item.assetKey);
-        if (asset?.currentVersion?.url) {
-          imageUrls.push(asset.currentVersion.url);
-        }
+    for (const item of state.imageItems) {
+      const asset = assets.find((a) => a.assetKey === item.assetKey);
+      if (asset?.currentVersion?.url) {
+        imageUrls.push(asset.currentVersion.url);
       }
     }
 
