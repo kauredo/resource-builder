@@ -22,8 +22,6 @@ import {
 import {
   ArrowLeft,
   Download,
-  Eye,
-  EyeOff,
   Pencil,
   Trash2,
   Loader2,
@@ -39,7 +37,11 @@ import {
   PDFFrameOptions,
 } from "@/lib/pdf";
 import { getEmotionDescription } from "@/lib/emotions";
-import { PDFPreview } from "@/components/resource/PDFPreview";
+import {
+  ExportModal,
+  EmotionCardsSettings,
+  type EmotionCardsExportSettings,
+} from "@/components/resource/ExportModal";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
@@ -52,9 +54,8 @@ interface EmotionCardsDetailProps {
 
 export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const router = useRouter();
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [pdfReady, setPdfReady] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportSettings, setExportSettings] = useState<EmotionCardsExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [regeneratingEmotions, setRegeneratingEmotions] = useState<Set<string>>(new Set());
   const [improvingEmotion, setImprovingEmotion] = useState<string | null>(null);
@@ -132,12 +133,13 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       };
     });
 
+    const es = exportSettings;
     const options: PDFLayoutOptions = {
-      cardsPerPage: content.layout.cardsPerPage,
+      cardsPerPage: es?.cardsPerPage ?? content.layout.cardsPerPage,
       cardSize: content.layout.cardSize,
-      showLabels: content.layout.showLabels,
-      showDescriptions: content.layout.showDescriptions,
-      showCutLines: true,
+      showLabels: es?.showLabels ?? content.layout.showLabels,
+      showDescriptions: es?.showDescriptions ?? content.layout.showDescriptions,
+      showCutLines: es?.showCutLines ?? true,
       useFrames: content.layout.useFrames,
       cardLayout: style?.cardLayout ?? undefined,
     };
@@ -163,41 +165,13 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       styleOptions,
       frameOptions,
     );
-  }, [resource, assetImageMap, style]);
+  }, [resource, assetImageMap, style, exportSettings]);
 
-  const handleDownloadPDF = useCallback(async () => {
-    if (!resource) return;
-
-    setIsGeneratingPDF(true);
-    setPdfReady(false);
-
-    try {
-      const blob = await buildPdfBlob();
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${resource.name || "emotion-cards"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      if (resource.status === "draft") {
-        await updateResource({
-          resourceId: resource._id,
-          status: "complete",
-        });
-      }
-
-      setPdfReady(true);
-      setTimeout(() => setPdfReady(false), 3000);
-    } catch (error) {
-      console.error("Failed to generate PDF:", error);
-    } finally {
-      setIsGeneratingPDF(false);
+  const handleDownloaded = useCallback(async () => {
+    if (resource?.status === "draft") {
+      await updateResource({ resourceId: resource._id, status: "complete" });
     }
-  }, [resource, buildPdfBlob, updateResource]);
+  }, [resource, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -339,42 +313,24 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF || generatedCount === 0}
-              className="gap-2"
+              className="btn-coral gap-1.5 cursor-pointer"
+              disabled={generatedCount === 0}
+              onClick={() => {
+                const c = resource.content as EmotionCardContent;
+                setExportSettings({
+                  cardsPerPage: c.layout.cardsPerPage,
+                  showLabels: c.layout.showLabels,
+                  showDescriptions: c.layout.showDescriptions,
+                  showCutLines: true,
+                });
+                setExportOpen(true);
+              }}
             >
-              {isGeneratingPDF ? (
-                <>
-                  <Loader2
-                    className="size-4 animate-spin motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                  Download PDF
-                </>
-              ) : pdfReady ? (
-                <>
-                  <Check className="size-4" aria-hidden="true" />
-                  Downloaded
-                </>
-              ) : (
-                <>
-                  <Download className="size-4" aria-hidden="true" />
-                  Download PDF
-                </>
-              )}
+              <Download className="size-4" aria-hidden="true" />
+              Export
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview((v) => !v)}
-              className="gap-1.5 cursor-pointer"
-            >
-              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
-              {showPreview ? "Hide Preview" : "Preview"}
-            </Button>
-
-            <Button asChild className="btn-coral gap-2">
+            <Button asChild variant="outline" className="gap-2">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit
@@ -425,17 +381,6 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
-      </div>
-
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
-          <div className="pb-6">
-            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
-          </div>
-        </div>
       </div>
 
       {/* Success banner for complete decks */}
@@ -491,6 +436,22 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
           />
         )}
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        resourceName={resource.name || "emotion-cards"}
+        buildPdfBlob={buildPdfBlob}
+        onDownloaded={handleDownloaded}
+        settingsPanel={
+          exportSettings && (
+            <EmotionCardsSettings
+              settings={exportSettings}
+              onSettingsChange={setExportSettings}
+            />
+          )
+        }
+      />
 
       {improvingEmotion && (() => {
         const assetKey = `emotion:${improvingEmotion}`;

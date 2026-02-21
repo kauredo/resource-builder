@@ -42,6 +42,7 @@ src/
 │   ├── style/                # Style picker, editor
 │   ├── character/            # Character components
 │   └── resource/
+│       ├── ExportModal.tsx   # Unified PDF export modal (settings + preview + download)
 │       ├── wizard/           # Shared AI wizard (4-step: Describe → Review → Generate → Export)
 │       ├── book/             # Book (custom 5-step wizard)
 │       ├── flashcards/       # Flashcards (shared wizard)
@@ -56,7 +57,8 @@ src/
     ├── utils.ts              # Tailwind class merging (cn)
     ├── style-presets.ts      # Built-in style presets
     ├── pdf.ts                # PDF generation (emotion cards, shared utils)
-    ├── pdf-image-pages.ts    # Full-page/grid image PDFs (poster, flashcards)
+    ├── pdf-image-pages.ts    # Full-page/grid image PDFs (poster, board game)
+    ├── pdf-flashcards.ts     # Flashcard PDFs (front/back grid, double-sided)
     ├── pdf-worksheet.ts      # Block-based worksheet PDFs
     ├── pdf-card-game.ts      # Card game PDFs with layered composition
     ├── pdf-book.ts           # Book PDFs (two layouts: picture_book, illustrated_text)
@@ -88,16 +90,16 @@ convex/
 
 8 resource types, each with a wizard, detail page, and PDF export:
 
-| Type | Wizard | Content Model | PDF |
-|------|--------|---------------|-----|
-| Poster | Shared AI | Single image | `pdf-image-pages.ts` (full page) |
-| Flashcards | Shared AI | Array of cards (front text + image) | `pdf-image-pages.ts` (grid) |
-| Emotion Cards | Shared AI | Array of emotions (label + image) | `pdf.ts` |
-| Card Game | Shared AI | Array of cards (text + image) | `pdf-card-game.ts` |
-| Board Game | Shared AI | Board + cards + pieces | Custom |
-| Worksheet | Shared AI | Blocks (text, image, fill-in) | `pdf-worksheet.ts` |
-| Free Prompt | Custom | Single image with free prompt | `pdf-image-pages.ts` |
-| Book | Custom | Multi-page narrative (cover + pages) | `pdf-book.ts` |
+| Type | Wizard | Content Model | PDF | Export Settings |
+|------|--------|---------------|-----|-----------------|
+| Poster | Shared AI | Single image | `pdf-image-pages.ts` (full page) | None |
+| Flashcards | Shared AI | Array of cards (front text + image) | `pdf-flashcards.ts` | Cards per page (4/6/9) |
+| Emotion Cards | Shared AI | Array of emotions (label + image) | `pdf.ts` | Cards per page, labels, descriptions, cut lines |
+| Card Game | Shared AI | Array of cards (text + image) | `pdf-card-game.ts` | Cards per page, include card backs |
+| Board Game | Shared AI | Board + cards + pieces | `pdf-image-pages.ts` | None |
+| Worksheet | Shared AI | Blocks (text, image, fill-in) | `pdf-worksheet.ts` | Orientation (portrait/landscape) |
+| Free Prompt | Custom | Single image with free prompt | `pdf-image-pages.ts` | None |
+| Book | Custom | Multi-page narrative (cover + pages) | `pdf-book.ts` | Format (book/booklet) |
 
 ### Shared AI Wizard (`resource/wizard/`)
 
@@ -140,6 +142,24 @@ BookContent {
 
 Asset types: `book_page_image`, `book_cover_image`
 Image aspects: cover `3:4` (portrait), pages `4:3` (landscape)
+
+### Export Modal (`resource/ExportModal.tsx`)
+
+Unified PDF export experience used by all 8 detail pages. Single "Export" button opens a Dialog with:
+- **Settings panel** (left, ~280px) — resource-specific controls, optional
+- **PDF preview** (right, flex-1) — live `PDFPreview` re-rendered on "Update Preview"
+- **Footer** — Download (coral) + Close
+
+Each detail page passes a `buildPdfBlob` callback that reads from local `exportSettings` state. Settings are initialized from `content.layout` (or defaults) when the modal opens. The `onDownloaded` callback handles marking the resource as complete.
+
+Settings sub-components (named exports from `ExportModal.tsx`):
+- `EmotionCardsSettings` — cardsPerPage (4/6/9), showLabels, showDescriptions, showCutLines
+- `FlashcardsSettings` — cardsPerPage (4/6/9)
+- `CardGameSettings` — cardsPerPage (4/6/9), includeCardBacks
+- `BookSettings` — format (book/booklet)
+- `WorksheetSettings` — orientation (portrait/landscape)
+
+Types without settings (Poster, Free Prompt, Board Game) pass no `settingsPanel`, rendering a single-column preview-only modal.
 
 ---
 

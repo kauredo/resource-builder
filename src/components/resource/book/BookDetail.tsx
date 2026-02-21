@@ -25,16 +25,17 @@ import { generateBookPDF } from "@/lib/pdf-book";
 import {
   ArrowLeft,
   Download,
-  Eye,
-  EyeOff,
-  Newspaper,
   Pencil,
   Trash2,
   Loader2,
   Paintbrush,
 } from "lucide-react";
-import { PDFPreview } from "@/components/resource/PDFPreview";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
+import {
+  ExportModal,
+  BookSettings,
+  type BookExportSettings,
+} from "@/components/resource/ExportModal";
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -45,8 +46,8 @@ interface BookDetailProps {
 }
 
 export function BookDetail({ resourceId }: BookDetailProps) {
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState<"book" | "booklet" | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportSettings, setExportSettings] = useState<BookExportSettings>({ booklet: false });
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
@@ -84,13 +85,13 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     return map;
   }, [assets]);
 
-  const buildPdfBlob = useCallback(async (booklet?: boolean) => {
+  const buildPdfBlob = useCallback(async () => {
     if (!resource) throw new Error("Resource not loaded");
     const content = resource.content as BookContent;
     return generateBookPDF({
       content,
       assetMap,
-      booklet,
+      booklet: exportSettings.booklet,
       style: style
         ? {
             colors: style.colors,
@@ -98,32 +99,13 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           }
         : undefined,
     });
-  }, [resource, assetMap, style]);
+  }, [resource, assetMap, style, exportSettings]);
 
-  const buildPreviewBlob = useCallback(() => buildPdfBlob(false), [buildPdfBlob]);
-
-  const handleDownloadPDF = useCallback(async (booklet?: boolean) => {
-    if (!resource) return;
-    setIsGeneratingPDF(booklet ? "booklet" : "book");
-    try {
-      const blob = await buildPdfBlob(booklet);
-      const suffix = booklet ? "-booklet" : "";
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${resource.name || "book"}${suffix}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      if (resource.status === "draft") {
-        await updateResource({ resourceId: resource._id, status: "complete" });
-      }
-    } finally {
-      setIsGeneratingPDF(null);
+  const handleDownloaded = useCallback(async () => {
+    if (resource?.status === "draft") {
+      await updateResource({ resourceId: resource._id, status: "complete" });
     }
-  }, [resource, buildPdfBlob, updateResource]);
+  }, [resource, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -255,43 +237,11 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => handleDownloadPDF()}
-              className="btn-coral gap-1.5"
-              disabled={!!isGeneratingPDF}
+              className="btn-coral gap-1.5 cursor-pointer"
+              onClick={() => setExportOpen(true)}
             >
-              {isGeneratingPDF === "book" ? (
-                <Loader2
-                  className="size-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Download className="size-4" aria-hidden="true" />
-              )}
-              Download Book
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleDownloadPDF(true)}
-              disabled={!!isGeneratingPDF}
-              className="gap-1.5"
-            >
-              {isGeneratingPDF === "booklet" ? (
-                <Loader2
-                  className="size-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Newspaper className="size-4" aria-hidden="true" />
-              )}
-              Booklet
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview((v) => !v)}
-              className="gap-1.5 cursor-pointer"
-            >
-              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
-              {showPreview ? "Hide Preview" : "Preview"}
+              <Download className="size-4" aria-hidden="true" />
+              Export
             </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
@@ -342,17 +292,6 @@ export function BookDetail({ resourceId }: BookDetailProps) {
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor resourceId={resourceId} tags={resource.tags ?? []} />
         {style && <ResourceStyleBadge styleId={style._id} styleName={style.name} />}
-      </div>
-
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
-          <div className="pb-6">
-            <PDFPreview generatePdf={resource ? buildPreviewBlob : null} visible={showPreview} />
-          </div>
-        </div>
       </div>
 
       {/* Cover */}
@@ -588,6 +527,20 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           })}
         </div>
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        resourceName={`${resource.name || "book"}${exportSettings.booklet ? "-booklet" : ""}`}
+        buildPdfBlob={buildPdfBlob}
+        onDownloaded={handleDownloaded}
+        settingsPanel={
+          <BookSettings
+            settings={exportSettings}
+            onSettingsChange={setExportSettings}
+          />
+        }
+      />
 
       {editingKey && (
         <ImageEditorModal

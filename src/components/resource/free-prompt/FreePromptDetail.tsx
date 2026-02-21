@@ -21,9 +21,9 @@ import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
-import { PDFPreview } from "@/components/resource/PDFPreview";
+import { ExportModal } from "@/components/resource/ExportModal";
 import type { FreePromptContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -33,12 +33,11 @@ interface FreePromptDetailProps {
 }
 
 export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isImproveOpen, setIsImproveOpen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -64,27 +63,11 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
     });
   }, [asset]);
 
-  const handleDownloadPDF = useCallback(async () => {
-    if (!resource || !asset?.currentVersion?.url) return;
-    setIsGeneratingPDF(true);
-    try {
-      const blob = await buildPdfBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${resource.name || "free-prompt"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      if (resource.status === "draft") {
-        await updateResource({ resourceId: resource._id, status: "complete" });
-      }
-    } finally {
-      setIsGeneratingPDF(false);
+  const handleDownloaded = useCallback(async () => {
+    if (resource?.status === "draft") {
+      await updateResource({ resourceId: resource._id, status: "complete" });
     }
-  }, [resource, asset, buildPdfBlob, updateResource]);
+  }, [resource, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -121,24 +104,12 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleDownloadPDF}
-              className="btn-coral gap-1.5"
-              disabled={isGeneratingPDF || !imageUrl}
+              className="btn-coral gap-1.5 cursor-pointer"
+              disabled={!imageUrl}
+              onClick={() => setExportOpen(true)}
             >
-              {isGeneratingPDF ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Download className="size-4" aria-hidden="true" />
-              )}
-              Download PDF
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview((v) => !v)}
-              className="gap-1.5 cursor-pointer"
-            >
-              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
-              {showPreview ? "Hide Preview" : "Preview"}
+              <Download className="size-4" aria-hidden="true" />
+              Export
             </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
@@ -175,17 +146,6 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
-          <div className="pb-6">
-            <PDFPreview generatePdf={imageUrl ? buildPdfBlob : null} visible={showPreview} />
           </div>
         </div>
       </div>
@@ -262,6 +222,14 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
           </Button>
         )}
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        resourceName={resource.name || "free-prompt"}
+        buildPdfBlob={buildPdfBlob}
+        onDownloaded={handleDownloaded}
+      />
 
       {imageUrl && (
         <>

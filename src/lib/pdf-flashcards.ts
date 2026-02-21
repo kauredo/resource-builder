@@ -73,7 +73,7 @@ export async function generateFlashcardsPDF({
             style: {
               width: cardWidth,
               height: imageHeight,
-              objectFit: "cover",
+              objectFit: "contain",
             },
           }),
         );

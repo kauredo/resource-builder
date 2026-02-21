@@ -30,11 +30,13 @@ import {
   Trash2,
   Loader2,
   Paintbrush,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
-import { PDFPreview } from "@/components/resource/PDFPreview";
+import {
+  ExportModal,
+  WorksheetSettings,
+  type WorksheetExportSettings,
+} from "@/components/resource/ExportModal";
 import type { WorksheetContent, WorksheetBlock } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
@@ -44,15 +46,14 @@ interface WorksheetDetailProps {
 }
 
 export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportSettings, setExportSettings] = useState<WorksheetExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const [regeneratingBlocks, setRegeneratingBlocks] = useState<Set<string>>(
     new Set(),
   );
-  const [showPreview, setShowPreview] = useState(false);
-
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
     ownerType: "resource",
@@ -95,31 +96,15 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
         : undefined,
       headerImageUrl,
       assetMap,
-      orientation: content.orientation,
+      orientation: exportSettings?.orientation ?? content.orientation,
     });
-  }, [resource, assets, assetMap, style]);
+  }, [resource, assets, assetMap, style, exportSettings]);
 
-  const handleDownloadPDF = useCallback(async () => {
-    if (!resource) return;
-    setIsGeneratingPDF(true);
-    try {
-      const blob = await buildPdfBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${resource.name || "worksheet"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      if (resource.status === "draft") {
-        await updateResource({ resourceId: resource._id, status: "complete" });
-      }
-    } finally {
-      setIsGeneratingPDF(false);
+  const handleDownloaded = useCallback(async () => {
+    if (resource?.status === "draft") {
+      await updateResource({ resourceId: resource._id, status: "complete" });
     }
-  }, [resource, buildPdfBlob, updateResource]);
+  }, [resource, updateResource]);
 
   const handleDelete = async () => {
     if (!resource) return;
@@ -203,27 +188,17 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleDownloadPDF}
-              className="btn-coral gap-1.5"
-              disabled={isGeneratingPDF}
+              className="btn-coral gap-1.5 cursor-pointer"
+              onClick={() => {
+                const c = resource.content as WorksheetContent;
+                setExportSettings({
+                  orientation: c.orientation ?? "portrait",
+                });
+                setExportOpen(true);
+              }}
             >
-              {isGeneratingPDF ? (
-                <Loader2
-                  className="size-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Download className="size-4" aria-hidden="true" />
-              )}
-              Download PDF
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview((v) => !v)}
-              className="gap-1.5 cursor-pointer"
-            >
-              {showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
-              {showPreview ? "Hide Preview" : "Preview"}
+              <Download className="size-4" aria-hidden="true" />
+              Export
             </Button>
             <Button asChild variant="outline">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
@@ -271,17 +246,6 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
         </div>
       </div>
 
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-        style={{ gridTemplateRows: showPreview ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
-          <div className="pb-6">
-            <PDFPreview generatePdf={resource ? buildPdfBlob : null} visible={showPreview} />
-          </div>
-        </div>
-      </div>
-
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor
           resourceId={resourceId}
@@ -312,6 +276,22 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           />
         ))}
       </div>
+
+      <ExportModal
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        resourceName={resource.name || "worksheet"}
+        buildPdfBlob={buildPdfBlob}
+        onDownloaded={handleDownloaded}
+        settingsPanel={
+          exportSettings && (
+            <WorksheetSettings
+              settings={exportSettings}
+              onSettingsChange={setExportSettings}
+            />
+          )
+        }
+      />
 
       {editingKey && (
         <ImageEditorModal

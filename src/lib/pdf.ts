@@ -239,7 +239,7 @@ const createStyles = (
     cardImage: {
       width: "100%",
       height: "100%",
-      objectFit: "cover",
+      objectFit: "contain",
     },
     cardContent: {
       paddingLeft: 32,
