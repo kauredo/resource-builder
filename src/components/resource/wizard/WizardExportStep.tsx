@@ -25,6 +25,15 @@ function getLayoutMode(resourceType: string): "full_page" | "grid" {
   }
 }
 
+const LAYOUT_LABELS: Record<string, string> = {
+  full_page: "Full page",
+  grid: "Card grid",
+};
+
+function formatResourceType(type: string): string {
+  return type.replaceAll("_", " ");
+}
+
 export function WizardExportStep({ state }: WizardExportStepProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exported, setExported] = useState(false);
@@ -132,7 +141,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
                 PDF downloaded
               </h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Your {state.resourceType.replaceAll("_", " ")} is ready for
+                Your {formatResourceType(state.resourceType)} is ready for
                 printing.
               </p>
               <Button
@@ -151,7 +160,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
             <>
               <h3 className="font-medium text-foreground">Ready to export</h3>
               <p className="text-sm text-muted-foreground mt-1.5">
-                {completedImages} image{completedImages !== 1 ? "s" : ""}, {getLayoutMode(state.resourceType).replaceAll("_", " ")} layout
+                {completedImages} image{completedImages !== 1 ? "s" : ""}, {LAYOUT_LABELS[getLayoutMode(state.resourceType)].toLowerCase()} layout
               </p>
               <Button
                 onClick={handleExport}
@@ -186,7 +195,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Type</dt>
               <dd className="font-medium capitalize">
-                {state.resourceType.replaceAll("_", " ")}
+                {formatResourceType(state.resourceType)}
               </dd>
             </div>
             <div className="flex justify-between">
@@ -199,8 +208,8 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Layout</dt>
-              <dd className="font-medium capitalize">
-                {getLayoutMode(state.resourceType).replaceAll("_", " ")}
+              <dd className="font-medium">
+                {LAYOUT_LABELS[getLayoutMode(state.resourceType)]}
               </dd>
             </div>
           </dl>

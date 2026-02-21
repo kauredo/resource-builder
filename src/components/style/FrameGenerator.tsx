@@ -202,7 +202,7 @@ export function FrameGenerator({
                 {isGenerating && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                     <Loader2
-                      className="size-5 animate-spin text-coral"
+                      className="size-5 animate-spin motion-reduce:animate-none text-coral"
                       aria-hidden="true"
                     />
                   </div>
@@ -252,7 +252,7 @@ export function FrameGenerator({
                         >
                           {isDeleting ? (
                             <Loader2
-                              className="size-3 animate-spin"
+                              className="size-3 animate-spin motion-reduce:animate-none"
                               aria-hidden="true"
                             />
                           ) : (

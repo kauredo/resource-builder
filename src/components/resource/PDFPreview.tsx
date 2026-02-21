@@ -54,10 +54,12 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
     };
   }, []);
 
+  const heightClass = className?.match(/h-\[/) ? "" : "h-[600px]";
+
   if (!generatePdf || isGenerating) {
     return (
       <div
-        className={`flex items-center justify-center h-[600px] border border-border/60 rounded-xl bg-muted/5 ${className ?? ""}`}
+        className={`flex items-center justify-center border border-border/60 rounded-xl bg-muted/5 ${heightClass} ${className ?? ""}`}
       >
         <div className="flex flex-col items-center gap-2">
           <Loader2
@@ -75,7 +77,7 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
   if (error) {
     return (
       <div
-        className={`flex flex-col items-center justify-center h-[600px] border border-border/60 rounded-xl bg-muted/5 gap-3 ${className ?? ""}`}
+        className={`flex flex-col items-center justify-center border border-border/60 rounded-xl bg-muted/5 gap-3 ${heightClass} ${className ?? ""}`}
       >
         <span className="text-sm text-muted-foreground">{error}</span>
         <Button
@@ -97,7 +99,7 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
     <div className={`relative ${className ?? ""}`}>
       <iframe
         src={url}
-        className="w-full h-[600px] border border-border/60 rounded-xl bg-white"
+        className={`w-full border border-border/60 rounded-xl bg-white ${heightClass}`}
         title="PDF Preview"
       />
       <Button

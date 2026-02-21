@@ -15,7 +15,6 @@ import {
   Search,
   X,
   Tag,
-  ChevronDown,
 } from "lucide-react";
 import type {
   EmotionCardContent,
@@ -55,6 +54,13 @@ const TYPE_LABELS: Record<TypeFilter, string> = {
   free_prompt: "Free Prompt",
 };
 
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "Newest",
+  oldest: "Oldest",
+  "name-asc": "Name A-Z",
+  "name-desc": "Name Z-A",
+};
+
 export default function ResourcesPage() {
   const user = useQuery(api.users.currentUser);
   const resources = useQuery(
@@ -82,7 +88,6 @@ export default function ResourcesPage() {
 
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
-  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
 
   const statusCounts = useMemo(() => {
     if (!resources) return { all: 0, draft: 0, complete: 0 };
@@ -118,6 +123,16 @@ export default function ResourcesPage() {
     });
     return Array.from(tags).sort((a, b) => a.localeCompare(b));
   }, [resources]);
+
+  const tagDropdownOptions = useMemo(
+    () => ["all", ...tagOptions],
+    [tagOptions]
+  );
+  const tagDropdownLabels = useMemo(() => {
+    const labels: Record<string, string> = { all: "All" };
+    tagOptions.forEach((t) => { labels[t] = t; });
+    return labels;
+  }, [tagOptions]);
 
   const filteredResources = useMemo(() => {
     if (!resources) return [];
@@ -160,13 +175,6 @@ export default function ResourcesPage() {
 
     return result;
   }, [resources, search, statusFilter, typeFilter, tagFilter, sortOption]);
-
-  const sortLabels: Record<SortOption, string> = {
-    newest: "Newest",
-    oldest: "Oldest",
-    "name-asc": "Name A-Z",
-    "name-desc": "Name Z-A",
-  };
 
   const clearAllFilters = () => {
     clearFilters();
@@ -304,126 +312,65 @@ export default function ResourcesPage() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              {/* Tag filter dropdown */}
               {tagOptions.length > 0 && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setTagDropdownOpen(!tagDropdownOpen)}
-                    className={`inline-flex items-center gap-1.5 min-h-[32px] px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
-                      tagFilter !== "all"
-                        ? "bg-[color-mix(in_oklch,var(--coral)_10%,transparent)] text-foreground font-medium border border-coral/30"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
-                    }`}
-                    aria-haspopup="listbox"
-                    aria-expanded={tagDropdownOpen}
-                  >
-                    <Tag className="size-3.5" aria-hidden="true" />
-                    {tagFilter !== "all" ? tagFilter : "Tags"}
-                    <ChevronDown
-                      className={`size-3.5 transition-transform duration-150 motion-reduce:transition-none ${tagDropdownOpen ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    />
-                  </button>
-                  {tagDropdownOpen && (
-                    <>
-                      {/* Backdrop to close dropdown */}
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setTagDropdownOpen(false)}
-                        aria-hidden="true"
-                      />
-                      <div
-                        className="absolute right-0 top-full mt-1 w-44 bg-card border border-border rounded-lg shadow-lg py-1 z-20"
-                        role="listbox"
-                        aria-label="Filter by tag"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTagFilter("all");
-                            setTagDropdownOpen(false);
-                          }}
-                          className={`w-full min-h-[36px] px-3 py-2 text-sm text-left cursor-pointer transition-colors duration-150 motion-reduce:transition-none ${
-                            tagFilter === "all"
-                              ? "text-coral font-medium bg-muted/50"
-                              : "text-foreground hover:bg-muted/50"
-                          }`}
-                          role="option"
-                          aria-selected={tagFilter === "all"}
-                        >
-                          All tags
-                        </button>
-                        {tagOptions.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => {
-                              setTagFilter(tag);
-                              setTagDropdownOpen(false);
-                            }}
-                            className={`w-full min-h-[36px] px-3 py-2 text-sm text-left cursor-pointer transition-colors duration-150 motion-reduce:transition-none ${
-                              tagFilter === tag
-                                ? "text-coral font-medium bg-muted/50"
-                                : "text-foreground hover:bg-muted/50"
-                            }`}
-                            role="option"
-                            aria-selected={tagFilter === tag}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                <SortDropdown
+                  value={tagFilter}
+                  onChange={setTagFilter}
+                  options={tagDropdownOptions}
+                  labels={tagDropdownLabels}
+                  prefix="Tag"
+                  icon={Tag}
+                />
               )}
 
               <SortDropdown
                 value={sortOption}
                 onChange={setSortOption}
                 options={[...SORT_OPTIONS]}
-                labels={sortLabels}
+                labels={SORT_LABELS}
               />
             </div>
           </div>
 
           {/* Type tabs + status + clear — single row */}
           <div className="flex items-center gap-2 mb-6 flex-wrap">
-            {/* Type tabs */}
-            <nav
-              className="flex items-center gap-1 overflow-x-auto"
-              role="tablist"
-              aria-label="Filter by resource type"
-            >
-              {activeTypes.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setTypeFilter(type)}
-                  role="tab"
-                  aria-selected={typeFilter === type}
-                  className={`whitespace-nowrap px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
-                    typeFilter === type
-                      ? "bg-foreground text-background font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  }`}
+            {/* Type tabs — only shown when 3+ types exist */}
+            {activeTypes.length > 2 && (
+              <>
+                <nav
+                  className="flex items-center gap-1 overflow-x-auto"
+                  role="tablist"
+                  aria-label="Filter by resource type"
                 >
-                  {TYPE_LABELS[type]}
-                  {type !== "all" && (
-                    <span className="ml-1.5 tabular-nums text-xs opacity-60">
-                      {typeCounts[type] ?? 0}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
+                  {activeTypes.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setTypeFilter(type)}
+                      role="tab"
+                      aria-selected={typeFilter === type}
+                      className={`whitespace-nowrap px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
+                        typeFilter === type
+                          ? "bg-foreground text-background font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {TYPE_LABELS[type]}
+                      {type !== "all" && (
+                        <span className="ml-1.5 tabular-nums text-xs opacity-60">
+                          {typeCounts[type] ?? 0}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
 
-            {/* Divider */}
-            <div
-              className="h-5 w-px bg-border/60 mx-1 hidden sm:block"
-              aria-hidden="true"
-            />
+                <div
+                  className="h-5 w-px bg-border/60 mx-1 hidden sm:block"
+                  aria-hidden="true"
+                />
+              </>
+            )}
 
             {/* Status pills */}
             <div
@@ -464,8 +411,9 @@ export default function ResourcesPage() {
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded px-2 py-1"
+                className="ml-auto inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded px-2 py-1"
               >
+                <X className="size-3" aria-hidden="true" />
                 Clear filters
               </button>
             )}

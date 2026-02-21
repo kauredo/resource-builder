@@ -63,7 +63,7 @@ function ResetPasswordForm() {
 
   if (missingParams) {
     return (
-      <Card className="w-full max-w-md shadow-lg border-border/50">
+      <Card className="w-full max-w-md shadow-sm border-border/50">
         <CardHeader className="text-center pb-2">
           <CardTitle className="font-serif text-3xl tracking-tight">
             Invalid reset link
@@ -75,7 +75,7 @@ function ResetPasswordForm() {
         <CardFooter className="flex justify-center pt-4">
           <Link
             href="/forgot-password"
-            className="text-sm text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors"
+            className="text-sm text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
           >
             Request a new reset link
           </Link>
@@ -86,9 +86,9 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <Card className="w-full max-w-md shadow-lg border-border/50">
+      <Card className="w-full max-w-md shadow-sm border-border/50">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-teal/10 flex items-center justify-center">
+          <div className="mx-auto mb-3 size-12 rounded-2xl bg-teal/10 flex items-center justify-center">
             <CheckCircle2 className="size-6 text-teal" aria-hidden="true" />
           </div>
           <CardTitle className="font-serif text-3xl tracking-tight">
@@ -109,9 +109,9 @@ function ResetPasswordForm() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-border/50">
+    <Card className="w-full max-w-md shadow-sm border-border/50">
       <CardHeader className="text-center pb-2">
-        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
+        <div className="mx-auto mb-3 size-12 rounded-2xl bg-coral/10 flex items-center justify-center">
           <KeyRound className="size-6 text-coral" aria-hidden="true" />
         </div>
         <CardTitle className="font-serif text-3xl tracking-tight">
@@ -176,7 +176,7 @@ function ResetPasswordForm() {
           >
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 <span>Resetting...</span>
               </>
             ) : (
@@ -193,10 +193,10 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <Card className="w-full max-w-md shadow-lg border-border/50">
+        <Card className="w-full max-w-md shadow-sm border-border/50">
           <CardHeader className="flex items-center justify-center py-12">
             <Loader2
-              className="size-8 animate-spin text-coral"
+              className="size-8 animate-spin motion-reduce:animate-none text-coral"
               aria-label="Loading"
             />
           </CardHeader>

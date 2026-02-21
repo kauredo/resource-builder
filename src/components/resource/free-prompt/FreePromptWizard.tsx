@@ -330,7 +330,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]" role="status" aria-label="Loading">
-        <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+        <div className="size-8 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

@@ -86,7 +86,7 @@ export function PasswordForm() {
         )}
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
       {success && (
         <p className="text-sm text-green-600 flex items-center gap-1.5">

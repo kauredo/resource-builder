@@ -44,7 +44,7 @@ export function PromptEditor({
             disabled={isGenerating || !editValue.trim()}
           >
             {isGenerating ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
               <RefreshCw className="size-3.5" aria-hidden="true" />
             )}
@@ -114,7 +114,7 @@ export function PromptEditor({
           className="text-xs text-muted-foreground/70 hover:text-foreground cursor-pointer transition-colors duration-150 inline-flex items-center gap-0.5 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded"
         >
           {isGenerating ? (
-            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+            <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
           ) : (
             <RefreshCw className="size-3" aria-hidden="true" />
           )}

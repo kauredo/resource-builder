@@ -49,7 +49,7 @@ export function FramePreview({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-8 h-8 mx-auto mb-1 rounded border-2 border-dashed border-muted-foreground/20" />
+              <div className="size-8 mx-auto mb-1 rounded border-2 border-dashed border-muted-foreground/20" />
               <span className="text-[10px] text-muted-foreground/50">
                 Empty
               </span>

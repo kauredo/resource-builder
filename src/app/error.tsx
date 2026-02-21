@@ -31,7 +31,7 @@ export default function Error({
             alt=""
             width={32}
             height={32}
-            className="w-8 h-8"
+            className="size-8"
           />
           <span className="font-serif text-xl font-medium">Resource Builder</span>
         </Link>
@@ -52,7 +52,7 @@ export default function Error({
                   alt="Calm emotion card illustration"
                   width={112}
                   height={112}
-                  className="w-28 h-28 object-contain"
+                  className="size-28 object-contain"
                 />
               </div>
               <div className="px-4 pb-4">
@@ -109,7 +109,7 @@ export default function Error({
         <p className="text-sm text-muted-foreground">
           Problem persists?{" "}
           <a
-            href="mailto:support@basketballstatsapp.com"
+            href="mailto:support@resourcebuilder.app"
             className="text-foreground underline underline-offset-4 hover:text-coral transition-colors"
           >
             Contact support

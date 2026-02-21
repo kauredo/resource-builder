@@ -48,7 +48,7 @@ export default function DashboardLayout({
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="size-8 animate-spin text-coral" aria-hidden="true" />
+          <Loader2 className="size-8 animate-spin motion-reduce:animate-none text-coral" aria-hidden="true" />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function DashboardLayout({
                 alt=""
                 width={32}
                 height={32}
-                className="w-8 h-8"
+                className="size-8"
               />
               <span className="font-serif text-xl font-medium">
                 Resource Builder
@@ -91,7 +91,7 @@ export default function DashboardLayout({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 motion-reduce:transition-none ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
                     isActive(link.href, link.exact)
                       ? "bg-coral/10 text-coral"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -144,7 +144,7 @@ export default function DashboardLayout({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 ${
                     isActive(link.href, link.exact)
                       ? "bg-coral/10 text-coral"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

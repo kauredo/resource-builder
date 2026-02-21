@@ -116,7 +116,7 @@ export function WorksheetContentStep({
           </div>
 
           {state.contentStatus === "error" && state.contentError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive" role="alert">
               {state.contentError}
             </div>
           )}

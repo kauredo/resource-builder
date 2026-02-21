@@ -58,7 +58,7 @@ export function CharacterStep({
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[300px]" role="status" aria-label="Loading">
-        <div className="w-6 h-6 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+        <div className="size-6 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function CharacterStep({
       >
         <div
           className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+            "size-12 rounded-xl flex items-center justify-center shrink-0",
             characterId === null ? "bg-muted" : "bg-muted"
           )}
         >
@@ -103,7 +103,7 @@ export function CharacterStep({
           </p>
         </div>
         {characterId === null && (
-          <div className="w-6 h-6 bg-foreground/15 rounded-full flex items-center justify-center shrink-0">
+          <div className="size-6 bg-foreground/15 rounded-full flex items-center justify-center shrink-0">
             <Check className="size-4 text-foreground/50" aria-hidden="true" />
           </div>
         )}
@@ -134,7 +134,7 @@ export function CharacterStep({
                 >
                   <div
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden",
+                      "size-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden",
                       isSelected ? "bg-teal/20" : "bg-muted"
                     )}
                   >
@@ -163,7 +163,7 @@ export function CharacterStep({
                     )}
                   </div>
                   {isSelected && (
-                    <div className="w-6 h-6 bg-teal rounded-full flex items-center justify-center shrink-0">
+                    <div className="size-6 bg-teal rounded-full flex items-center justify-center shrink-0">
                       <Check className="size-4 text-white" aria-hidden="true" />
                     </div>
                   )}
@@ -228,7 +228,7 @@ export function CharacterStep({
                 <Link
                   href={`/dashboard/characters/${selected._id}`}
                   target="_blank"
-                  className="underline underline-offset-2 hover:text-amber-900 transition-colors"
+                  className="underline underline-offset-2 hover:text-amber-900 transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Update it
                 </Link>{" "}

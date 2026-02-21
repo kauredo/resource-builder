@@ -82,7 +82,7 @@ export function StyleCharacters({ styleId, userId }: StyleCharactersProps) {
             className="btn-coral gap-2"
           >
             {isCreating ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
               <Plus className="size-4" aria-hidden="true" />
             )}
@@ -106,7 +106,7 @@ export function StyleCharacters({ styleId, userId }: StyleCharactersProps) {
           className="btn-coral gap-1.5"
         >
           {isCreating ? (
-            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
           ) : (
             <Plus className="size-3.5" aria-hidden="true" />
           )}

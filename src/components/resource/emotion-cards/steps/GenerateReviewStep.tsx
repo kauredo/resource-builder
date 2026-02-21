@@ -404,13 +404,13 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/8 to-teal/5 border border-coral/20 p-8 text-center">
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div className="absolute top-4 left-8 w-16 h-16 rounded-2xl bg-coral/10 rotate-12" />
-            <div className="absolute bottom-6 right-12 w-12 h-12 rounded-xl bg-teal/10 -rotate-6" />
-            <div className="absolute top-1/2 right-1/4 w-8 h-8 rounded-lg bg-coral/5 rotate-45" />
+            <div className="absolute top-4 left-8 size-16 rounded-2xl bg-coral/10 rotate-12" />
+            <div className="absolute bottom-6 right-12 size-12 rounded-xl bg-teal/10 -rotate-6" />
+            <div className="absolute top-1/2 right-1/4 size-8 rounded-lg bg-coral/5 rotate-45" />
           </div>
 
           <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+            <div className="size-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
               <Wand2 className="size-8 text-coral" aria-hidden="true" />
             </div>
 

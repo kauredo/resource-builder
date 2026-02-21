@@ -17,6 +17,12 @@ type SortOption = "newest" | "oldest" | "name-asc" | "name-desc";
 type TabValue = "characters" | "groups";
 
 const SORT_OPTIONS: SortOption[] = ["newest", "oldest", "name-asc", "name-desc"];
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "Newest",
+  oldest: "Oldest",
+  "name-asc": "Name A-Z",
+  "name-desc": "Name Z-A",
+};
 
 export default function CharactersPage() {
   const router = useRouter();
@@ -147,13 +153,6 @@ export default function CharactersPage() {
 
     return result;
   }, [groups, search, sortOption]);
-
-  const sortLabels: Record<SortOption, string> = {
-    newest: "Newest",
-    oldest: "Oldest",
-    "name-asc": "Name A-Z",
-    "name-desc": "Name Z-A",
-  };
 
   const isCharactersTab = tab === "characters";
   const hasAnyItems = isCharactersTab
@@ -350,7 +349,7 @@ export default function CharactersPage() {
               value={sortOption}
               onChange={setSortOption}
               options={SORT_OPTIONS}
-              labels={sortLabels}
+              labels={SORT_LABELS}
             />
           </div>
         </>
@@ -365,13 +364,13 @@ export default function CharactersPage() {
               <div className="absolute top-6 right-6 sm:top-8 sm:right-16" aria-hidden="true">
                 <div className="relative w-24 h-28 sm:w-32 sm:h-36">
                   <div className="absolute top-0 left-2 sm:left-4 w-16 h-20 sm:w-20 sm:h-24 rounded-xl bg-muted/40 border border-border/30 -rotate-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted/60 mx-auto mt-3 sm:mt-4" />
+                    <div className="size-8 sm:size-10 rounded-full bg-muted/60 mx-auto mt-3 sm:mt-4" />
                   </div>
                   <div className="absolute top-1 left-4 sm:left-6 w-16 h-20 sm:w-20 sm:h-24 rounded-xl bg-muted/60 border border-border/40 rotate-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted/80 mx-auto mt-3 sm:mt-4" />
+                    <div className="size-8 sm:size-10 rounded-full bg-muted/80 mx-auto mt-3 sm:mt-4" />
                   </div>
                   <div className="absolute top-2 left-6 sm:left-8 w-16 h-20 sm:w-20 sm:h-24 rounded-xl bg-card border border-border shadow-sm">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-dashed border-teal/30 mx-auto mt-3 sm:mt-4 flex items-center justify-center">
+                    <div className="size-8 sm:size-10 rounded-full border-2 border-dashed border-teal/30 mx-auto mt-3 sm:mt-4 flex items-center justify-center">
                       <Users className="size-3.5 sm:size-4 text-teal/40" />
                     </div>
                     <div className="mx-3 mt-2 space-y-1">

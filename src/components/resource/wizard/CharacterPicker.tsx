@@ -157,7 +157,7 @@ export function CharacterPicker({
             : "border-border bg-card",
         )}
       >
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-muted">
+        <div className="size-10 rounded-lg flex items-center justify-center shrink-0 bg-muted">
           <UserX
             className="size-5 text-muted-foreground"
             aria-hidden="true"
@@ -169,7 +169,7 @@ export function CharacterPicker({
           </span>
         </div>
         {!selection && (
-          <div className="w-5 h-5 bg-foreground/15 rounded-full flex items-center justify-center shrink-0">
+          <div className="size-5 bg-foreground/15 rounded-full flex items-center justify-center shrink-0">
             <Check
               className="size-3 text-foreground/50"
               aria-hidden="true"
@@ -199,7 +199,7 @@ export function CharacterPicker({
             >
               <div
                 className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden",
+                  "size-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden",
                   isSelected ? "bg-teal/20" : "bg-muted",
                 )}
               >
@@ -228,7 +228,7 @@ export function CharacterPicker({
                 )}
               </div>
               {isSelected && (
-                <div className="w-5 h-5 bg-teal rounded-full flex items-center justify-center shrink-0">
+                <div className="size-5 bg-teal rounded-full flex items-center justify-center shrink-0">
                   <Check
                     className="size-3 text-white"
                     aria-hidden="true"
@@ -356,7 +356,7 @@ export function CharacterPicker({
                 <Link
                   href={`/dashboard/characters/${selectedChar._id}`}
                   target="_blank"
-                  className="underline underline-offset-2 hover:text-amber-900 transition-colors"
+                  className="underline underline-offset-2 hover:text-amber-900 transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Update it
                 </Link>{" "}

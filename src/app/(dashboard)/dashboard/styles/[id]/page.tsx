@@ -238,12 +238,12 @@ export default function StyleDetailPage({ params }: PageProps) {
         role="status"
         aria-label="Loading style"
       >
-        <div className="h-4 w-16 bg-muted rounded animate-pulse mb-6" />
-        <div className="h-12 w-72 bg-muted rounded animate-pulse mb-8" />
-        <div className="h-64 bg-muted rounded-xl animate-pulse mb-8" />
+        <div className="h-4 w-16 bg-muted rounded animate-pulse motion-reduce:animate-none mb-6" />
+        <div className="h-12 w-72 bg-muted rounded animate-pulse motion-reduce:animate-none mb-8" />
+        <div className="h-64 bg-muted rounded-xl animate-pulse motion-reduce:animate-none mb-8" />
         <div className="space-y-6">
-          <div className="h-24 bg-muted rounded-lg animate-pulse" />
-          <div className="h-20 bg-muted rounded-lg animate-pulse" />
+          <div className="h-24 bg-muted rounded-lg animate-pulse motion-reduce:animate-none" />
+          <div className="h-20 bg-muted rounded-lg animate-pulse motion-reduce:animate-none" />
         </div>
       </div>
     );
@@ -313,7 +313,7 @@ export default function StyleDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
               {saveStatus === "saving" && (
                 <span className="inline-flex items-center gap-1.5">
-                  <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   Saving...
                 </span>
               )}
@@ -375,7 +375,7 @@ export default function StyleDetailPage({ params }: PageProps) {
                   >
                     {isDeleting && (
                       <Loader2
-                        className="size-4 animate-spin mr-2"
+                        className="size-4 animate-spin motion-reduce:animate-none mr-2"
                         aria-hidden="true"
                       />
                     )}
@@ -705,7 +705,7 @@ export default function StyleDetailPage({ params }: PageProps) {
             >
               {isDuplicating && (
                 <Loader2
-                  className="size-4 animate-spin mr-2"
+                  className="size-4 animate-spin motion-reduce:animate-none mr-2"
                   aria-hidden="true"
                 />
               )}
@@ -743,7 +743,7 @@ function ColorSwatch({
           input.click();
         }}
         disabled={disabled}
-        className="w-full aspect-square rounded-lg border border-border/50 cursor-pointer hover:scale-105 hover:border-coral/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-colors transition-all duration-150 motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="w-full aspect-square rounded-lg border border-border/50 cursor-pointer hover:scale-105 hover:border-coral/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 transition-all duration-150 motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         style={{ backgroundColor: value }}
         aria-label={`Change ${label.toLowerCase()} color`}
       />
@@ -1225,7 +1225,7 @@ function CardLayoutSection({
                   }))
                 }
                 disabled={disabled}
-                className="w-8 h-8 rounded cursor-pointer border border-border"
+                className="size-8 rounded cursor-pointer border border-border"
               />
               <Input
                 type="text"

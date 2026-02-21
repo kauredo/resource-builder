@@ -8,6 +8,10 @@ interface SortDropdownProps<T extends string> {
   onChange: (value: T) => void;
   options: T[];
   labels: Record<T, string>;
+  /** Label prefix shown before the selected value. Defaults to "Sort" */
+  prefix?: string;
+  /** Optional icon rendered before the prefix */
+  icon?: React.ElementType;
 }
 
 export function SortDropdown<T extends string>({
@@ -15,6 +19,8 @@ export function SortDropdown<T extends string>({
   onChange,
   options,
   labels,
+  prefix = "Sort",
+  icon: Icon,
 }: SortDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -95,7 +101,8 @@ export function SortDropdown<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        Sort: {labels[value]}
+        {Icon && <Icon className="size-3.5" aria-hidden="true" />}
+        {prefix}: {labels[value]}
         <ChevronDown
           className={`size-4 transition-transform duration-150 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
           aria-hidden="true"

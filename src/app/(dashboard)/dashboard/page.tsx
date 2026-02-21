@@ -66,7 +66,7 @@ export default function DashboardPage() {
               <span className="mx-1.5" aria-hidden="true">·</span>
               <Link
                 href="/dashboard/settings/billing"
-                className="text-coral hover:underline underline-offset-4 transition-colors duration-150 motion-reduce:transition-none"
+                className="text-coral hover:underline underline-offset-4 transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
               >
                 Upgrade
               </Link>

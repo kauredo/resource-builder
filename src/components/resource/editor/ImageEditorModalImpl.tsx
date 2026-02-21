@@ -480,7 +480,7 @@ export function ImageEditorModalImpl({
               >
                 {isSaving ? (
                   <Loader2
-                    className="size-4 animate-spin"
+                    className="size-4 animate-spin motion-reduce:animate-none"
                     aria-hidden="true"
                   />
                 ) : (

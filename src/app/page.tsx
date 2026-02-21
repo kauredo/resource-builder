@@ -17,7 +17,7 @@ function EmotionCardPreview({
 }) {
   return (
     <article
-      className="w-36 h-48 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1),0_8px_32px_-8px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:scale-105 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15),0_12px_40px_-8px_rgba(0,0,0,0.1)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+      className="w-36 h-48 rounded-2xl shadow-sm flex flex-col overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:scale-105 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:scale-100"
       style={{
         backgroundColor: color,
         transform: `rotate(${rotation}deg)`,
@@ -32,12 +32,12 @@ function EmotionCardPreview({
             alt={`Illustration representing ${emotion}`}
             width={112}
             height={112}
-            className="w-28 h-28 object-contain"
+            className="size-28 object-contain"
           />
         ) : (
           // Placeholder illustration area
-          <div className="w-24 h-24 rounded-xl bg-white/25 flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full bg-white/35" />
+          <div className="size-24 rounded-xl bg-white/25 flex items-center justify-center">
+            <div className="size-16 rounded-full bg-white/35" />
           </div>
         )}
       </div>
@@ -71,7 +71,7 @@ function StylePreviewChip({
         {colors.map((color, i) => (
           <div
             key={i}
-            className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+            className="size-4 rounded-full border-2 border-white shadow-sm"
             style={{ backgroundColor: color }}
           />
         ))}
@@ -86,7 +86,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
   const icons = {
     palette: (
       <svg
-        className="w-5 h-5 text-coral"
+        className="size-5 text-coral"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -102,7 +102,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
     ),
     printer: (
       <svg
-        className="w-5 h-5 text-coral"
+        className="size-5 text-coral"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -118,7 +118,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
     ),
     character: (
       <svg
-        className="w-5 h-5 text-coral"
+        className="size-5 text-coral"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -135,7 +135,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
   };
 
   return (
-    <div className="w-11 h-11 rounded-xl bg-coral/10 flex items-center justify-center shrink-0">
+    <div className="size-11 rounded-xl bg-coral/10 flex items-center justify-center shrink-0">
       {icons[type]}
     </div>
   );
@@ -156,7 +156,7 @@ function ResourceTypeCard({
   return (
     <div className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 flex flex-col gap-4">
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center"
+        className="size-12 rounded-xl flex items-center justify-center"
         style={{ backgroundColor: `color-mix(in oklch, ${color}, transparent 85%)` }}
       >
         <div style={{ color }}>{icon}</div>
@@ -177,7 +177,7 @@ export default function Home() {
       {/* Skip link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:px-4 focus:py-2 focus:rounded-md focus:ring-2 focus:ring-ring focus:text-foreground"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-[100] focus-visible:bg-background focus-visible:px-4 focus-visible:py-2 focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-coral focus-visible:text-foreground"
       >
         Skip to main content
       </a>
@@ -267,8 +267,8 @@ export default function Home() {
 
                 {/* Decorative shapes behind cards */}
                 <div className="absolute inset-0 -z-10">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-coral/8" />
-                  <div className="absolute top-1/4 right-1/4 w-32 h-32 rounded-full bg-teal/5" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-72 rounded-full bg-coral/8" />
+                  <div className="absolute top-1/4 right-1/4 size-32 rounded-full bg-teal/5" />
                 </div>
               </div>
             </div>
@@ -468,7 +468,7 @@ export default function Home() {
                 description="Beautiful illustrated cards for feelings identification. Print, cut, and use in sessions."
                 color="#FF6B6B"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
                   </svg>
                 }
@@ -478,7 +478,7 @@ export default function Home() {
                 description="Therapeutic board games with custom tokens, cards, and game boards. Complete print-and-play sets."
                 color="#6B9080"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                   </svg>
                 }
@@ -488,7 +488,7 @@ export default function Home() {
                 description="Double-sided flashcards for CBT exercises, coping strategies, and psychoeducation."
                 color="#5390D9"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
                   </svg>
                 }
@@ -498,7 +498,7 @@ export default function Home() {
                 description="Structured therapy worksheets with your illustrations. Great for homework assignments."
                 color="#C77DFF"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                   </svg>
                 }
@@ -508,7 +508,7 @@ export default function Home() {
                 description="Wall posters for therapy rooms — feelings wheels, coping toolkits, and regulation guides."
                 color="#DDA15E"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
                   </svg>
                 }
@@ -518,7 +518,7 @@ export default function Home() {
                 description="Complete therapeutic card games with custom icons, labels, and game rules. Print-and-play ready."
                 color="#606C38"
                 icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
                   </svg>
                 }
@@ -558,7 +558,7 @@ export default function Home() {
               <li>
                 <Link
                   href="/privacy"
-                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block"
+                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Privacy
                 </Link>
@@ -566,15 +566,15 @@ export default function Home() {
               <li>
                 <Link
                   href="/terms"
-                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block"
+                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Terms
                 </Link>
               </li>
               <li>
                 <Link
-                  href="mailto:support@basketballstatsapp.com"
-                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block"
+                  href="mailto:support@resourcebuilder.app"
+                  className="hover:text-foreground transition-default px-3 py-2 rounded-md inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                 >
                   Support
                 </Link>

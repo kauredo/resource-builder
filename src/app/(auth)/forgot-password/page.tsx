@@ -37,9 +37,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-border/50">
+    <Card className="w-full max-w-md shadow-sm border-border/50">
       <CardHeader className="text-center pb-2">
-        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
+        <div className="mx-auto mb-3 size-12 rounded-2xl bg-coral/10 flex items-center justify-center">
           <Mail className="size-6 text-coral" aria-hidden="true" />
         </div>
         <CardTitle className="font-serif text-3xl tracking-tight">
@@ -59,14 +59,14 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => setSubmitted(false)}
-              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors cursor-pointer"
+              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               try again
             </button>
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Back to sign in
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
               {isLoading ? (
                 <>
                   <Loader2
-                    className="size-4 animate-spin"
+                    className="size-4 animate-spin motion-reduce:animate-none"
                     aria-hidden="true"
                   />
                   <span>Sending...</span>
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
               Back to sign in

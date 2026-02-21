@@ -473,7 +473,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
                     {saveStatus === "saving" && (
                       <span className="inline-flex items-center gap-1.5">
                         <Loader2
-                          className="size-3 animate-spin"
+                          className="size-3 animate-spin motion-reduce:animate-none"
                           aria-hidden="true"
                         />
                         Saving...
@@ -518,7 +518,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
                     >
                       {isDeleting && (
                         <Loader2
-                          className="size-4 animate-spin mr-2"
+                          className="size-4 animate-spin motion-reduce:animate-none mr-2"
                           aria-hidden="true"
                         />
                       )}
@@ -604,7 +604,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
               >
                 {isUploading ? (
                   <Loader2
-                    className="size-3.5 animate-spin"
+                    className="size-3.5 animate-spin motion-reduce:animate-none"
                     aria-hidden="true"
                   />
                 ) : (
@@ -620,7 +620,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
               >
                 {isGeneratingImage ? (
                   <Loader2
-                    className="size-3.5 animate-spin"
+                    className="size-3.5 animate-spin motion-reduce:animate-none"
                     aria-hidden="true"
                   />
                 ) : (
@@ -687,7 +687,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
               aria-live="polite"
             >
               <Loader2
-                className="size-3.5 animate-spin text-teal"
+                className="size-3.5 animate-spin motion-reduce:animate-none text-teal"
                 aria-hidden="true"
               />
               <p className="text-xs text-teal font-medium">
@@ -869,7 +869,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
                 >
                   {isGeneratingPrompt ? (
                     <Loader2
-                      className="size-3.5 animate-spin"
+                      className="size-3.5 animate-spin motion-reduce:animate-none"
                       aria-hidden="true"
                     />
                   ) : (
@@ -911,7 +911,7 @@ export default function CharacterDetailPage({ params }: PageProps) {
                 ) : isGeneratingPrompt ? (
                   <div className="flex items-center gap-2" aria-live="polite">
                     <Loader2
-                      className="size-3.5 animate-spin text-teal"
+                      className="size-3.5 animate-spin motion-reduce:animate-none text-teal"
                       aria-hidden="true"
                     />
                     <p className="text-xs text-teal font-medium">

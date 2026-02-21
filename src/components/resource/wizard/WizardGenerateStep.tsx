@@ -231,14 +231,9 @@ export function WizardGenerateStep({
   if (!hasStarted) {
     return (
       <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-coral/5 via-coral/8 to-teal/5 border border-coral/20 p-8 text-center">
-          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div className="absolute top-4 left-8 w-16 h-16 rounded-2xl bg-coral/10 rotate-12" />
-            <div className="absolute bottom-6 right-12 w-12 h-12 rounded-xl bg-teal/10 -rotate-6" />
-          </div>
-
-          <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+        <div className="rounded-2xl border border-coral/20 bg-[color-mix(in_oklch,var(--coral)_4%,transparent)] p-8 text-center">
+          <div>
+            <div className="size-16 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
               <Wand2 className="size-8 text-coral" aria-hidden="true" />
             </div>
 
@@ -503,7 +498,7 @@ function ImageItemCard({
         )}
         {item.status === "pending" && isGeneratingAll && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full border-2 border-border/50" />
+            <div className="size-8 rounded-full border-2 border-border/50" />
           </div>
         )}
 

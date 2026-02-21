@@ -31,16 +31,16 @@ export function GenerationProgress({
         <div className="flex items-center gap-3">
           {isComplete ? (
             hasErrors ? (
-              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+              <div className="size-10 rounded-full bg-amber-50 flex items-center justify-center">
                 <AlertCircle className="size-5 text-amber-700" aria-hidden="true" />
               </div>
             ) : (
-              <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center">
+              <div className="size-10 rounded-full bg-teal/20 flex items-center justify-center">
                 <Check className="size-5 text-teal" aria-hidden="true" />
               </div>
             )
           ) : (
-            <div className="w-10 h-10 rounded-full bg-coral/10 flex items-center justify-center">
+            <div className="size-10 rounded-full bg-coral/10 flex items-center justify-center">
               <Loader2 className="size-5 text-coral animate-spin motion-reduce:animate-none" aria-hidden="true" />
             </div>
           )}

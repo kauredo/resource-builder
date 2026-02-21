@@ -2,10 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
+import { DetailPageHeader, DetailPageSkeleton } from "@/components/resource/DetailPageHeader";
 import { ImageHoverOverlay } from "@/components/resource/ImageHoverOverlay";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
@@ -27,6 +28,7 @@ interface WorksheetDetailProps {
 }
 
 export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
+  const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<WorksheetExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -92,7 +94,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
     setIsDeleting(true);
     try {
       await deleteResource({ resourceId: resource._id });
-      window.location.href = "/dashboard/resources";
+      router.push("/dashboard/resources");
     } finally {
       setIsDeleting(false);
     }
@@ -143,7 +145,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
     [resource, generateStyledImage],
   );
 
-  if (!resource) return null;
+  if (!resource) return <DetailPageSkeleton />;
   const content = resource.content as WorksheetContent;
 
   return (

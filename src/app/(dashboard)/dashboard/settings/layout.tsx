@@ -42,7 +42,7 @@ export default function SettingsLayout({
                   isActive
                     ? "bg-coral/10 text-coral"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2`}
                 aria-current={isActive ? "page" : undefined}
               >
                 <Icon className="size-4" aria-hidden="true" />

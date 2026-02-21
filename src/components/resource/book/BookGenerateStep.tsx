@@ -345,12 +345,12 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                           className="absolute inset-0 flex items-center justify-center"
                           role="status"
                         >
-                          <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" />
+                          <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" aria-hidden="true" />
                         </div>
                       )}
                       {item.status === "error" && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                          <AlertCircle className="size-8 text-red-400 mb-2" />
+                          <AlertCircle className="size-8 text-red-400 mb-2" aria-hidden="true" />
                           <p className="text-xs text-red-600 line-clamp-2">
                             {item.error || "Failed"}
                           </p>
@@ -426,7 +426,7 @@ export function BookGenerateStep({ state, onUpdate }: BookGenerateStepProps) {
                     </div>
                     <div className="px-3 py-2 flex items-center gap-2">
                       {item.status === "complete" && (
-                        <Check className="size-3.5 text-teal shrink-0" />
+                        <Check className="size-3.5 text-teal shrink-0" aria-hidden="true" />
                       )}
                       <span className="text-xs text-muted-foreground truncate">
                         {item.label}

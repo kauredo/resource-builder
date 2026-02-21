@@ -60,9 +60,9 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-border/50">
+    <Card className="w-full max-w-md shadow-sm border-border/50">
       <CardHeader className="text-center pb-2">
-        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-coral/10 flex items-center justify-center">
+        <div className="mx-auto mb-3 size-12 rounded-2xl bg-coral/10 flex items-center justify-center">
           <Pencil className="size-6 text-coral" aria-hidden="true" />
         </div>
         <CardTitle className="font-serif text-3xl tracking-tight">
@@ -141,7 +141,7 @@ export default function SignupPage() {
           >
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 <span>Creating account...</span>
               </>
             ) : (
@@ -153,14 +153,14 @@ export default function SignupPage() {
             By continuing, you agree to our{" "}
             <Link
               href="/terms"
-              className="underline underline-offset-4 hover:text-foreground transition-colors"
+              className="underline underline-offset-4 hover:text-foreground transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               Terms
             </Link>{" "}
             and{" "}
             <Link
               href="/privacy"
-              className="underline underline-offset-4 hover:text-foreground transition-colors"
+              className="underline underline-offset-4 hover:text-foreground transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               Privacy Policy
             </Link>
@@ -170,7 +170,7 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors"
+              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               Sign in
             </Link>

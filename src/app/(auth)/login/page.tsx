@@ -50,7 +50,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-border/50">
+    <Card className="w-full max-w-md shadow-sm border-border/50">
       <CardHeader className="text-center pb-2">
         <CardTitle className="font-serif text-3xl tracking-tight">
           Welcome back
@@ -92,7 +92,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-muted-foreground hover:text-coral transition-colors py-1 -my-1 px-1 -mx-1 rounded"
+                className="text-sm text-muted-foreground hover:text-coral transition-colors py-1 -my-1 px-1 -mx-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
               >
                 Forgot password?
               </Link>
@@ -120,7 +120,7 @@ export default function LoginPage() {
           >
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 <span>Signing in...</span>
               </>
             ) : (
@@ -132,7 +132,7 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors"
+              className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
               Start free trial
             </Link>

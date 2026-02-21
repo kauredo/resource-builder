@@ -43,7 +43,7 @@ export function NameStyleStep({
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[300px]" role="status" aria-label="Loading">
-        <div className="w-6 h-6 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
+        <div className="size-6 border-2 border-coral border-t-transparent rounded-full animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

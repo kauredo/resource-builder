@@ -132,7 +132,7 @@ export function WizardPreview({
             ) : (
               /* Abstract placeholder - more sophisticated than smiley */
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-14 h-14">
+                <div className="relative size-14">
                   {/* Organic blob shape */}
                   <div
                     className="absolute inset-0 rounded-[40%_60%_55%_45%/55%_45%_60%_40%]"
@@ -140,7 +140,7 @@ export function WizardPreview({
                   />
                   {/* Accent detail */}
                   <div
-                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                    className="absolute -top-1 -right-1 size-3 rounded-full"
                     style={{
                       backgroundColor: previewColors.accent,
                       opacity: 0.9,
@@ -148,7 +148,7 @@ export function WizardPreview({
                   />
                   {/* Secondary detail */}
                   <div
-                    className="absolute bottom-0 left-0 w-2 h-2 rounded-full"
+                    className="absolute bottom-0 left-0 size-2 rounded-full"
                     style={{
                       backgroundColor: previewColors.secondary,
                       opacity: 0.7,
@@ -236,7 +236,7 @@ export function WizardPreview({
         ].map((color, i) => (
           <div
             key={i}
-            className="w-3 h-3 rounded-full ring-1 ring-black/5"
+            className="size-3 rounded-full ring-1 ring-black/5"
             style={{ backgroundColor: color }}
           />
         ))}

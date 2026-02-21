@@ -88,16 +88,18 @@ export function ResourceCard({
               {/* Subtle vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-              {/* Card count badge - top left */}
-              <div className="absolute top-3 left-3">
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-background/90 border border-border/60 text-foreground rounded-md whitespace-nowrap max-w-[140px] truncate"
-                  title={formatCountLabel(type, itemCount)}
-                >
-                  <Layers className="size-3" aria-hidden="true" />
-                  {formatCountLabel(type, itemCount)}
-                </span>
-              </div>
+              {/* Card count badge - top left (hidden when 0) */}
+              {itemCount > 0 && (
+                <div className="absolute top-3 left-3">
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-background/90 border border-border/60 text-foreground rounded-md whitespace-nowrap max-w-[140px] truncate"
+                    title={formatCountLabel(type, itemCount)}
+                  >
+                    <Layers className="size-3" aria-hidden="true" />
+                    {formatCountLabel(type, itemCount)}
+                  </span>
+                </div>
+              )}
 
               {/* Status badge - top right */}
               <div className="absolute top-3 right-3">
@@ -157,10 +159,12 @@ export function ResourceCard({
                 )}
                 {isComplete ? "Complete" : "Draft"}
               </span>
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <Layers className="size-3" aria-hidden="true" />
-                {formatCountLabel(type, itemCount)}
-              </span>
+              {itemCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Layers className="size-3" aria-hidden="true" />
+                  {formatCountLabel(type, itemCount)}
+                </span>
+              )}
             </div>
 
             {/* Title */}

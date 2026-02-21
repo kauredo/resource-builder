@@ -2,10 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
+import { DetailPageHeader, DetailPageSkeleton } from "@/components/resource/DetailPageHeader";
 import { ImageHoverOverlay } from "@/components/resource/ImageHoverOverlay";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
@@ -27,6 +28,7 @@ interface BookDetailProps {
 }
 
 export function BookDetail({ resourceId }: BookDetailProps) {
+  const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<BookExportSettings>({ booklet: false });
   const [isDeleting, setIsDeleting] = useState(false);
@@ -93,7 +95,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     setIsDeleting(true);
     try {
       await deleteResource({ resourceId: resource._id });
-      window.location.href = "/dashboard/resources";
+      router.push("/dashboard/resources");
     } finally {
       setIsDeleting(false);
     }
@@ -189,7 +191,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     }
   }, [resource, generateStyledImage]);
 
-  if (!resource) return null;
+  if (!resource) return <DetailPageSkeleton />;
   const content = resource.content as BookContent;
   const coverUrl = content.cover?.imageAssetKey
     ? assetMap.get(content.cover.imageAssetKey)
@@ -229,7 +231,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                   className="absolute inset-0 flex flex-col items-center justify-center gap-2"
                   role="status"
                 >
-                  <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" />
+                  <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" aria-hidden="true" />
                   <span className="text-sm text-muted-foreground">
                     Generating...
                   </span>
@@ -320,7 +322,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
                           className="absolute inset-0 flex flex-col items-center justify-center gap-2"
                           role="status"
                         >
-                          <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" />
+                          <Loader2 className="size-8 text-coral animate-spin motion-reduce:animate-none" aria-hidden="true" />
                           <span className="text-sm text-muted-foreground">
                             Generating...
                           </span>

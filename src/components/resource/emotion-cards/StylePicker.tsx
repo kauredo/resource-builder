@@ -116,7 +116,7 @@ function StyleOption({
             {isSelected && (
               <div
                 className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center",
+                  "size-5 rounded-full flex items-center justify-center",
                   accentColor === "coral" ? "bg-coral" : "bg-teal"
                 )}
               >

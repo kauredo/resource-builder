@@ -18,14 +18,14 @@ export function MarketingHeader() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-2 transition-default hover:opacity-80"
+            className="flex items-center gap-2 cursor-pointer transition-default hover:opacity-80"
           >
             <Image
               src="/logo.png"
               alt=""
               width={32}
               height={32}
-              className="w-8 h-8"
+              className="size-8"
             />
             <span className="font-serif text-xl font-medium">
               Resource Builder
@@ -33,7 +33,7 @@ export function MarketingHeader() {
           </Link>
           <div className="flex items-center gap-3">
             {isLoading ? (
-              <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Loading" />
+              <Loader2 className="size-4 animate-spin motion-reduce:animate-none text-muted-foreground" aria-label="Loading" />
             ) : isAuthenticated ? (
               <Button size="sm" className="btn-coral gap-1.5" asChild>
                 <Link href="/dashboard">

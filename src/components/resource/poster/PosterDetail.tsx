@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useAction, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
-import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
+import { DetailPageHeader, DetailPageSkeleton } from "@/components/resource/DetailPageHeader";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { Loader2, RefreshCw, Paintbrush } from "lucide-react";
@@ -22,6 +23,7 @@ interface PosterDetailProps {
 }
 
 export function PosterDetail({ resourceId }: PosterDetailProps) {
+  const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -84,13 +86,13 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
     setIsDeleting(true);
     try {
       await deleteResource({ resourceId: resource._id });
-      window.location.href = "/dashboard/resources";
+      router.push("/dashboard/resources");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!resource) return null;
+  if (!resource) return <DetailPageSkeleton />;
 
   const content = resource.content as PosterContent;
   const imageUrl = asset?.currentVersion?.url ?? null;
@@ -147,7 +149,7 @@ export function PosterDetail({ resourceId }: PosterDetailProps) {
                 className="gap-1.5"
               >
                 {isRegenerating ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 ) : (
                   <RefreshCw className="size-4" aria-hidden="true" />
                 )}

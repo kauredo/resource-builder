@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
-import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
+import { DetailPageHeader, DetailPageSkeleton } from "@/components/resource/DetailPageHeader";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { PromptEditor } from "@/components/resource/PromptEditor";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
@@ -22,6 +23,7 @@ interface BoardGameDetailProps {
 }
 
 export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
+  const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -63,13 +65,13 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
     setIsDeleting(true);
     try {
       await deleteResource({ resourceId: resource._id });
-      window.location.href = "/dashboard/resources";
+      router.push("/dashboard/resources");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!resource) return null;
+  if (!resource) return <DetailPageSkeleton />;
   const content = resource.content as BoardGameContent;
 
   return (

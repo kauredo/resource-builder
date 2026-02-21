@@ -182,12 +182,12 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
         <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-coral/5 via-background to-teal/5 p-8 text-center">
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-coral/10" />
-            <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-teal/10" />
+            <div className="absolute -top-6 -right-6 size-24 rounded-full bg-coral/10" />
+            <div className="absolute -bottom-4 -left-4 size-16 rounded-full bg-teal/10" />
           </div>
 
           <div className="relative">
-            <div className="w-20 h-20 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
+            <div className="size-20 rounded-2xl bg-coral/20 flex items-center justify-center mx-auto mb-5">
               <Check className="size-10 text-coral" aria-hidden="true" />
             </div>
             <h3 className="font-serif text-2xl font-medium mb-2">

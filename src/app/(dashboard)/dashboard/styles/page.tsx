@@ -24,6 +24,13 @@ const SORT_OPTIONS: SortOption[] = [
   "name-desc",
 ];
 
+const SORT_LABELS: Record<SortOption, string> = {
+  newest: "Newest",
+  oldest: "Oldest",
+  "name-asc": "Name A-Z",
+  "name-desc": "Name Z-A",
+};
+
 export default function StylesPage() {
   const router = useRouter();
   const user = useQuery(api.users.currentUser);
@@ -105,13 +112,6 @@ export default function StylesPage() {
 
     return result;
   }, [styles, search, typeFilter, sortOption]);
-
-  const sortLabels: Record<SortOption, string> = {
-    newest: "Newest",
-    oldest: "Oldest",
-    "name-asc": "Name A-Z",
-    "name-desc": "Name Z-A",
-  };
 
   const hasAnyStyles = styles && styles.length > 0;
   const hasFilteredResults = filteredStyles.length > 0;
@@ -212,35 +212,45 @@ export default function StylesPage() {
       {/* Search, Filter, and Sort Controls */}
       {hasAnyStyles && (
         <>
-          {/* Search Input */}
-          <div className="relative mb-6">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
-              aria-hidden="true"
-            />
-            <Input
-              type="text"
-              placeholder="Find a style..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-10 pr-10"
-              aria-label="Search styles by name"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 motion-reduce:transition-none"
-                aria-label="Clear search"
-              >
-                <X className="size-4" />
-              </button>
-            )}
+          {/* Search + sort row */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="relative flex-1 max-w-sm">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                aria-hidden="true"
+              />
+              <Input
+                type="text"
+                placeholder="Find a style..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10 pr-10"
+                aria-label="Search styles by name"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 motion-reduce:transition-none"
+                  aria-label="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="ml-auto">
+              <SortDropdown
+                value={sortOption}
+                onChange={setSortOption}
+                options={SORT_OPTIONS}
+                labels={SORT_LABELS}
+              />
+            </div>
           </div>
 
-          {/* Filter Pills and Sort */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            {/* Type Filter Pills */}
+          {/* Filter pills */}
+          <div className="flex items-center gap-2 mb-6">
             <div
               className="flex gap-2"
               role="group"
@@ -267,14 +277,6 @@ export default function StylesPage() {
                 </button>
               ))}
             </div>
-
-            {/* Sort Dropdown */}
-            <SortDropdown
-              value={sortOption}
-              onChange={setSortOption}
-              options={SORT_OPTIONS}
-              labels={sortLabels}
-            />
           </div>
         </>
       )}
@@ -325,13 +327,25 @@ export default function StylesPage() {
 
       {/* Empty State - No Matching Results */}
       {hasAnyStyles && !hasFilteredResults && isFiltering && (
-        <div className="py-16 text-center">
-          <p className="text-muted-foreground mb-4">
-            No styles match &ldquo;{search || typeFilter}&rdquo;
-          </p>
-          <Button variant="outline" onClick={clearFilters} size="sm">
-            Clear filters
-          </Button>
+        <div className="rounded-xl border-2 border-dashed border-border/60 bg-muted/20">
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Search
+                className="size-6 text-muted-foreground/50"
+                aria-hidden="true"
+              />
+            </div>
+            <h2 className="font-medium text-foreground mb-1">
+              No styles found
+            </h2>
+            <p className="text-sm text-muted-foreground mb-5 max-w-sm leading-relaxed">
+              Try adjusting your search or filters.
+            </p>
+            <Button variant="outline" onClick={clearFilters} className="gap-2">
+              <X className="size-4" aria-hidden="true" />
+              Clear filters
+            </Button>
+          </div>
         </div>
       )}
 

@@ -134,15 +134,15 @@ export function ColorPaletteEditor({ colors, onChange, disabled }: ColorPaletteE
       >
         {/* Organic blob shapes */}
         <div
-          className="absolute -bottom-10 -left-10 w-36 h-36 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] transition-colors duration-200"
+          className="absolute -bottom-10 -left-10 size-36 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] transition-colors duration-200"
           style={{ backgroundColor: colors.primary }}
         />
         <div
-          className="absolute -top-6 -right-6 w-28 h-28 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] opacity-85 transition-colors duration-200"
+          className="absolute -top-6 -right-6 size-28 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] opacity-85 transition-colors duration-200"
           style={{ backgroundColor: colors.secondary }}
         />
         <div
-          className="absolute bottom-6 right-6 w-12 h-12 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] transition-colors duration-200"
+          className="absolute bottom-6 right-6 size-12 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] transition-colors duration-200"
           style={{ backgroundColor: colors.accent }}
         />
         <div

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           href="/"
           className="inline-flex items-center gap-2 transition-default hover:opacity-80"
         >
-          <Image src="/logo.png" alt="" width={32} height={32} className="w-8 h-8" />
+          <Image src="/logo.png" alt="" width={32} height={32} className="size-8" />
           <span className="font-serif text-xl font-medium">Resource Builder</span>
         </Link>
       </header>
@@ -90,10 +90,10 @@ export default function PrivacyPage() {
           <p>
             Questions about your privacy? Email us at{" "}
             <a
-              href="mailto:support@basketballstatsapp.com"
+              href="mailto:support@resourcebuilder.app"
               className="text-foreground underline underline-offset-4 hover:text-coral transition-colors"
             >
-              support@basketballstatsapp.com
+              support@resourcebuilder.app
             </a>
           </p>
         </div>

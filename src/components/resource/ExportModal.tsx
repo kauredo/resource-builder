@@ -82,7 +82,7 @@ export function ExportModal({
         </DialogHeader>
 
         <div
-          className={`flex-1 min-h-0 ${settingsPanel ? "grid grid-cols-[280px_1fr] gap-6" : ""}`}
+          className={`flex-1 min-h-0 ${settingsPanel ? "grid grid-cols-1 sm:grid-cols-[280px_1fr] gap-6" : ""}`}
         >
           {/* Settings panel */}
           {settingsPanel && (
@@ -103,7 +103,7 @@ export function ExportModal({
             <PDFPreview
               key={previewKey}
               generatePdf={buildPdfBlob}
-              className="!h-[500px]"
+              className="h-[500px]"
             />
           </div>
         </div>

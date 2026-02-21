@@ -27,6 +27,10 @@ const PLACEHOLDER_MAP: Record<string, string> = {
     "A fun feelings card game where kids match emotions and practice naming what they feel...",
   board_game:
     "A feelings adventure board game where kids move through spaces and practice coping skills...",
+  worksheet:
+    "A CBT thought record worksheet for teens, with sections for situation, thoughts, feelings, and coping responses...",
+  emotion_cards:
+    "A set of emotion cards showing different feelings like happy, sad, angry, and scared, for young children to identify and name...",
 };
 
 export function WizardDescribeStep({
@@ -102,7 +106,7 @@ export function WizardDescribeStep({
 
       {/* Generate button */}
       {state.contentStatus === "error" && state.contentError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive" role="alert">
           {state.contentError}
         </div>
       )}

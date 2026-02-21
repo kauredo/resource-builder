@@ -37,6 +37,7 @@ function StylePresetChip({
   return (
     <button
       onClick={onClick}
+      aria-pressed={isSelected}
       className={`
         flex items-center gap-2 px-3 py-2 rounded-full border cursor-pointer
         transition-colors duration-150 ease-out

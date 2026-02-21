@@ -6,7 +6,8 @@ import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
-import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
+import { useRouter } from "next/navigation";
+import { DetailPageHeader, DetailPageSkeleton } from "@/components/resource/DetailPageHeader";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import { Paintbrush } from "lucide-react";
@@ -28,6 +29,7 @@ interface CardGameDetailProps {
 }
 
 export function CardGameDetail({ resourceId }: CardGameDetailProps) {
+  const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<CardGameExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -81,13 +83,13 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
     setIsDeleting(true);
     try {
       await deleteResource({ resourceId: resource._id });
-      window.location.href = "/dashboard/resources";
+      router.push("/dashboard/resources");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!resource) return null;
+  if (!resource) return <DetailPageSkeleton />;
 
   const editingAssetType: AssetType = editingKey
     ? editingKey.startsWith("card_bg:")
