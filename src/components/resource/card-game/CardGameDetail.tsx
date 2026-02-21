@@ -1,26 +1,15 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { AssetHistoryDialog } from "@/components/resource/AssetHistoryDialog";
+import { DetailPageHeader } from "@/components/resource/DetailPageHeader";
 import { ImageEditorModal } from "@/components/resource/editor/ImageEditorModal";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2, Paintbrush } from "lucide-react";
+import { Paintbrush } from "lucide-react";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import {
   ExportModal,
@@ -112,82 +101,22 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <Link
-          href="/dashboard/resources"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150 mb-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Resources
-        </Link>
-
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
-              {resource.name}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Card Game</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              className="btn-coral gap-1.5 cursor-pointer"
-              onClick={() => {
-                const content = resource.content as unknown as CardGameContent;
-                setExportSettings({
-                  cardsPerPage: 9,
-                  includeCardBacks: !!content.cardBack,
-                });
-                setExportOpen(true);
-              }}
-            >
-              <Download className="size-4" aria-hidden="true" />
-              Export
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/dashboard/resources/${resource._id}/edit`}>
-                <Pencil className="size-4" aria-hidden="true" />
-                Edit
-              </Link>
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                  <span className="sr-only">Delete</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this game?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this resource and its assets.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {isDeleting && (
-                      <Loader2
-                        className="size-4 animate-spin mr-2"
-                        aria-hidden="true"
-                      />
-                    )}
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </div>
+      <DetailPageHeader
+        resourceId={resourceId}
+        resourceName={resource.name}
+        subtitle="Card Game"
+        onExport={() => {
+          const content = resource.content as unknown as CardGameContent;
+          setExportSettings({
+            cardsPerPage: 9,
+            includeCardBacks: !!content.cardBack,
+          });
+          setExportOpen(true);
+        }}
+        deleteTitle="Delete this game?"
+        onDelete={handleDelete}
+        isDeleting={isDeleting}
+      />
 
       <div className="mb-6 flex flex-col gap-4">
         <ResourceTagsEditor
