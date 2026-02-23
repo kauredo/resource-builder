@@ -318,6 +318,7 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
               id="review-name"
               value={state.name}
               onChange={(e) => onUpdate({ name: e.target.value })}
+              maxLength={100}
               placeholder="Game name"
             />
           </div>
@@ -333,6 +334,7 @@ export function CardGameReview({ state, onUpdate }: CardGameReviewProps) {
                   generatedContent: { ...content, deckName: e.target.value },
                 })
               }
+              maxLength={100}
               placeholder="Deck name"
             />
           </div>

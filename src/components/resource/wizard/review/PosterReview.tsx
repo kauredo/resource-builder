@@ -53,6 +53,7 @@ export function PosterReview({ state, onUpdate }: PosterReviewProps) {
           id="review-name"
           value={state.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
+          maxLength={100}
           placeholder="Poster name"
         />
       </div>

@@ -210,19 +210,17 @@ export function WizardGenerateStep({
 
   // Group items for display
   const groups = useMemo(() => {
-    const grouped: { label: string; items: { item: ImageItem; index: number }[] }[] = [];
-    const seen = new Set<string>();
+    const groupMap = new Map<string, { item: ImageItem; index: number }[]>();
 
     state.imageItems.forEach((item, index) => {
       const label = item.group || "Images";
-      if (!seen.has(label)) {
-        seen.add(label);
-        grouped.push({ label, items: [] });
+      if (!groupMap.has(label)) {
+        groupMap.set(label, []);
       }
-      grouped.find((g) => g.label === label)!.items.push({ item, index });
+      groupMap.get(label)!.push({ item, index });
     });
 
-    return grouped;
+    return Array.from(groupMap, ([label, items]) => ({ label, items }));
   }, [state.imageItems]);
 
   const hasGroups = groups.length > 1 || (groups.length === 1 && groups[0].label !== "Images");

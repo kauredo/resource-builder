@@ -70,6 +70,7 @@ export function NameStyleStep({
           value={name}
           onChange={(e) => onUpdate({ name: e.target.value })}
           className="max-w-md text-base"
+          maxLength={100}
           autoFocus
         />
         <p className="text-sm text-muted-foreground">

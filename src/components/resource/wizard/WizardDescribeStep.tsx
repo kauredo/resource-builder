@@ -72,6 +72,7 @@ export function WizardDescribeStep({
           onChange={(e) => onUpdate({ description: e.target.value })}
           placeholder={placeholder}
           rows={4}
+          maxLength={2000}
           className="text-base"
         />
       </div>

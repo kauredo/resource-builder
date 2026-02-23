@@ -104,6 +104,7 @@ export function FlashcardsReview({
           id="review-name"
           value={state.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
+          maxLength={100}
           placeholder="Flashcard deck name"
         />
       </div>

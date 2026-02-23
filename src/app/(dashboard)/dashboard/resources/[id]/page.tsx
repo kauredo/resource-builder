@@ -3,17 +3,20 @@
 import { use } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { EmotionCardsDetail } from "@/components/resource/emotion-cards/EmotionCardsDetail";
-import { PosterDetail } from "@/components/resource/poster/PosterDetail";
-import { FlashcardsDetail } from "@/components/resource/flashcards/FlashcardsDetail";
-import { WorksheetDetail } from "@/components/resource/worksheet/WorksheetDetail";
-import { BoardGameDetail } from "@/components/resource/board-game/BoardGameDetail";
-import { CardGameDetail } from "@/components/resource/card-game/CardGameDetail";
-import { FreePromptDetail } from "@/components/resource/free-prompt/FreePromptDetail";
-import { BookDetail } from "@/components/resource/book/BookDetail";
+
+// Dynamic imports — only the active resource type component is loaded
+const EmotionCardsDetail = dynamic(() => import("@/components/resource/emotion-cards/EmotionCardsDetail").then(m => m.EmotionCardsDetail));
+const PosterDetail = dynamic(() => import("@/components/resource/poster/PosterDetail").then(m => m.PosterDetail));
+const FlashcardsDetail = dynamic(() => import("@/components/resource/flashcards/FlashcardsDetail").then(m => m.FlashcardsDetail));
+const WorksheetDetail = dynamic(() => import("@/components/resource/worksheet/WorksheetDetail").then(m => m.WorksheetDetail));
+const BoardGameDetail = dynamic(() => import("@/components/resource/board-game/BoardGameDetail").then(m => m.BoardGameDetail));
+const CardGameDetail = dynamic(() => import("@/components/resource/card-game/CardGameDetail").then(m => m.CardGameDetail));
+const FreePromptDetail = dynamic(() => import("@/components/resource/free-prompt/FreePromptDetail").then(m => m.FreePromptDetail));
+const BookDetail = dynamic(() => import("@/components/resource/book/BookDetail").then(m => m.BookDetail));
 
 interface PageProps {
   params: Promise<{ id: string }>;

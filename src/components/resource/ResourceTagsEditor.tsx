@@ -63,9 +63,9 @@ export function ResourceTagsEditor({ resourceId, tags }: ResourceTagsEditorProps
         {normalizedTags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground"
+            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground max-w-[200px]"
           >
-            {tag}
+            <span className="truncate">{tag}</span>
             <button
               type="button"
               onClick={() => handleRemove(tag)}
@@ -94,6 +94,7 @@ export function ResourceTagsEditor({ resourceId, tags }: ResourceTagsEditorProps
               }
             }}
             placeholder="e.g., breathing, social skills"
+            maxLength={50}
           />
         </div>
         <Button

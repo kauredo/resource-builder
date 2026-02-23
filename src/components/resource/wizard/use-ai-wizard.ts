@@ -212,7 +212,8 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     const characterIds = state.characterSelection?.characterIds ?? [];
     if (characterIds.length > 0) {
-      Promise.allSettled(
+      // Best-effort — character references update reactively via queries
+      void Promise.allSettled(
         characterIds.map((id) =>
           ensureCharacterRef({
             characterId: id as Id<"characters">,
@@ -317,7 +318,9 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
               ensureCharacterRef({
                 characterId: r.characterId as Id<"characters">,
                 styleId: state.styleId,
-              }).catch(() => {}); // Non-blocking
+              }).catch(() => {
+                // Non-blocking — portrait generation is best-effort
+              });
             }
           }
 
@@ -805,9 +808,10 @@ export function buildCharacterMap(
   const map = new Map<string, string[]>();
   for (const r of results) {
     for (const key of r.appearsOn) {
-      const existing = map.get(key) || [];
-      existing.push(r.characterId);
-      map.set(key, existing);
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(r.characterId);
     }
   }
   return map;

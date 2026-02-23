@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
@@ -20,6 +20,7 @@ export function AvatarPicker({
   avatarCharacterId,
 }: AvatarPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const characters = useQuery(api.characters.getUserCharactersWithThumbnails, {
     userId,
   });
@@ -28,24 +29,44 @@ export function AvatarPicker({
   const generateUploadUrl = useMutation(api.users.generateAvatarUploadUrl);
 
   const handleCharacterSelect = async (characterId: Id<"characters">) => {
-    await updateAvatar({ characterId });
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      await updateAvatar({ characterId });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleClear = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      await clearAvatar();
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const uploadUrl = await generateUploadUrl();
-    const result = await fetch(uploadUrl, {
-      method: "POST",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-    const { storageId } = await result.json();
-    await updateAvatar({ imageStorageId: storageId });
-
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setIsUpdating(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await result.json();
+      await updateAvatar({ imageStorageId: storageId });
+    } finally {
+      setIsUpdating(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   // The initials fallback for the large avatar
@@ -75,6 +96,7 @@ export function AvatarPicker({
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isUpdating}
             className="cursor-pointer"
           >
             <Upload className="size-4" aria-hidden="true" />
@@ -82,7 +104,8 @@ export function AvatarPicker({
           </Button>
           {avatarUrl && (
             <button
-              onClick={() => clearAvatar()}
+              onClick={handleClear}
+              disabled={isUpdating}
               className="block text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded px-1"
             >
               Remove avatar

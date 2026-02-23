@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProfileFormProps {
   name: string;
@@ -31,6 +32,8 @@ export function ProfileForm({ name: initialName, email }: ProfileFormProps) {
       await updateName({ name: trimmed });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      toast.error("Failed to save name. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -47,6 +50,7 @@ export function ProfileForm({ name: initialName, email }: ProfileFormProps) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
+          maxLength={100}
         />
       </div>
       <div className="space-y-2">

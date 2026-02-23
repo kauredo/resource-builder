@@ -99,6 +99,7 @@ export function BoardGameReview({
           id="review-name"
           value={state.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
+          maxLength={100}
           placeholder="Board game name"
         />
       </div>

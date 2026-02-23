@@ -99,6 +99,7 @@ export function CreateGroupDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Forest Friends, Emotion Explorers"
+              maxLength={100}
               disabled={isGenerating}
             />
           </div>
@@ -111,6 +112,7 @@ export function CreateGroupDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the group theme, style, and what connects them..."
               rows={3}
+              maxLength={500}
               disabled={isGenerating}
             />
           </div>

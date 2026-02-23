@@ -74,7 +74,7 @@ export function StyleCard({
         >
           {/* Typography preview */}
           <p
-            className="text-lg font-medium leading-snug"
+            className="text-lg font-medium leading-snug line-clamp-1"
             style={{
               fontFamily: `"${typography.headingFont}", system-ui, sans-serif`,
               color: colors.text,

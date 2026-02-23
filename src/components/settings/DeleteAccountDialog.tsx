@@ -6,6 +6,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../convex/_generated/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,7 @@ export function DeleteAccountDialog({ email }: DeleteAccountDialogProps) {
       await signOut();
     } catch {
       setDeleting(false);
+      toast.error("Failed to delete account. Please try again.");
     }
   };
 

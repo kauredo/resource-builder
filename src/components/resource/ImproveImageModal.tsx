@@ -127,6 +127,7 @@ export function ImproveImageModal({
             placeholder="Describe what to change, e.g. add a hat, make the background blue"
             aria-label="Improvement instructions"
             rows={3}
+            maxLength={1000}
             disabled={isImproving}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && instruction.trim()) {

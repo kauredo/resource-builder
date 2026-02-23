@@ -366,6 +366,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
               value={state.name}
               onChange={(e) => setState((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Calm Scene"
+              maxLength={100}
               className="max-w-md text-base"
             />
           </div>
@@ -396,6 +397,7 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
             value={state.prompt}
             onChange={(e) => setState((prev) => ({ ...prev, prompt: e.target.value }))}
             rows={5}
+            maxLength={2000}
             placeholder="Describe the image you want"
             disabled={isRefining}
           />

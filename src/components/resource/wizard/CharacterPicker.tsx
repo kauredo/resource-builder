@@ -220,7 +220,7 @@ export function CharacterPicker({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium">{character.name}</span>
+                <span className="text-sm font-medium truncate">{character.name}</span>
                 {character.personality && (
                   <p className="text-xs text-muted-foreground line-clamp-1">
                     {character.personality}
