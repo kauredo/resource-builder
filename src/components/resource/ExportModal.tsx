@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { PDFPreview } from "@/components/resource/PDFPreview";
 import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // ExportModal
@@ -63,6 +64,9 @@ export function ExportModal({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       onDownloaded?.();
+    } catch (error) {
+      console.error("PDF download failed:", error);
+      toast.error("PDF generation failed. Please try again.");
     } finally {
       setIsDownloading(false);
     }

@@ -129,7 +129,7 @@ export function WizardGenerateStep({
                         error:
                           error instanceof Error
                             ? error.message
-                            : "Unknown error",
+                            : "Generation failed — try again",
                       }
                     : it,
                 ),
@@ -307,7 +307,7 @@ export function WizardGenerateStep({
           />
         </div>
         {failedCount > 0 && (
-          <p className="text-xs text-red-600">
+          <p className="text-xs text-destructive">
             {failedCount} image{failedCount !== 1 ? "s" : ""} failed
           </p>
         )}
@@ -475,11 +475,11 @@ function ImageItemCard({
         {item.status === "error" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
             <AlertCircle
-              className="size-8 text-red-400 mb-2"
+              className="size-8 text-destructive/60 mb-2"
               aria-hidden="true"
             />
-            <p className="text-xs text-red-600 line-clamp-2">
-              {item.error || "Failed"}
+            <p className="text-xs text-destructive line-clamp-2">
+              {item.error || "Generation failed"}
             </p>
           </div>
         )}

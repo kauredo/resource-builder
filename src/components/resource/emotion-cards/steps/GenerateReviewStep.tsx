@@ -185,7 +185,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
           updated.set(emotion, {
             emotion,
             status: "error",
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: error instanceof Error ? error.message : "Generation failed — try again",
           });
           return updated;
         });
@@ -271,7 +271,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               updated.set(emotion, {
                 emotion,
                 status: "error",
-                error: error instanceof Error ? error.message : "Unknown error",
+                error: error instanceof Error ? error.message : "Generation failed — try again",
               });
               return updated;
             });
@@ -365,7 +365,7 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
               updated.set(emotion, {
                 emotion,
                 status: "error",
-                error: error instanceof Error ? error.message : "Unknown error",
+                error: error instanceof Error ? error.message : "Generation failed — try again",
               });
               return updated;
             });

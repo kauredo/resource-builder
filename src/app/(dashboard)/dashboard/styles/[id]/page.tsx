@@ -298,6 +298,7 @@ export default function StyleDetailPage({ params }: PageProps) {
                 type="text"
                 value={displayName}
                 onChange={e => handleNameChange(e.target.value)}
+                maxLength={100}
                 className="font-serif text-3xl sm:text-4xl font-medium tracking-tight border-none shadow-none px-0 h-auto focus-visible:ring-0 bg-transparent max-w-md"
                 placeholder="Style name"
               />

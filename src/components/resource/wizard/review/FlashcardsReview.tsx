@@ -137,7 +137,7 @@ export function FlashcardsReview({
                 <button
                   type="button"
                   onClick={() => removeCard(index)}
-                  className="text-muted-foreground hover:text-red-500 cursor-pointer transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                  className="text-muted-foreground hover:text-destructive cursor-pointer transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
                   aria-label={`Remove card ${index + 1}`}
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />

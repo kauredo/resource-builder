@@ -84,8 +84,8 @@ export function DetailPageHeader({
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-serif text-2xl sm:text-3xl font-medium tracking-tight truncate">
             {resourceName}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>

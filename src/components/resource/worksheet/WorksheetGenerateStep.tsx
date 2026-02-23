@@ -129,7 +129,7 @@ export function WorksheetGenerateStep({
                         error:
                           error instanceof Error
                             ? error.message
-                            : "Unknown error",
+                            : "Generation failed — try again",
                       }
                     : it,
                 ),
@@ -322,7 +322,7 @@ export function WorksheetGenerateStep({
           />
         </div>
         {failedCount > 0 && (
-          <p className="text-xs text-red-600">
+          <p className="text-xs text-destructive">
             {failedCount} image{failedCount !== 1 ? "s" : ""} failed
           </p>
         )}
@@ -391,9 +391,9 @@ export function WorksheetGenerateStep({
                       )}
                       {item.status === "error" && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                          <AlertCircle className="size-8 text-red-400 mb-2" />
-                          <p className="text-xs text-red-600 line-clamp-2">
-                            {item.error || "Failed"}
+                          <AlertCircle className="size-8 text-destructive/60 mb-2" />
+                          <p className="text-xs text-destructive line-clamp-2">
+                            {item.error || "Generation failed"}
                           </p>
                         </div>
                       )}
