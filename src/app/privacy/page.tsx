@@ -4,7 +4,8 @@ import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Resource Builder",
-  description: "Privacy policy for Resource Builder.",
+  description:
+    "How Resource Builder protects your therapy materials, client data, and account information. AI image generation, data storage, and your rights.",
 };
 
 export default function PrivacyPage() {

@@ -4,7 +4,8 @@ import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Terms of Service | Resource Builder",
-  description: "Terms of service for Resource Builder.",
+  description:
+    "Terms of service for Resource Builder. Content ownership, AI-generated illustrations, free trial, and acceptable use for therapy professionals.",
 };
 
 export default function TermsPage() {

@@ -19,7 +19,10 @@ const plusJakarta = Plus_Jakarta_Sans({
 const siteUrl = "https://resource-builder-tawny.vercel.app";
 
 export const metadata: Metadata = {
-  title: "Resource Builder | Therapy Materials Made Beautiful",
+  title: {
+    default: "Resource Builder | Therapy Materials Made Beautiful",
+    template: "%s | Resource Builder",
+  },
   description:
     "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
   metadataBase: new URL(siteUrl),
@@ -65,6 +68,27 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "Resource Builder",
+              url: siteUrl,
+              description:
+                "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+              applicationCategory: "DesignApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+                description: "14-day free trial",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={`${fraunces.variable} ${plusJakarta.variable} font-sans antialiased`}
