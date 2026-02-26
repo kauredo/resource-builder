@@ -437,9 +437,12 @@ export const migratePresetsToShared = mutation({
     const allChars = await ctx.db.query("characters").collect();
     const allGroups = await ctx.db.query("characterGroups").collect();
 
+    // Fallback for orphaned presets (names no longer in PRESET_STYLES)
+    const fallbackSharedId = sharedPresets[0]?._id;
+
     for (const oldPreset of perUserPresets) {
-      const sharedId = sharedByName.get(oldPreset.name);
-      if (!sharedId) continue; // Unknown preset name, skip
+      const sharedId = sharedByName.get(oldPreset.name) ?? fallbackSharedId;
+      if (!sharedId) continue; // No shared presets exist at all
 
       const oldId = oldPreset._id;
 
