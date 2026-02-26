@@ -5,9 +5,6 @@ export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Password({
       reset: {
-        id: "password-reset",
-        type: "email" as const,
-        name: "Password Reset",
         maxAge: 60 * 60, // 1 hour
         async sendVerificationRequest({ identifier, token }) {
           const siteUrl = process.env.SITE_URL;
