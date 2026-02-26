@@ -60,12 +60,9 @@ function AhaSendReset(): EmailConfig {
   };
 }
 
-const resetProvider = AhaSendReset();
-
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
-    Password({ reset: resetProvider }),
-    resetProvider,
+    Password({ reset: AhaSendReset() }),
   ],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
