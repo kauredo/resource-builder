@@ -33,7 +33,7 @@ export const { auth, signIn, signOut, store } = convexAuth({
                 from: { email: emailFrom },
                 recipients: [{ email: identifier }],
                 subject: "Reset your password — Resource Builder",
-                html_body: `
+                html_content: `
                   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
                     <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Reset your password</h1>
                     <p style="font-size: 16px; color: #555; line-height: 1.5; margin-bottom: 24px;">
