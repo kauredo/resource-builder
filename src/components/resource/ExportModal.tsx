@@ -34,6 +34,8 @@ interface ExportModalProps {
   buildPdfBlob: () => Promise<Blob>;
   settingsPanel?: ReactNode;
   onDownloaded?: () => void;
+  /** Show a notice that the PDF includes a watermark (free plan) */
+  showWatermarkNotice?: boolean;
 }
 
 export function ExportModal({
@@ -43,6 +45,7 @@ export function ExportModal({
   buildPdfBlob,
   settingsPanel,
   onDownloaded,
+  showWatermarkNotice,
 }: ExportModalProps) {
   const [previewKey, setPreviewKey] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -84,6 +87,19 @@ export function ExportModal({
             Preview and download &ldquo;{resourceName}&rdquo;
           </DialogDescription>
         </DialogHeader>
+
+        {showWatermarkNotice && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Free plan exports include a subtle watermark.{" "}
+            <a
+              href="/dashboard/settings/billing"
+              className="font-medium underline underline-offset-2 hover:text-amber-950 transition-colors duration-150"
+            >
+              Upgrade to Pro
+            </a>{" "}
+            for clean exports.
+          </div>
+        )}
 
         <div
           className={`flex-1 min-h-0 ${settingsPanel ? "grid grid-cols-1 sm:grid-cols-[280px_1fr] gap-6" : ""}`}

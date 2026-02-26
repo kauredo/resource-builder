@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { FREE_LIMITS } from "./users";
 
 export const getUserCharacters = query({
   args: { userId: v.id("users") },
@@ -102,6 +103,20 @@ export const createCharacter = mutation({
     styleId: v.optional(v.id("styles")),
   },
   handler: async (ctx, args) => {
+    // Enforce free tier character limit
+    const user = await ctx.db.get(args.userId);
+    if (user && user.subscription !== "pro") {
+      const existingCharacters = await ctx.db
+        .query("characters")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect();
+      if (existingCharacters.length >= FREE_LIMITS.characters) {
+        throw new Error(
+          "LIMIT_REACHED:character:You've reached your free plan limit of 1 character. Upgrade to Pro for unlimited characters."
+        );
+      }
+    }
+
     const now = Date.now();
     return await ctx.db.insert("characters", {
       userId: args.userId,

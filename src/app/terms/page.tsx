@@ -5,7 +5,7 @@ import Image from "next/image";
 export const metadata: Metadata = {
   title: "Terms of Service | Resource Builder",
   description:
-    "Terms of service for Resource Builder. Content ownership, AI-generated illustrations, free trial, and acceptable use for therapy professionals.",
+    "Terms of service for Resource Builder. Content ownership, AI-generated illustrations, free plan, and acceptable use for therapy professionals.",
 };
 
 export default function TermsPage() {
@@ -45,9 +45,9 @@ export default function TermsPage() {
             You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. You must provide accurate information when creating an account.
           </p>
 
-          <h2>4. Free Trial</h2>
+          <h2>4. Free Plan & Subscriptions</h2>
           <p>
-            New accounts receive a 14-day free trial. After the trial period, continued access requires a paid subscription. We reserve the right to modify trial terms at any time.
+            Resource Builder offers a free plan with limited usage. Paid subscriptions unlock unlimited access. We reserve the right to modify plan terms and pricing at any time.
           </p>
 
           <h2>5. Content Ownership</h2>

@@ -134,7 +134,7 @@ export default function LoginPage() {
               href="/signup"
               className="text-foreground font-medium underline underline-offset-4 hover:text-coral transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
             >
-              Start free trial
+              Create free account
             </Link>
           </p>
         </CardFooter>

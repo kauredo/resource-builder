@@ -29,6 +29,7 @@ interface BookDetailProps {
 
 export function BookDetail({ resourceId }: BookDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<BookExportSettings>({ booklet: false });
   const [isDeleting, setIsDeleting] = useState(false);
@@ -75,6 +76,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
       content,
       assetMap,
       booklet: exportSettings.booklet,
+      watermark: user?.subscription !== "pro",
       style: style
         ? {
             colors: style.colors,
@@ -82,7 +84,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           }
         : undefined,
     });
-  }, [resource, assetMap, style, exportSettings]);
+  }, [resource, assetMap, style, exportSettings, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -392,6 +394,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         resourceName={`${resource.name || "book"}${exportSettings.booklet ? "-booklet" : ""}`}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
         settingsPanel={
           <BookSettings
             settings={exportSettings}

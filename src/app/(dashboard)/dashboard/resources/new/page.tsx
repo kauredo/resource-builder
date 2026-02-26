@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
+  ArrowUpRight,
   Layers,
   FileText,
   Grid3x3,
@@ -85,6 +89,8 @@ const RESOURCE_TYPES = [
 export default function NewResourcePage() {
   const searchParams = useSearchParams();
   const styleId = searchParams.get("styleId");
+  const limits = useQuery(api.users.getSubscriptionLimits);
+  const atLimit = limits?.subscription === "free" && !limits.canCreate.resource;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -97,7 +103,24 @@ export default function NewResourcePage() {
         </p>
       </header>
 
-      <div className="space-y-2">
+      {atLimit && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6">
+          <p className="text-sm text-amber-800 mb-3">
+            You&apos;ve used your {limits.limits.resourcesPerMonth} free resources this month. Upgrade to Pro for unlimited resources.
+          </p>
+          <Button asChild size="sm" className="bg-coral text-white hover:bg-coral/90 gap-1.5">
+            <Link href="/dashboard/settings/billing">
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+              Upgrade to Pro
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      <div
+        className={cn("space-y-2", atLimit && "opacity-50")}
+        {...(atLimit ? { "aria-disabled": true, inert: true } : {})}
+      >
         {RESOURCE_TYPES.map((type) => (
           <ResourceTypeRow key={type.id} type={type} styleId={styleId} />
         ))}

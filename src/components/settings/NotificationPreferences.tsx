@@ -8,13 +8,13 @@ const STORAGE_KEY = "rb-notification-prefs";
 
 interface Preferences {
   resourceComplete: boolean;
-  trialReminders: boolean;
+  usageReminders: boolean;
   tips: boolean;
 }
 
 const defaults: Preferences = {
   resourceComplete: true,
-  trialReminders: true,
+  usageReminders: true,
   tips: true,
 };
 
@@ -61,16 +61,16 @@ export function NotificationPreferences() {
 
         <div className="flex items-start gap-3">
           <Checkbox
-            id="notif-trial"
-            checked={prefs.trialReminders}
-            onCheckedChange={(v) => update("trialReminders", v === true)}
+            id="notif-usage"
+            checked={prefs.usageReminders}
+            onCheckedChange={(v) => update("usageReminders", v === true)}
           />
           <div className="space-y-0.5">
-            <Label htmlFor="notif-trial" className="text-sm font-medium">
-              Trial reminders
+            <Label htmlFor="notif-usage" className="text-sm font-medium">
+              Usage reminders
             </Label>
             <p className="text-xs text-muted-foreground">
-              Reminders about your trial status.
+              Alerts when approaching free tier limits.
             </p>
           </div>
         </div>

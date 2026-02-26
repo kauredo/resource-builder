@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/dashboard/", "/api/"],
       },
     ],
-    sitemap: "https://resource-builder-tawny.vercel.app/sitemap.xml",
+    sitemap: "https://resourcebuilder.app/sitemap.xml",
   };
 }

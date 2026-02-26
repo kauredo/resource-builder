@@ -20,6 +20,7 @@ import {
 } from "@react-pdf/renderer";
 import { createElement, type ReactNode } from "react";
 import { registerFont, getPDFFontFamily } from "./pdf-fonts";
+import { createWatermarkOverlay } from "./pdf-watermark";
 import type {
   CardGameContent,
   CardGameCardEntry,
@@ -34,6 +35,7 @@ interface CardGamePDFOptions {
   assetMap: Map<string, string>;
   cardsPerPage?: 4 | 6 | 9;
   includeCardBacks?: boolean;
+  watermark?: boolean;
 }
 
 const A4_WIDTH = 595.28;
@@ -329,6 +331,7 @@ export async function generateCardGamePDF({
   assetMap,
   cardsPerPage = 9,
   includeCardBacks = false,
+  watermark,
 }: CardGamePDFOptions): Promise<Blob> {
   // Register the font
   const fontName = content.textSettings.fontFamily;
@@ -382,6 +385,7 @@ export async function generateCardGamePDF({
           },
           ...cardElements,
         ),
+        watermark ? createWatermarkOverlay() : null,
       ),
     );
 
@@ -431,6 +435,7 @@ export async function generateCardGamePDF({
             },
             ...backElements,
           ),
+          watermark ? createWatermarkOverlay() : null,
         ),
       );
     }

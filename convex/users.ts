@@ -2,6 +2,15 @@ import { v } from "convex/values";
 import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+// Free tier limits
+export const FREE_LIMITS = { styles: 1, characters: 1, resourcesPerMonth: 2 };
+
+// Get the start of the current calendar month (UTC)
+export function getMonthStart(now: number): number {
+  const d = new Date(now);
+  return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+}
+
 // Helper: resolve authenticated user from context
 async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   const authUserId = await getAuthUserId(ctx);
@@ -82,15 +91,10 @@ export const createUser = mutation({
       return existingUser._id;
     }
 
-    // Create new user with 14-day trial
-    const trialDays = 14;
-    const trialEndsAt = Date.now() + trialDays * 24 * 60 * 60 * 1000;
-
     return await ctx.db.insert("users", {
       email: args.email,
       name: args.name,
-      subscription: "trial",
-      trialEndsAt,
+      subscription: "free",
       createdAt: Date.now(),
     });
   },
@@ -128,15 +132,10 @@ export const ensureUser = mutation({
       return existingUser._id;
     }
 
-    // Create new user with 14-day trial
-    const trialDays = 14;
-    const trialEndsAt = Date.now() + trialDays * 24 * 60 * 60 * 1000;
-
     return await ctx.db.insert("users", {
       email,
       name: args.name,
-      subscription: "trial",
-      trialEndsAt,
+      subscription: "free",
       createdAt: Date.now(),
     });
   },
@@ -182,16 +181,38 @@ export const updateUserName = mutation({
 export const updateSubscription = mutation({
   args: {
     userId: v.id("users"),
-    subscription: v.union(
-      v.literal("trial"),
-      v.literal("active"),
-      v.literal("expired")
-    ),
-    stripeCustomerId: v.optional(v.string()),
+    subscription: v.union(v.literal("free"), v.literal("pro")),
   },
   handler: async (ctx, args) => {
-    const { userId, ...updates } = args;
-    await ctx.db.patch(userId, updates);
+    const { userId, subscription } = args;
+    await ctx.db.patch(userId, { subscription });
+  },
+});
+
+// Called by the Dodo Payments webhook handler to activate/deactivate subscriptions.
+// Looks up user by email to update their subscription status.
+export const handleSubscriptionWebhook = mutation({
+  args: {
+    email: v.string(),
+    dodoCustomerId: v.string(),
+    dodoSubscriptionId: v.string(),
+    status: v.union(v.literal("pro"), v.literal("free")),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    if (!user) {
+      console.error(`Webhook: no user found for email ${args.email}`);
+      return;
+    }
+
+    await ctx.db.patch(user._id, {
+      subscription: args.status,
+      dodoCustomerId: args.dodoCustomerId,
+      dodoSubscriptionId: args.dodoSubscriptionId,
+    });
   },
 });
 
@@ -317,6 +338,61 @@ export const generateAvatarUploadUrl = mutation({
   handler: async (ctx) => {
     await requireAuthenticatedUser(ctx);
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Get subscription limits and current usage for the authenticated user
+export const getSubscriptionLimits = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    if (!user) return null;
+
+    if (user.subscription === "pro") {
+      return {
+        subscription: "pro" as const,
+        limits: { styles: Infinity, characters: Infinity, resourcesPerMonth: Infinity },
+        usage: { styles: 0, characters: 0, resourcesThisMonth: 0 },
+        canCreate: { style: true, character: true, resource: true },
+      };
+    }
+
+    // Count custom (non-preset) styles
+    const allStyles = await ctx.db
+      .query("styles")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const customStyleCount = allStyles.filter((s) => !s.isPreset).length;
+
+    // Count characters
+    const allCharacters = await ctx.db
+      .query("characters")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const characterCount = allCharacters.length;
+
+    // Monthly resource count
+    const now = Date.now();
+    const monthStart = getMonthStart(now);
+    let resourcesThisMonth = user.resourcesCreatedThisMonth ?? 0;
+    if (!user.monthResetAt || user.monthResetAt < monthStart) {
+      resourcesThisMonth = 0;
+    }
+
+    return {
+      subscription: "free" as const,
+      limits: FREE_LIMITS,
+      usage: {
+        styles: customStyleCount,
+        characters: characterCount,
+        resourcesThisMonth,
+      },
+      canCreate: {
+        style: customStyleCount < FREE_LIMITS.styles,
+        character: characterCount < FREE_LIMITS.characters,
+        resource: resourcesThisMonth < FREE_LIMITS.resourcesPerMonth,
+      },
+    };
   },
 });
 

@@ -54,6 +54,7 @@ interface EmotionCardsDetailProps {
 
 export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<EmotionCardsExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -164,8 +165,9 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
       options,
       styleOptions,
       frameOptions,
+      { watermark: user?.subscription !== "pro" },
     );
-  }, [resource, assetImageMap, style, exportSettings]);
+  }, [resource, assetImageMap, style, exportSettings, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -443,6 +445,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
         resourceName={resource.name || "emotion-cards"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
         settingsPanel={
           exportSettings && (
             <EmotionCardsSettings

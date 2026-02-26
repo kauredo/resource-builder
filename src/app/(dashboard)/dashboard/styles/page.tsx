@@ -10,8 +10,10 @@ import { SortDropdown } from "@/components/ui/sort-dropdown";
 import { StyleCard } from "@/components/style/StyleCard";
 import { STYLE_PRESETS } from "@/lib/style-presets";
 import { useListFilters } from "@/hooks/use-list-filters";
-import { Plus, Palette, Search, X } from "lucide-react";
+import { Plus, Palette, Search, X, ArrowUpRight } from "lucide-react";
 import type { StyleFrames } from "@/types";
+import { toast } from "sonner";
+import Link from "next/link";
 
 type TypeFilter = "all" | "presets" | "custom";
 type SortOption = "newest" | "oldest" | "name-asc" | "name-desc";
@@ -39,6 +41,7 @@ export default function StylesPage() {
     user?._id ? { userId: user._id } : "skip",
   );
   const styles = stylesWithSummaries;
+  const limits = useQuery(api.users.getSubscriptionLimits);
   const createStyle = useMutation(api.styles.createStyle);
 
   const {
@@ -132,7 +135,19 @@ export default function StylesPage() {
       });
       router.push(`/dashboard/styles/${newStyleId}`);
     } catch (error) {
-      console.error("Failed to create style:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("LIMIT_REACHED:")) {
+        const parts = message.split(":");
+        const humanMessage = parts.slice(2).join(":");
+        toast.error(humanMessage, {
+          action: {
+            label: "Upgrade",
+            onClick: () => { window.location.href = "/dashboard/settings/billing"; },
+          },
+        });
+      } else {
+        console.error("Failed to create style:", error);
+      }
       setIsCreating(false);
     }
   };
@@ -199,14 +214,23 @@ export default function StylesPage() {
         <h1 className="font-serif text-4xl font-medium tracking-tight">
           Styles
         </h1>
-        <Button
-          onClick={handleCreateStyle}
-          disabled={isCreating}
-          className="btn-coral gap-2"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {isCreating ? "Creating..." : "Create Style"}
-        </Button>
+        {limits && !limits.canCreate.style ? (
+          <Button asChild variant="outline" className="gap-2 cursor-pointer">
+            <Link href="/dashboard/settings/billing">
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+              Upgrade to create more
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            onClick={handleCreateStyle}
+            disabled={isCreating}
+            className="btn-coral gap-2"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {isCreating ? "Creating..." : "Create Style"}
+          </Button>
+        )}
       </div>
 
       {/* Search, Filter, and Sort Controls */}
@@ -313,14 +337,23 @@ export default function StylesPage() {
               Define the colors, typography, and visual style that make your
               therapy resources uniquely yours.
             </p>
-            <Button
-              onClick={handleCreateStyle}
-              disabled={isCreating}
-              className="btn-coral gap-2"
-            >
-              <Plus className="size-4" aria-hidden="true" />
-              {isCreating ? "Creating..." : "Create Your First Style"}
-            </Button>
+            {limits && !limits.canCreate.style ? (
+              <Button asChild variant="outline" className="gap-2 cursor-pointer">
+                <Link href="/dashboard/settings/billing">
+                  <ArrowUpRight className="size-4" aria-hidden="true" />
+                  Upgrade to create a style
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleCreateStyle}
+                disabled={isCreating}
+                className="btn-coral gap-2"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                {isCreating ? "Creating..." : "Create Your First Style"}
+              </Button>
+            )}
           </div>
         </div>
       )}

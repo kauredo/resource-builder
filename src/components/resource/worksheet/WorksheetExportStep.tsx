@@ -17,6 +17,7 @@ interface WorksheetExportStepProps {
 export function WorksheetExportStep({ state }: WorksheetExportStepProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exported, setExported] = useState(false);
+  const user = useQuery(api.users.currentUser);
   const updateResource = useMutation(api.resources.updateResource);
 
   const assets = useQuery(
@@ -53,8 +54,9 @@ export function WorksheetExportStep({ state }: WorksheetExportStepProps) {
         : undefined,
       assetMap,
       orientation: state.orientation,
+      watermark: user?.subscription !== "pro",
     });
-  }, [assets, state.title, state.blocks, state.creationMode, state.orientation, state.stylePreset]);
+  }, [assets, state.title, state.blocks, state.creationMode, state.orientation, state.stylePreset, user?.subscription]);
 
   const handleExport = async () => {
     if (!state.resourceId) return;

@@ -16,7 +16,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const siteUrl = "https://resource-builder-tawny.vercel.app";
+const siteUrl = "https://resourcebuilder.app";
 
 export const metadata: Metadata = {
   title: {
@@ -84,7 +84,7 @@ export default function RootLayout({
                 "@type": "Offer",
                 price: "0",
                 priceCurrency: "USD",
-                description: "14-day free trial",
+                description: "Free plan available",
               },
             }),
           }}

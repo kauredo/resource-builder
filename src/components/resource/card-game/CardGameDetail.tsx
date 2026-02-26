@@ -30,6 +30,7 @@ interface CardGameDetailProps {
 
 export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<CardGameExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -69,8 +70,9 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
       assetMap,
       cardsPerPage: exportSettings?.cardsPerPage ?? 9,
       includeCardBacks: exportSettings?.includeCardBacks ?? !!content.cardBack,
+      watermark: user?.subscription !== "pro",
     });
-  }, [resource, assetMap, exportSettings]);
+  }, [resource, assetMap, exportSettings, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -142,6 +144,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
         resourceName={resource.name || "card-game"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
         settingsPanel={
           exportSettings && (
             <CardGameSettings

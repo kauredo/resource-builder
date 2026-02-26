@@ -9,12 +9,14 @@
 import { Document, Page, View, Image, Text, pdf } from "@react-pdf/renderer";
 import { createElement, type ReactNode } from "react";
 import { registerFont, getPDFFontFamily } from "./pdf-fonts";
+import { createWatermarkOverlay } from "./pdf-watermark";
 
 export interface FlashcardsPDFInput {
   cards: Array<{ frontText: string; backText: string; imageUrl?: string }>;
   cardsPerPage?: 4 | 6 | 9;
   bodyFont?: string;
   headingFont?: string;
+  watermark?: boolean;
 }
 
 const A4_WIDTH = 595.28;
@@ -37,6 +39,7 @@ export async function generateFlashcardsPDF({
   cardsPerPage = 6,
   bodyFont,
   headingFont,
+  watermark,
 }: FlashcardsPDFInput): Promise<Blob> {
   // Register fonts
   const bodyFamily = bodyFont ? (registerFont(bodyFont), getPDFFontFamily(bodyFont)) : "Helvetica";
@@ -159,6 +162,7 @@ export async function generateFlashcardsPDF({
           },
           ...frontElements,
         ),
+        watermark ? createWatermarkOverlay() : null,
       ),
     );
 
@@ -227,6 +231,7 @@ export async function generateFlashcardsPDF({
           },
           ...backElements,
         ),
+        watermark ? createWatermarkOverlay() : null,
       ),
     );
   }

@@ -17,6 +17,7 @@ interface BookExportStepProps {
 export function BookExportStep({ state }: BookExportStepProps) {
   const [isExporting, setIsExporting] = useState<"book" | "booklet" | null>(null);
   const [exported, setExported] = useState(false);
+  const user = useQuery(api.users.currentUser);
   const updateResource = useMutation(api.resources.updateResource);
 
   const assets = useQuery(
@@ -53,8 +54,9 @@ export function BookExportStep({ state }: BookExportStepProps) {
             typography: state.stylePreset.typography,
           }
         : undefined,
+      watermark: user?.subscription !== "pro",
     });
-  }, [assets, state.bookType, state.layout, state.hasCover, state.cover, state.pages, state.stylePreset]);
+  }, [assets, state.bookType, state.layout, state.hasCover, state.cover, state.pages, state.stylePreset, user?.subscription]);
 
   const handleExport = useCallback(async (booklet?: boolean) => {
     if (!assets || !state.resourceId) return;

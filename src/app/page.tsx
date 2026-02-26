@@ -222,7 +222,7 @@ export default function Home() {
                   </Button>
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  14-day free trial · No credit card required
+                  Free forever · Upgrade anytime
                 </p>
               </div>
 
@@ -535,7 +535,7 @@ export default function Home() {
           <div className="max-w-2xl mx-auto text-center">
             <h2 id="cta-heading">Ready to create something beautiful?</h2>
             <p className="mt-4 text-lg text-muted-foreground mb-8">
-              Start your free trial today. Create your first deck in minutes.
+              Start creating — it&apos;s free. Create your first deck in minutes.
             </p>
             <Button size="lg" className="btn-coral h-12 px-8 text-base" asChild>
               <Link href="/signup">Start creating — it&apos;s free</Link>

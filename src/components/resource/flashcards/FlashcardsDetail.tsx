@@ -28,6 +28,7 @@ interface FlashcardsDetailProps {
 
 export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<FlashcardsExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -73,8 +74,9 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
       cardsPerPage: exportSettings?.cardsPerPage ?? content.layout?.cardsPerPage ?? 6,
       bodyFont: style?.typography?.bodyFont,
       headingFont: style?.typography?.headingFont,
+      watermark: user?.subscription !== "pro",
     });
-  }, [resource, assetMap, style, exportSettings]);
+  }, [resource, assetMap, style, exportSettings, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -244,6 +246,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
         resourceName={resource.name || "flashcards"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
         settingsPanel={
           exportSettings && (
             <FlashcardsSettings

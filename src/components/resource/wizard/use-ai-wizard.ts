@@ -492,6 +492,20 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
       }
 
       setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS - 1));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("LIMIT_REACHED:")) {
+        const parts = message.split(":");
+        const humanMessage = parts.slice(2).join(":");
+        toast.error(humanMessage, {
+          action: {
+            label: "Upgrade",
+            onClick: () => { window.location.href = "/dashboard/settings/billing"; },
+          },
+        });
+      } else {
+        throw error;
+      }
     } finally {
       setIsNavigating(false);
     }

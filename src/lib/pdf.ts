@@ -18,6 +18,7 @@ import {
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
 import { calculateCardLayout, DEFAULT_CARD_LAYOUT } from "./card-layout";
+import { createWatermarkOverlay } from "./pdf-watermark";
 import type { CardLayoutSettings } from "@/types";
 
 export interface PDFLayoutOptions {
@@ -498,6 +499,7 @@ function CardPage({
   cardWidth,
   cardHeight,
   borderColor,
+  watermark,
 }: {
   cards: EmotionCardData[];
   styles: ReturnType<typeof createStyles>["styles"];
@@ -509,6 +511,7 @@ function CardPage({
   cardWidth: number;
   cardHeight: number;
   borderColor: string;
+  watermark?: boolean;
 }) {
   return createElement(
     Page,
@@ -532,6 +535,7 @@ function CardPage({
         }),
       ),
     ),
+    watermark ? createWatermarkOverlay() : null,
   );
 }
 
@@ -548,6 +552,7 @@ export async function generateEmotionCardsPDF(
   options: PDFLayoutOptions,
   style?: PDFStyleOptions,
   frames?: PDFFrameOptions,
+  { watermark }: { watermark?: boolean } = {},
 ): Promise<Blob> {
   // Merge with defaults
   const effectiveStyle = style
@@ -612,6 +617,7 @@ export async function generateEmotionCardsPDF(
         cardWidth,
         cardHeight,
         borderColor,
+        watermark,
       }),
     ),
   );
@@ -628,7 +634,8 @@ export async function generateEmotionCardsPDFDataUrl(
   options: PDFLayoutOptions,
   style?: PDFStyleOptions,
   frames?: PDFFrameOptions,
+  opts?: { watermark?: boolean },
 ): Promise<string> {
-  const blob = await generateEmotionCardsPDF(cards, options, style, frames);
+  const blob = await generateEmotionCardsPDF(cards, options, style, frames, opts);
   return URL.createObjectURL(blob);
 }

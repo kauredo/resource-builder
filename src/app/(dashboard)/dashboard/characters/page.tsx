@@ -10,8 +10,10 @@ import { SortDropdown } from "@/components/ui/sort-dropdown";
 import { CharacterCard } from "@/components/character/CharacterCard";
 import { GroupCard } from "@/components/character/GroupCard";
 import { CreateGroupDialog } from "@/components/character/CreateGroupDialog";
-import { Plus, Users, Search, X } from "lucide-react";
+import { Plus, Users, Search, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import Link from "next/link";
 
 type SortOption = "newest" | "oldest" | "name-asc" | "name-desc";
 type TabValue = "characters" | "groups";
@@ -37,6 +39,7 @@ export default function CharactersPage() {
     api.characterGroups.getUserGroupsWithThumbnails,
     user?._id ? { userId: user._id } : "skip"
   );
+  const limits = useQuery(api.users.getSubscriptionLimits);
   const createCharacter = useMutation(api.characters.createCharacter);
 
   // Initialize state from URL params
@@ -180,7 +183,19 @@ export default function CharactersPage() {
       });
       router.push(`/dashboard/characters/${newCharacterId}`);
     } catch (error) {
-      console.error("Failed to create character:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("LIMIT_REACHED:")) {
+        const parts = message.split(":");
+        const humanMessage = parts.slice(2).join(":");
+        toast.error(humanMessage, {
+          action: {
+            label: "Upgrade",
+            onClick: () => { window.location.href = "/dashboard/settings/billing"; },
+          },
+        });
+      } else {
+        console.error("Failed to create character:", error);
+      }
       setIsCreating(false);
     }
   };
@@ -241,6 +256,13 @@ export default function CharactersPage() {
             >
               <Plus className="size-4" aria-hidden="true" />
               Create Group
+            </Button>
+          ) : limits && !limits.canCreate.character ? (
+            <Button asChild variant="outline" className="gap-2 cursor-pointer">
+              <Link href="/dashboard/settings/billing">
+                <ArrowUpRight className="size-4" aria-hidden="true" />
+                Upgrade to create more
+              </Link>
             </Button>
           ) : (
             <Button
@@ -392,14 +414,23 @@ export default function CharactersPage() {
                   Create characters that appear consistently across your therapy
                   resources. Define their look once, use them everywhere.
                 </p>
-                <Button
-                  onClick={handleCreateCharacter}
-                  disabled={isCreating}
-                  className="btn-coral gap-2"
-                >
-                  <Plus className="size-4" aria-hidden="true" />
-                  Create Your First Character
-                </Button>
+                {limits && !limits.canCreate.character ? (
+                  <Button asChild variant="outline" className="gap-2 cursor-pointer">
+                    <Link href="/dashboard/settings/billing">
+                      <ArrowUpRight className="size-4" aria-hidden="true" />
+                      Upgrade to create a character
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleCreateCharacter}
+                    disabled={isCreating}
+                    className="btn-coral gap-2"
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    Create Your First Character
+                  </Button>
+                )}
               </div>
             </div>
           )}

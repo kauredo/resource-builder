@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { FREE_LIMITS } from "./users";
 
 // Style presets - same as in src/lib/style-presets.ts
 // Duplicated here because Convex backend can't import from src/
@@ -122,6 +123,23 @@ export const createStyle = mutation({
     illustrationStyle: v.string(),
   },
   handler: async (ctx, args) => {
+    // Enforce free tier limit for custom (non-preset) styles
+    if (!args.isPreset) {
+      const user = await ctx.db.get(args.userId);
+      if (user && user.subscription !== "pro") {
+        const existingStyles = await ctx.db
+          .query("styles")
+          .withIndex("by_user", (q) => q.eq("userId", args.userId))
+          .collect();
+        const customCount = existingStyles.filter((s) => !s.isPreset).length;
+        if (customCount >= FREE_LIMITS.styles) {
+          throw new Error(
+            "LIMIT_REACHED:style:You've reached your free plan limit of 1 custom style. Upgrade to Pro for unlimited styles."
+          );
+        }
+      }
+    }
+
     return await ctx.db.insert("styles", {
       ...args,
       createdAt: Date.now(),
@@ -311,6 +329,21 @@ export const duplicateStyle = mutation({
     const original = await ctx.db.get(args.styleId);
     if (!original) {
       throw new Error("Style not found");
+    }
+
+    // Enforce free tier limit (duplicated styles are always custom)
+    const user = await ctx.db.get(original.userId);
+    if (user && user.subscription !== "pro") {
+      const existingStyles = await ctx.db
+        .query("styles")
+        .withIndex("by_user", (q) => q.eq("userId", original.userId))
+        .collect();
+      const customCount = existingStyles.filter((s) => !s.isPreset).length;
+      if (customCount >= FREE_LIMITS.styles) {
+        throw new Error(
+          "LIMIT_REACHED:style:You've reached your free plan limit of 1 custom style. Upgrade to Pro for unlimited styles."
+        );
+      }
     }
 
     // Create a copy without frames (they need to be regenerated)

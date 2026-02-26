@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CharacterCard } from "@/components/character/CharacterCard";
 import { Plus, Loader2, Users } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 interface StyleCharactersProps {
   styleId: Id<"styles">;
@@ -30,7 +31,19 @@ export function StyleCharacters({ styleId, userId }: StyleCharactersProps) {
       });
       router.push(`/dashboard/characters/${characterId}`);
     } catch (error) {
-      console.error("Failed to create character:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("LIMIT_REACHED:")) {
+        const parts = message.split(":");
+        const humanMessage = parts.slice(2).join(":");
+        toast.error(humanMessage, {
+          action: {
+            label: "Upgrade",
+            onClick: () => { window.location.href = "/dashboard/settings/billing"; },
+          },
+        });
+      } else {
+        console.error("Failed to create character:", error);
+      }
       setIsCreating(false);
     }
   };

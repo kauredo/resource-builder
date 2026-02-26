@@ -185,7 +185,7 @@ export type ResourceType =
   | "flashcards"
   | "book";
 
-export type SubscriptionStatus = "trial" | "active" | "expired";
+export type SubscriptionStatus = "free" | "pro";
 
 export type ResourceStatus = "draft" | "complete";
 

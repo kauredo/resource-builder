@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const baseUrl = "https://resource-builder-tawny.vercel.app";
+const baseUrl = "https://resourcebuilder.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

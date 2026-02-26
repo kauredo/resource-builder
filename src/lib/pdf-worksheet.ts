@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, Image, pdf } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
+import { createWatermarkOverlay } from "./pdf-watermark";
 import type { WorksheetBlock, WorksheetContent } from "@/types";
 
 interface WorksheetPDFOptions {
@@ -24,6 +25,7 @@ interface WorksheetPDFOptions {
   assetMap?: Map<string, string>;
   /** Page orientation — defaults to portrait */
   orientation?: "portrait" | "landscape";
+  watermark?: boolean;
 }
 
 const DEFAULT_STYLE = {
@@ -297,6 +299,7 @@ export async function generateWorksheetPDF({
   headerImageUrl,
   assetMap,
   orientation,
+  watermark,
 }: WorksheetPDFOptions): Promise<Blob> {
   const effectiveStyle = style
     ? {
@@ -647,6 +650,7 @@ export async function generateWorksheetPDF({
           renderBlock(block, styles, assetMap),
         ),
       ),
+      watermark ? createWatermarkOverlay() : null,
     ),
   );
 

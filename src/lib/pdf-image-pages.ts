@@ -11,6 +11,7 @@
 
 import { Document, Page, View, Image, pdf } from "@react-pdf/renderer";
 import { createElement, type ReactNode } from "react";
+import { createWatermarkOverlay } from "./pdf-watermark";
 
 interface ImagePagesPDFInput {
   images: string[];
@@ -18,6 +19,7 @@ interface ImagePagesPDFInput {
   cardsPerPage?: 4 | 6 | 9;
   /** If true, insert a blank back-page after each front page (for double-sided printing) */
   interleaveBackPages?: boolean;
+  watermark?: boolean;
 }
 
 const A4_WIDTH = 595.28;
@@ -40,6 +42,7 @@ export async function generateImagePagesPDF({
   layout,
   cardsPerPage = 6,
   interleaveBackPages = false,
+  watermark,
 }: ImagePagesPDFInput): Promise<Blob> {
   const pages: ReactNode[] = [];
 
@@ -72,6 +75,7 @@ export async function generateImagePagesPDF({
               },
             }),
           ),
+          watermark ? createWatermarkOverlay() : null,
         ),
       );
     }
@@ -132,6 +136,7 @@ export async function generateImagePagesPDF({
             },
             ...cardElements,
           ),
+          watermark ? createWatermarkOverlay() : null,
         ),
       );
 

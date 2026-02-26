@@ -11,7 +11,6 @@ import {
   Plus,
   Palette,
   FileStack,
-  Clock,
   ArrowRight,
 } from "lucide-react";
 import type { StyleFrames } from "@/types";
@@ -27,13 +26,7 @@ export default function DashboardPage() {
     user?._id ? { userId: user._id, limit: 6 } : "skip"
   );
 
-  // Calculate trial days remaining
-  const trialDaysRemaining = user?.trialEndsAt
-    ? Math.max(
-        0,
-        Math.ceil((user.trialEndsAt - Date.now()) / (1000 * 60 * 60 * 24))
-      )
-    : 0;
+  const limits = useQuery(api.users.getSubscriptionLimits);
 
   const isResourcesLoading = resources === undefined;
   const hasResources = (resources?.length ?? 0) > 0;
@@ -58,12 +51,11 @@ export default function DashboardPage() {
           <p className="text-lg text-muted-foreground">
             What will you create today?
           </p>
-          {/* Trial status - subtle inline mention */}
-          {user?.subscription === "trial" && trialDaysRemaining > 0 && (
+          {/* Free tier usage indicator */}
+          {limits?.subscription === "free" && (
             <p className="mt-2 text-sm text-muted-foreground">
-              <Clock className="size-3.5 inline-block mr-1.5 text-muted-foreground/70" aria-hidden="true" />
-              <span>{trialDaysRemaining} days left in trial</span>
-              <span className="mx-1.5" aria-hidden="true">·</span>
+              <span>{limits.usage.resourcesThisMonth}/{limits.limits.resourcesPerMonth} resources this month</span>
+              <span className="mx-1.5" aria-hidden="true">&middot;</span>
               <Link
                 href="/dashboard/settings/billing"
                 className="text-coral hover:underline underline-offset-4 transition-colors duration-150 motion-reduce:transition-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"

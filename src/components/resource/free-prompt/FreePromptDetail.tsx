@@ -24,6 +24,7 @@ interface FreePromptDetailProps {
 
 export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -51,8 +52,9 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
     return generateImagePagesPDF({
       images: [asset.currentVersion.url],
       layout: "full_page",
+      watermark: user?.subscription !== "pro",
     });
-  }, [asset]);
+  }, [asset, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -167,6 +169,7 @@ export function FreePromptDetail({ resourceId }: FreePromptDetailProps) {
         resourceName={resource.name || "free-prompt"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
       />
 
       {imageUrl && (

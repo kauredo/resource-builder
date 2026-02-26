@@ -14,6 +14,7 @@
 import { Document, Page, View, Text, Image, pdf } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { getPDFFontFamily, registerFonts } from "./pdf-fonts";
+import { createWatermarkOverlay } from "./pdf-watermark";
 import type { BookContent, BookPage, BookCover } from "@/types";
 
 interface BookPDFOptions {
@@ -21,6 +22,7 @@ interface BookPDFOptions {
   assetMap: Map<string, string>;
   /** Export as saddle-stitch booklet (landscape A4, two pages per sheet) */
   booklet?: boolean;
+  watermark?: boolean;
   style?: {
     colors: {
       primary: string;
@@ -67,6 +69,7 @@ export async function generateBookPDF({
   content,
   assetMap,
   booklet,
+  watermark,
   style,
 }: BookPDFOptions): Promise<Blob> {
   const effectiveStyle = style
@@ -97,7 +100,7 @@ export async function generateBookPDF({
 
   // Booklet uses a completely different rendering path
   if (booklet) {
-    return generateBookletLayout(content, assetMap, fontOpts);
+    return generateBookletLayout(content, assetMap, fontOpts, watermark);
   }
 
   const isPictureBook = content.layout === "picture_book";
@@ -113,6 +116,7 @@ export async function generateBookPDF({
         ...fontOpts,
         usableWidth,
         usableHeight,
+        watermark,
       }),
     );
   }
@@ -126,6 +130,7 @@ export async function generateBookPDF({
         usableWidth,
         usableHeight,
         hasCover: !!content.cover,
+        watermark,
       }),
     );
   });
@@ -143,6 +148,7 @@ function renderCoverPage(
     colors: typeof DEFAULT_STYLE.colors;
     usableWidth: number;
     usableHeight: number;
+    watermark?: boolean;
   },
 ) {
   const coverUrl = cover.imageAssetKey
@@ -222,6 +228,7 @@ function renderCoverPage(
       },
     },
     ...children,
+    opts.watermark ? createWatermarkOverlay() : null,
   );
 }
 
@@ -238,6 +245,7 @@ function renderContentPage(
     usableWidth: number;
     usableHeight: number;
     hasCover: boolean;
+    watermark?: boolean;
   },
 ) {
   const imageUrl = page.imageAssetKey
@@ -427,6 +435,7 @@ function renderContentPage(
       },
     },
     ...children,
+    opts.watermark ? createWatermarkOverlay() : null,
   );
 }
 
@@ -483,6 +492,7 @@ async function generateBookletLayout(
   content: BookContent,
   assetMap: Map<string, string>,
   fontOpts: FontOpts,
+  watermark?: boolean,
 ): Promise<Blob> {
   // Build linear list of book slots: cover (if any) + pages
   const slots: BookSlot[] = [];
@@ -540,6 +550,7 @@ async function generateBookletLayout(
       }),
       // Right half
       rightContent,
+      watermark ? createWatermarkOverlay() : null,
     );
   });
 

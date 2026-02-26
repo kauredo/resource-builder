@@ -37,6 +37,7 @@ function formatResourceType(type: string): string {
 export function WizardExportStep({ state }: WizardExportStepProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exported, setExported] = useState(false);
+  const user = useQuery(api.users.currentUser);
   const updateResource = useMutation(api.resources.updateResource);
 
   // Fetch all assets to get image URLs
@@ -63,6 +64,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
         assetMap,
         cardsPerPage: 9,
         includeCardBacks: !!(state.generatedContent as Record<string, unknown>).cardBack,
+        watermark: user?.subscription !== "pro",
       });
     }
 
@@ -84,8 +86,9 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
       images: imageUrls,
       layout,
       cardsPerPage: layout === "grid" ? 9 : undefined,
+      watermark: user?.subscription !== "pro",
     });
-  }, [assets, state.resourceType, state.generatedContent, state.imageItems]);
+  }, [assets, state.resourceType, state.generatedContent, state.imageItems, user?.subscription]);
 
   const handleExport = async () => {
     if (!assets || !state.resourceId) return;

@@ -7,13 +7,12 @@ export default defineSchema({
   users: defineTable({
     email: v.string(),
     name: v.string(),
-    subscription: v.union(
-      v.literal("trial"),
-      v.literal("active"),
-      v.literal("expired"),
-    ),
-    trialEndsAt: v.optional(v.number()),
-    stripeCustomerId: v.optional(v.string()),
+    subscription: v.union(v.literal("free"), v.literal("pro")),
+    dodoCustomerId: v.optional(v.string()),
+    dodoSubscriptionId: v.optional(v.string()),
+    // Monthly resource creation tracking (stored counter for O(1) checks)
+    resourcesCreatedThisMonth: v.optional(v.number()),
+    monthResetAt: v.optional(v.number()),
     createdAt: v.number(),
     // Onboarding tracking
     onboardingCompleted: v.optional(v.boolean()),

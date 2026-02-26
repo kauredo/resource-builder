@@ -24,6 +24,7 @@ interface BoardGameDetailProps {
 
 export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -51,8 +52,9 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
     return generateImagePagesPDF({
       images: [boardAsset.currentVersion.url],
       layout: "full_page",
+      watermark: user?.subscription !== "pro",
     });
-  }, [boardAsset]);
+  }, [boardAsset, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -173,6 +175,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
         resourceName={resource.name || "board-game"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
       />
 
       {boardAsset?.currentVersion?.url && (

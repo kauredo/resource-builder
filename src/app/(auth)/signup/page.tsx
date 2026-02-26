@@ -69,7 +69,7 @@ export default function SignupPage() {
           Start creating
         </CardTitle>
         <CardDescription className="text-base">
-          14 days free, no credit card required
+          Free forever, no credit card required
         </CardDescription>
       </CardHeader>
 

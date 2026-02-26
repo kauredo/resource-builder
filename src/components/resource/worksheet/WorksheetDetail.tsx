@@ -29,6 +29,7 @@ interface WorksheetDetailProps {
 
 export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const router = useRouter();
+  const user = useQuery(api.users.currentUser);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportSettings, setExportSettings] = useState<WorksheetExportSettings | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -80,8 +81,9 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
       headerImageUrl,
       assetMap,
       orientation: exportSettings?.orientation ?? content.orientation,
+      watermark: user?.subscription !== "pro",
     });
-  }, [resource, assets, assetMap, style, exportSettings]);
+  }, [resource, assets, assetMap, style, exportSettings, user?.subscription]);
 
   const handleDownloaded = useCallback(async () => {
     if (resource?.status === "draft") {
@@ -203,6 +205,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
         resourceName={resource.name || "worksheet"}
         buildPdfBlob={buildPdfBlob}
         onDownloaded={handleDownloaded}
+        showWatermarkNotice={user?.subscription !== "pro"}
         settingsPanel={
           exportSettings && (
             <WorksheetSettings

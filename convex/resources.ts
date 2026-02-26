@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { FREE_LIMITS, getMonthStart } from "./users";
 
 export const getUserResources = query({
   args: {
@@ -180,6 +181,27 @@ export const createResource = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Enforce free tier resource limit
+    const user = await ctx.db.get(args.userId);
+    if (user && user.subscription !== "pro") {
+      const monthStart = getMonthStart(now);
+      let resourcesThisMonth = user.resourcesCreatedThisMonth ?? 0;
+      if (!user.monthResetAt || user.monthResetAt < monthStart) {
+        resourcesThisMonth = 0;
+      }
+      if (resourcesThisMonth >= FREE_LIMITS.resourcesPerMonth) {
+        throw new Error(
+          "LIMIT_REACHED:resource:You've used your 2 free resources this month. Upgrade to Pro for unlimited resources."
+        );
+      }
+      // Increment counter
+      await ctx.db.patch(user._id, {
+        resourcesCreatedThisMonth: resourcesThisMonth + 1,
+        monthResetAt: monthStart,
+      });
+    }
+
     return await ctx.db.insert("resources", {
       ...args,
       images: [],

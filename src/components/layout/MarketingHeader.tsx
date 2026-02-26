@@ -47,7 +47,7 @@ export function MarketingHeader() {
                   <Link href="/login">Log in</Link>
                 </Button>
                 <Button size="sm" className="btn-coral" asChild>
-                  <Link href="/signup">Start free trial</Link>
+                  <Link href="/signup">Get started free</Link>
                 </Button>
               </>
             )}
