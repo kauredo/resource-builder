@@ -189,6 +189,63 @@ export const updateSubscription = mutation({
   },
 });
 
+// Admin helpers
+function getAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS ?? "";
+  return raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+}
+
+export const isAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    if (!user) return false;
+    return getAdminEmails().includes(user.email.toLowerCase());
+  },
+});
+
+export const adminLookupUser = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const caller = await getAuthenticatedUser(ctx);
+    if (!caller || !getAdminEmails().includes(caller.email.toLowerCase())) {
+      throw new Error("Not authorized");
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .first();
+    if (!user) return null;
+    return {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      subscription: user.subscription,
+      dodoCustomerId: user.dodoCustomerId ?? null,
+      createdAt: user.createdAt,
+    };
+  },
+});
+
+export const adminSetSubscription = mutation({
+  args: {
+    email: v.string(),
+    subscription: v.union(v.literal("free"), v.literal("pro")),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthenticatedUser(ctx);
+    if (!caller || !getAdminEmails().includes(caller.email.toLowerCase())) {
+      throw new Error("Not authorized");
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, { subscription: args.subscription });
+  },
+});
+
 // Called by the Dodo Payments webhook handler to activate/deactivate subscriptions.
 // Looks up user by email to update their subscription status.
 export const handleSubscriptionWebhook = mutation({

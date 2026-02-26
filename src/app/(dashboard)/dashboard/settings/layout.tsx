@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Shield, CreditCard, AlertTriangle } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { User, Shield, CreditCard, AlertTriangle, Wrench } from "lucide-react";
 
 const settingsNav = [
   { href: "/dashboard/settings/profile", label: "Profile", icon: User },
@@ -21,6 +23,11 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isAdminUser = useQuery(api.users.isAdmin);
+
+  const navItems = isAdminUser
+    ? [...settingsNav, { href: "/dashboard/settings/admin", label: "Admin", icon: Wrench }]
+    : settingsNav;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -31,7 +38,7 @@ export default function SettingsLayout({
           className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-visible sm:w-52 sm:shrink-0 pb-2 sm:pb-0"
           aria-label="Settings navigation"
         >
-          {settingsNav.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
