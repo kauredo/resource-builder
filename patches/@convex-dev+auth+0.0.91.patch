@@ -20,26 +20,3 @@ index 6bf9673..1c97838 100644
  }
  function materializeAndDefaultProviders(config_) {
      // Have to materialize first so that the correct env variables are used
-diff --git a/node_modules/@convex-dev/auth/src/server/provider_utils.ts b/node_modules/@convex-dev/auth/src/server/provider_utils.ts
-index 5680649..c0df1b8 100644
---- a/node_modules/@convex-dev/auth/src/server/provider_utils.ts
-+++ b/node_modules/@convex-dev/auth/src/server/provider_utils.ts
-@@ -60,14 +60,14 @@ export function configDefaults(config_: ConvexAuthConfig) {
-  */
- export function materializeProvider(provider: AuthProviderConfig) {
-   const config = { providers: [provider] };
--  materializeAndDefaultProviders(config);
--  return config.providers[0] as AuthProviderMaterializedConfig;
-+  const result = materializeAndDefaultProviders(config);
-+  return result.providers[0] as AuthProviderMaterializedConfig;
- }
- 
- function materializeProviders(providers: AuthProviderConfig[]) {
-   const config = { providers };
--  materializeAndDefaultProviders(config);
--  return config.providers as AuthProviderMaterializedConfig[];
-+  const result = materializeAndDefaultProviders(config);
-+  return result.providers as AuthProviderMaterializedConfig[];
- }
- 
- function materializeAndDefaultProviders(config_: ConvexAuthConfig) {
