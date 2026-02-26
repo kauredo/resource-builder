@@ -19,7 +19,7 @@ function AhaSendReset(): EmailConfig {
         throw new Error("Missing email configuration environment variables");
       }
 
-      const resetUrl = `${siteUrl}/reset-password?code=${encodeURIComponent(token)}&email=${encodeURIComponent(identifier)}`;
+      const resetUrl = `${siteUrl}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(identifier)}`;
 
       const response = await fetch(
         `https://api.ahasend.com/v2/accounts/${accountId}/messages`,

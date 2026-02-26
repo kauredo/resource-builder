@@ -20,7 +20,7 @@ import { Loader2, KeyRound, CheckCircle2 } from "lucide-react";
 function ResetPasswordForm() {
   const { signIn } = useAuthActions();
   const searchParams = useSearchParams();
-  const code = searchParams.get("code") ?? "";
+  const code = searchParams.get("token") ?? "";
   const email = searchParams.get("email") ?? "";
 
   const [newPassword, setNewPassword] = useState("");
