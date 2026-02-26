@@ -195,6 +195,110 @@ function getAdminEmails(): string[] {
   return raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 }
 
+export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
+  const caller = await getAuthenticatedUser(ctx);
+  if (!caller || !getAdminEmails().includes(caller.email.toLowerCase())) {
+    throw new Error("Not authorized");
+  }
+  return caller;
+}
+
+export const adminGetStats = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+
+    const allUsers = await ctx.db.query("users").collect();
+    const allResources = await ctx.db.query("resources").collect();
+    const allStyles = await ctx.db.query("styles").collect();
+    const allCharacters = await ctx.db.query("characters").collect();
+
+    const byType: Record<string, number> = {};
+    let complete = 0;
+    let draft = 0;
+    for (const r of allResources) {
+      byType[r.type] = (byType[r.type] ?? 0) + 1;
+      if (r.status === "complete") complete++;
+      else draft++;
+    }
+
+    return {
+      users: {
+        total: allUsers.length,
+        pro: allUsers.filter((u) => u.subscription === "pro").length,
+        free: allUsers.filter((u) => u.subscription === "free").length,
+      },
+      resources: {
+        total: allResources.length,
+        complete,
+        draft,
+        byType,
+      },
+      styles: {
+        total: allStyles.filter((s) => !s.isPreset).length,
+        custom: allStyles.filter((s) => !s.isPreset).length,
+      },
+      characters: { total: allCharacters.length },
+    };
+  },
+});
+
+export const adminListUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+
+    const allUsers = await ctx.db.query("users").collect();
+
+    return await Promise.all(
+      allUsers.map(async (user) => {
+        const resources = await ctx.db
+          .query("resources")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .collect();
+        const styles = await ctx.db
+          .query("styles")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .collect();
+        const characters = await ctx.db
+          .query("characters")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .collect();
+
+        const resourcesComplete = resources.filter(
+          (r) => r.status === "complete",
+        ).length;
+        const customStyles = styles.length;
+
+        // Most recent resource activity
+        let lastActivity: number | null = null;
+        for (const r of resources) {
+          const ts = r.updatedAt ?? r.createdAt;
+          if (!lastActivity || ts > lastActivity) lastActivity = ts;
+        }
+
+        return {
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+          subscription: user.subscription,
+          dodoCustomerId: user.dodoCustomerId ?? null,
+          createdAt: user.createdAt,
+          onboardingCompleted: user.onboardingCompleted ?? false,
+          resourcesCreatedThisMonth: user.resourcesCreatedThisMonth ?? 0,
+          counts: {
+            resources: resources.length,
+            resourcesComplete,
+            styles: customStyles,
+            characters: characters.length,
+          },
+          lastActivity,
+        };
+      }),
+    );
+  },
+});
+
 export const isAdmin = query({
   args: {},
   handler: async (ctx) => {
@@ -414,12 +518,12 @@ export const getSubscriptionLimits = query({
       };
     }
 
-    // Count custom (non-preset) styles
-    const allStyles = await ctx.db
+    // Count custom styles (by_user only returns custom — shared presets have no userId)
+    const customStyles = await ctx.db
       .query("styles")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
-    const customStyleCount = allStyles.filter((s) => !s.isPreset).length;
+    const customStyleCount = customStyles.length;
 
     // Count characters
     const allCharacters = await ctx.db

@@ -128,7 +128,6 @@ export default function StylesPage() {
       const newStyleId = await createStyle({
         userId: user._id,
         name: "My Custom Style",
-        isPreset: false,
         colors: basePreset.colors,
         typography: basePreset.typography,
         illustrationStyle: basePreset.illustrationStyle,

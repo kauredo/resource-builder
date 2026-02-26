@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
-import { PresetSeeder } from "@/components/style/PresetSeeder";
+import { PresetGuard } from "@/components/style/PresetGuard";
 import { UserDropdown } from "@/components/layout/UserDropdown";
 import { LogOut, Loader2, Menu, X } from "lucide-react";
 
@@ -61,8 +61,8 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Auto-seed style presets for new users */}
-      <PresetSeeder />
+      {/* Ensure shared system presets exist */}
+      <PresetGuard />
 
       {/* Navigation */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">

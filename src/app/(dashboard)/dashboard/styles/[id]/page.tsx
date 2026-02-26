@@ -105,7 +105,10 @@ export default function StyleDetailPage({ params }: PageProps) {
 
   const styleId = resolvedParams.id as Id<"styles">;
   const style = useQuery(api.styles.getStyleWithFrameUrls, { styleId });
-  const styleSummary = useQuery(api.styles.getStyleSummary, { styleId });
+  const styleSummary = useQuery(
+    api.styles.getStyleSummary,
+    user?._id ? { styleId, userId: user._id } : "skip"
+  );
   const updateStyle = useMutation(api.styles.updateStyle);
   const duplicateStyle = useMutation(api.styles.duplicateStyle);
   const deleteStyle = useMutation(api.styles.deleteStyle);
@@ -194,13 +197,14 @@ export default function StyleDetailPage({ params }: PageProps) {
   );
 
   const handleDuplicate = async () => {
-    if (!style) return;
+    if (!style || !user?._id) return;
 
     setIsDuplicating(true);
     try {
       const newName = duplicateName.trim() || `${style.name} (Copy)`;
       const newStyleId = await duplicateStyle({
         styleId,
+        userId: user._id,
         newName,
       });
       router.push(`/dashboard/styles/${newStyleId}`);

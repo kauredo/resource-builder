@@ -94,9 +94,6 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
 
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
-  const getOrCreatePresetStyle = useMutation(
-    api.styles.getOrCreatePresetStyle,
-  );
   const recordFirstResource = useMutation(api.users.recordFirstResource);
   const generateContent = useAction(
     api.contentGeneration.generateResourceContent,
@@ -473,18 +470,6 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
 
-    let styleId = state.styleId;
-    if (!styleId && state.stylePreset) {
-      styleId = await getOrCreatePresetStyle({
-        userId: user._id,
-        name: state.stylePreset.name,
-        colors: state.stylePreset.colors,
-        typography: state.stylePreset.typography,
-        illustrationStyle: state.stylePreset.illustrationStyle,
-      });
-      updateState({ styleId });
-    }
-
     const content = buildContent();
 
     if (state.resourceId) {
@@ -498,7 +483,7 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
 
     const newId = await createResource({
       userId: user._id,
-      styleId: styleId ?? undefined,
+      styleId: state.styleId ?? undefined,
       type: "worksheet",
       name: state.name,
       description: state.description || `Worksheet: ${state.name}`,
@@ -512,7 +497,6 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
     buildContent,
     createResource,
     updateResource,
-    getOrCreatePresetStyle,
     recordFirstResource,
     updateState,
   ]);

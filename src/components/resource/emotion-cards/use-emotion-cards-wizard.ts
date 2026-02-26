@@ -133,7 +133,6 @@ export function useEmotionCardsWizard({
     api.resources.removeImagesFromResource,
   );
   const recordFirstResource = useMutation(api.users.recordFirstResource);
-  const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
   const ensureCharacterRef = useAction(api.characterActions.ensureCharacterReference);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -303,19 +302,6 @@ export function useEmotionCardsWizard({
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
 
-    // Ensure we have a styleId - create from preset if needed
-    let styleId = state.styleId;
-    if (!styleId && state.stylePreset) {
-      styleId = await getOrCreatePresetStyle({
-        userId: user._id,
-        name: state.stylePreset.name,
-        colors: state.stylePreset.colors,
-        typography: state.stylePreset.typography,
-        illustrationStyle: state.stylePreset.illustrationStyle,
-      });
-      updateState({ styleId });
-    }
-
     const content: EmotionCardContent = {
       cards: state.selectedEmotions.map(emotion => ({
         emotion,
@@ -351,7 +337,7 @@ export function useEmotionCardsWizard({
       // Create new draft
       const resourceId = await createResource({
         userId: user._id,
-        styleId: styleId ?? undefined,
+        styleId: state.styleId ?? undefined,
         type: "emotion_cards",
         name: state.name,
         description: `Emotion card deck with ${state.selectedEmotions.length} cards`,
@@ -368,7 +354,6 @@ export function useEmotionCardsWizard({
     updateResource,
     removeImagesFromResource,
     recordFirstResource,
-    getOrCreatePresetStyle,
     updateState,
   ]);
 

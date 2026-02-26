@@ -157,7 +157,6 @@ Visual prompt fragment: ${character.promptFragment || "N/A"}`;
       {
         userId: args.userId,
         name: `${character.name} Style`,
-        isPreset: false,
         colors,
         typography: FALLBACK_TYPOGRAPHY,
         illustrationStyle,

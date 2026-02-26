@@ -86,7 +86,6 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
 
   const createResource = useMutation(api.resources.createResource);
   const updateResource = useMutation(api.resources.updateResource);
-  const getOrCreatePresetStyle = useMutation(api.styles.getOrCreatePresetStyle);
   const generateImage = useAction(api.images.generateStyledImage);
   const refinePrompt = useAction(api.contentGeneration.refinePrompt);
 
@@ -194,18 +193,6 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
   const saveDraft = useCallback(async () => {
     if (!user?._id || !state.name) return null;
 
-    let styleId = state.styleId;
-    if (!styleId && state.stylePreset) {
-      styleId = await getOrCreatePresetStyle({
-        userId: user._id,
-        name: state.stylePreset.name,
-        colors: state.stylePreset.colors,
-        typography: state.stylePreset.typography,
-        illustrationStyle: state.stylePreset.illustrationStyle,
-      });
-      setState((prev) => ({ ...prev, styleId }));
-    }
-
     const content: FreePromptContent = {
       prompt: state.prompt,
       output: { type: "single_image", aspect: state.aspect },
@@ -223,14 +210,14 @@ export function FreePromptWizard({ resourceId: editResourceId }: FreePromptWizar
 
     const newId = await createResource({
       userId: user._id,
-      styleId: styleId ?? undefined,
+      styleId: state.styleId ?? undefined,
       type: "free_prompt",
       name: state.name,
       description: "Free prompt",
       content,
     });
     return newId;
-  }, [user?._id, state, createResource, updateResource, getOrCreatePresetStyle]);
+  }, [user?._id, state, createResource, updateResource]);
 
   const canGoNext = () => {
     switch (currentStep) {

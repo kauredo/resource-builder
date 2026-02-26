@@ -23,7 +23,7 @@ export default defineSchema({
   }).index("by_email", ["email"]),
 
   styles: defineTable({
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     name: v.string(),
     isPreset: v.boolean(),
     colors: v.object({
@@ -88,7 +88,9 @@ export default defineSchema({
     ),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_preset", ["isPreset"]),
 
   characters: defineTable({
     userId: v.id("users"),

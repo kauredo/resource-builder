@@ -24,6 +24,9 @@ export const updateStyleFrame = mutation({
     if (!style) {
       throw new Error("Style not found");
     }
+    if (style.isPreset) {
+      throw new Error("Cannot modify frames on a preset style");
+    }
 
     // Build the updated frames object
     const currentFrames = style.frames || {};
@@ -53,6 +56,9 @@ export const deleteFrame = mutation({
     const style = await ctx.db.get(args.styleId);
     if (!style) {
       throw new Error("Style not found");
+    }
+    if (style.isPreset) {
+      throw new Error("Cannot modify frames on a preset style");
     }
 
     if (!style.frames) {
