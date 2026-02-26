@@ -80,12 +80,26 @@ export default function RootLayout({
                 "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
               applicationCategory: "DesignApplication",
               operatingSystem: "Web",
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "USD",
-                description: "Free plan available",
-              },
+              offers: [
+                {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "USD",
+                  description: "Free plan — 2 resources/month, 1 style, 1 character",
+                },
+                {
+                  "@type": "Offer",
+                  price: "19",
+                  priceCurrency: "USD",
+                  description: "Pro monthly — unlimited resources, styles, and characters",
+                },
+                {
+                  "@type": "Offer",
+                  price: "180",
+                  priceCurrency: "USD",
+                  description: "Pro annual — $15/month, billed yearly",
+                },
+              ],
             }),
           }}
         />

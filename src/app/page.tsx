@@ -16,12 +16,10 @@ function EmotionCardPreview({
   imageSrc?: string;
 }) {
   return (
+    <div style={{ transform: `rotate(${rotation}deg)` }}>
     <article
-      className="w-36 h-48 rounded-2xl shadow-sm flex flex-col overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:scale-105 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:scale-100"
-      style={{
-        backgroundColor: color,
-        transform: `rotate(${rotation}deg)`,
-      }}
+      className="w-36 h-48 rounded-2xl shadow-sm flex flex-col overflow-hidden transition-[translate,box-shadow] duration-700 ease-out hover:shadow-lg hover:-translate-y-3 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-sm"
+      style={{ backgroundColor: color }}
       aria-label={`${emotion} emotion card example`}
     >
       {/* Image area - ready for real illustrations */}
@@ -54,6 +52,7 @@ function EmotionCardPreview({
         </span>
       </div>
     </article>
+    </div>
   );
 }
 
@@ -66,7 +65,7 @@ function StylePreviewChip({
   colors: [string, string, string];
 }) {
   return (
-    <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white border border-border shadow-sm transition-default hover:shadow-md hover:border-border/80">
+    <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white border border-border shadow-sm">
       <div className="flex -space-x-1.5" aria-hidden="true">
         {colors.map((color, i) => (
           <div
@@ -222,7 +221,7 @@ export default function Home() {
                   </Button>
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Free forever · Upgrade anytime
+                  Free to start · No credit card required
                 </p>
               </div>
 
@@ -317,10 +316,10 @@ export default function Home() {
         >
           <div className="max-w-6xl mx-auto">
             <div className="max-w-2xl mb-16">
-              <h2 id="how-heading">From idea to printed cards in minutes</h2>
+              <h2 id="how-heading">From idea to printed resource in minutes</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                No design skills needed. Pick a style, choose your emotions, and
-                let AI create illustrations that work beautifully together.
+                No design skills needed. Pick a style, describe what you need,
+                and let AI create illustrations that work beautifully together.
               </p>
             </div>
 
@@ -352,11 +351,11 @@ export default function Home() {
                   2
                 </div>
                 <div className="relative pt-8">
-                  <h3 className="mb-3">Select emotions</h3>
+                  <h3 className="mb-3">Describe what you need</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Choose from 20+ research-backed emotions or add your own.
-                    From primary feelings to nuanced states like &ldquo;overwhelmed&rdquo;
-                    or &ldquo;hopeful.&rdquo;
+                    Tell us what you&apos;re creating — emotion cards, a worksheet,
+                    a board game. Pick emotions, topics, or write your own
+                    content.
                   </p>
                 </div>
               </div>
@@ -370,11 +369,11 @@ export default function Home() {
                   3
                 </div>
                 <div className="relative pt-8">
-                  <h3 className="mb-3">Generate & print</h3>
+                  <h3 className="mb-3">Generate & export</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    AI creates matching illustrations for each card. Export as
-                    print-ready PDF with cut lines. Print, cut, and use in your
-                    next session.
+                    AI creates matching illustrations for every piece. Export as
+                    print-ready PDF — sized, formatted, and ready for your next
+                    session.
                   </p>
                 </div>
               </div>
@@ -451,7 +450,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="max-w-2xl mx-auto text-center mb-16">
               <p className="text-sm font-medium text-coral mb-3 tracking-wide">
-                More than emotion cards
+                8 resource types, one consistent style
               </p>
               <h2 id="resources-heading">
                 Everything you need for creative therapy
@@ -462,7 +461,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <ResourceTypeCard
                 title="Emotion Cards"
                 description="Beautiful illustrated cards for feelings identification. Print, cut, and use in sessions."
@@ -523,26 +522,152 @@ export default function Home() {
                   </svg>
                 }
               />
+              <ResourceTypeCard
+                title="Books"
+                description="Illustrated social stories, CBT workbooks, and narrative therapy books. AI or therapist-written."
+                color="#E07A5F"
+                icon={
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                  </svg>
+                }
+              />
+              <ResourceTypeCard
+                title="Free Prompt"
+                description="Generate any custom illustration with a free-form prompt. Full creative control for unique materials."
+                color="#8B7355"
+                icon={
+                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                  </svg>
+                }
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section
+          className="py-24 px-6 bg-secondary/30"
+          aria-labelledby="pricing-heading"
+        >
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-16">
+              <p className="text-sm font-medium text-coral mb-3 tracking-wide">
+                Simple pricing
+              </p>
+              <h2 id="pricing-heading">
+                Start free, upgrade when you&apos;re ready
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                No surprises. Create your first resources at no cost.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {/* Free plan */}
+              <div className="bg-card rounded-2xl p-8 border border-border/50 shadow-sm">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-1">Free</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-serif font-semibold">$0</span>
+                    <span className="text-muted-foreground text-sm">/forever</span>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-8 text-sm text-muted-foreground" role="list">
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    2 resources per month
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    1 custom style + 5 presets
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    1 character
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    All 8 resource types
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-muted-foreground/40 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <span className="text-muted-foreground/60">Exports include subtle watermark</span>
+                  </li>
+                </ul>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-11 cursor-pointer"
+                  asChild
+                >
+                  <Link href="/signup">Get started free</Link>
+                </Button>
+              </div>
+
+              {/* Pro plan */}
+              <div className="bg-card rounded-2xl p-8 border-2 border-coral/30 shadow-sm relative">
+                <div className="absolute -top-3 left-8 bg-coral text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  Most popular
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-1">Pro</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-serif font-semibold">$15</span>
+                    <span className="text-muted-foreground text-sm">/month, billed annually</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    or $19/month billed monthly
+                  </p>
+                </div>
+                <ul className="space-y-3 mb-8 text-sm" role="list">
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <strong>Unlimited</strong>&nbsp;resources
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <strong>Unlimited</strong>&nbsp;custom styles
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <strong>Unlimited</strong>&nbsp;characters
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    Clean, watermark-free exports
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    Priority support
+                  </li>
+                </ul>
+                <Button
+                  size="lg"
+                  className="w-full h-11 btn-coral cursor-pointer"
+                  asChild
+                >
+                  <Link href="/signup">Start creating today</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Final CTA */}
         <section
-          className="py-24 px-6 bg-secondary/30"
+          className="py-24 px-6"
           aria-labelledby="cta-heading"
         >
           <div className="max-w-2xl mx-auto text-center">
             <h2 id="cta-heading">Ready to create something beautiful?</h2>
             <p className="mt-4 text-lg text-muted-foreground mb-8">
-              Start creating — it&apos;s free. Create your first deck in minutes.
+              Your first two resources are free — no credit card required.
             </p>
             <Button size="lg" className="btn-coral h-12 px-8 text-base" asChild>
-              <Link href="/signup">Start creating — it&apos;s free</Link>
+              <Link href="/signup">Get started free</Link>
             </Button>
-            <p className="mt-4 text-sm text-muted-foreground">
-              No credit card required · Cancel anytime
-            </p>
           </div>
         </section>
       </main>

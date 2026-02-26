@@ -26,18 +26,18 @@ export default function TermsPage() {
           Terms of Service
         </h1>
         <p className="text-sm text-muted-foreground mb-10">
-          Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          Last updated: February 26, 2026
         </p>
 
-        <div className="prose prose-neutral max-w-none [&_h2]:font-serif [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_li]:text-muted-foreground">
+        <div className="prose prose-neutral max-w-none [&_h2]:font-serif [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_li]:text-muted-foreground [&_ul]:space-y-1">
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing or using Resource Builder, you agree to be bound by these Terms of Service. If you do not agree, please do not use the service.
+            By accessing or using Resource Builder, you agree to be bound by these Terms of Service. If you do not agree, please do not use the service. You must be at least 18 years old to create an account.
           </p>
 
           <h2>2. Description of Service</h2>
           <p>
-            Resource Builder is a web application that helps therapists and psychologists create branded therapy materials including emotion cards, worksheets, board games, and other resources for use in clinical settings.
+            Resource Builder is a web application that helps therapists and psychologists create branded therapy materials including emotion cards, worksheets, board games, books, and other resources for use in clinical settings.
           </p>
 
           <h2>3. Accounts</h2>
@@ -45,19 +45,26 @@ export default function TermsPage() {
             You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. You must provide accurate information when creating an account.
           </p>
 
-          <h2>4. Free Plan & Subscriptions</h2>
+          <h2>4. Plans & Pricing</h2>
           <p>
-            Resource Builder offers a free plan with limited usage. Paid subscriptions unlock unlimited access. We reserve the right to modify plan terms and pricing at any time.
+            Resource Builder offers two plans:
+          </p>
+          <ul>
+            <li><strong>Free plan</strong> — 2 resources per month, 1 custom style (plus 5 presets), 1 character. PDF exports include a subtle watermark.</li>
+            <li><strong>Pro plan</strong> — $19/month (or $15/month billed annually at $180/year). Unlimited resources, styles, and characters. Clean, watermark-free exports.</li>
+          </ul>
+          <p>
+            All payments are processed by Dodo Payments, our merchant of record. Dodo Payments handles billing, sales tax, and payment compliance on our behalf. Subscriptions renew automatically at the end of each billing period. You can cancel anytime from your billing settings — access continues until the end of your current billing period. No partial refunds are issued for unused time. We will provide at least 30 days notice via email before any price increases to existing subscribers.
           </p>
 
           <h2>5. Content Ownership</h2>
           <p>
-            You retain ownership of the therapy materials you create using Resource Builder. We do not claim any rights over your content. However, we may use anonymized, aggregated data to improve our service.
+            You retain ownership of the therapy materials you create using Resource Builder. We do not claim any rights over your content. We may use anonymized usage patterns (such as which features are most popular) to improve the service — this never includes your therapy content, illustrations, or any identifiable information.
           </p>
 
           <h2>6. AI-Generated Content</h2>
           <p>
-            Resource Builder uses AI to generate illustrations and content. While we strive for quality and appropriateness, AI-generated content may occasionally be inaccurate or unsuitable. You are responsible for reviewing all generated content before use in clinical settings.
+            Resource Builder uses Google Gemini to generate illustrations. Your style descriptions and character prompts are sent to this service to create images. AI-generated content may occasionally be inaccurate or unsuitable — you are responsible for reviewing all generated content before use in clinical settings. Copyright protection for AI-generated images may vary by jurisdiction.
           </p>
 
           <h2>7. Acceptable Use</h2>
@@ -67,12 +74,12 @@ export default function TermsPage() {
 
           <h2>8. Limitation of Liability</h2>
           <p>
-            Resource Builder is provided &ldquo;as is&rdquo; without warranties of any kind. We are not liable for any damages arising from your use of the service or materials created with it.
+            Resource Builder is provided &ldquo;as is&rdquo; without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service or materials created with it. Our total liability is limited to the fees you paid in the 12 months preceding the claim.
           </p>
 
           <h2>9. Changes to Terms</h2>
           <p>
-            We may update these terms from time to time. Continued use of the service after changes constitutes acceptance of the updated terms.
+            We may update these terms from time to time. We will notify you of material changes via email at least 30 days before they take effect. Continued use of the service after changes constitutes acceptance of the updated terms.
           </p>
 
           <h2>10. Contact</h2>

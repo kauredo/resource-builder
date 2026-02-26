@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-sm text-muted-foreground mb-10">
-          Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          Last updated: February 26, 2026
         </p>
 
         <div className="prose prose-neutral max-w-none [&_h2]:font-serif [&_h2]:text-xl [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_li]:text-muted-foreground [&_ul]:space-y-1">
@@ -37,6 +37,7 @@ export default function PrivacyPage() {
             <li>Content you create (styles, characters, resources)</li>
             <li>Generated images and illustrations</li>
             <li>Usage data (pages visited, features used)</li>
+            <li>Payment information (processed and stored by Dodo Payments — we do not store card details)</li>
           </ul>
 
           <h2>How We Use Your Data</h2>
@@ -44,23 +45,24 @@ export default function PrivacyPage() {
           <ul>
             <li>Provide and maintain the service</li>
             <li>Generate AI illustrations based on your style preferences</li>
+            <li>Process payments and manage your subscription</li>
             <li>Send transactional emails (password resets, account notifications)</li>
             <li>Improve the service through anonymized analytics</li>
           </ul>
 
-          <h2>AI and Image Generation</h2>
-          <p>
-            When you generate illustrations, your style descriptions and character prompts are sent to third-party AI services (Google Gemini) to create images. These prompts do not contain personal client information unless you include it. We recommend not including identifiable client information in any prompts.
-          </p>
+          <h2>Third-Party Services</h2>
+          <p>We share specific data with the following services to operate Resource Builder:</p>
+          <ul>
+            <li><strong>Convex</strong> — Database and file storage. Stores all account data, content, and generated images.</li>
+            <li><strong>Google Gemini</strong> — AI image generation. Receives style descriptions and character prompts to create illustrations. We recommend not including identifiable client information in prompts.</li>
+            <li><strong>Dodo Payments</strong> — Payment processing (merchant of record). Receives your name, email, and payment details to process subscriptions and handle billing.</li>
+            <li><strong>AhaSend</strong> — Transactional email. Receives your email address to send password resets and account notifications.</li>
+          </ul>
+          <p>We do not sell your data to third parties.</p>
 
           <h2>Data Storage</h2>
           <p>
-            Your data is stored securely using Convex, a cloud database platform. Images are stored in Convex file storage. We do not sell your data to third parties.
-          </p>
-
-          <h2>Email Communications</h2>
-          <p>
-            We use AhaSend to send transactional emails. We will only send emails necessary for account functionality (password resets, critical account notifications). We do not send marketing emails without your explicit consent.
+            Your data is stored using Convex, a cloud database platform hosted in the United States. All data is encrypted in transit via HTTPS. Payment data is stored and processed by Dodo Payments — we never store credit card numbers or payment credentials on our servers.
           </p>
 
           <h2>Your Rights</h2>
@@ -70,11 +72,20 @@ export default function PrivacyPage() {
             <li>Update your account information in Settings</li>
             <li>Delete your account and all associated data</li>
             <li>Request a copy of your data by contacting us</li>
+            <li>Object to or restrict certain data processing</li>
           </ul>
+          <p>
+            We respond to all data requests within 30 days. For EU residents, you also have the right to lodge a complaint with your local data protection authority.
+          </p>
+
+          <h2>Children&apos;s Data</h2>
+          <p>
+            Resource Builder creates materials <em>for</em> children, but the service itself is for adult professionals. We do not knowingly collect personal information from children under 13. If you believe a child has provided us with personal data, please contact us.
+          </p>
 
           <h2>Data Deletion</h2>
           <p>
-            When you delete your account, we permanently remove all your data including styles, characters, resources, and generated images. This action cannot be undone.
+            When you delete your account, we permanently remove all your data including styles, characters, resources, and generated images. This action cannot be undone. Payment records may be retained by Dodo Payments as required by law.
           </p>
 
           <h2>Cookies</h2>
@@ -84,7 +95,7 @@ export default function PrivacyPage() {
 
           <h2>Changes to This Policy</h2>
           <p>
-            We may update this policy from time to time. We will notify you of significant changes via email or an in-app notification.
+            We may update this policy from time to time. We will notify you of significant changes via email at least 30 days before they take effect.
           </p>
 
           <h2>Contact</h2>
