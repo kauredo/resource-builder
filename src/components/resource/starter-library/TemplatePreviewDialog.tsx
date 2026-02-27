@@ -67,7 +67,7 @@ export function TemplatePreviewDialog({
   };
 
   const handleCreate = async () => {
-    if (!template) return;
+    if (!template || isCreating) return;
     setIsCreating(true);
     try {
       const resourceId = await createFromTemplate({
@@ -86,13 +86,14 @@ export function TemplatePreviewDialog({
   if (!template) return null;
 
   const typeLabel = RESOURCE_TYPE_LABELS[template.type as Exclude<ResourceType, "free_prompt">] ?? template.type;
+  const styleName = selectedPreset?.name ?? template.name;
   const buttonLabel = selectedPreset
-    ? `Create with ${selectedPreset.name}`
-    : "Create Resource";
+    ? `Create with ${styleName.length > 20 ? styleName.slice(0, 20) + "…" : styleName}`
+    : `Create ${template.name.length > 25 ? template.name.slice(0, 25) + "…" : template.name}`;
 
   return (
-    <Dialog open={!!template} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+    <Dialog open={!!template} onOpenChange={(open) => !open && !isCreating && handleClose()}>
+      <DialogContent className={cn("max-h-[85vh] overflow-y-auto", step === "style" ? "max-w-2xl" : "max-w-lg")}>
         {/* Crossfade wrapper — each step fades in */}
         <div
           key={step}
@@ -146,9 +147,9 @@ export function TemplatePreviewDialog({
               </DialogHeader>
 
               <p className="text-sm text-muted-foreground">
-                Pick a visual style for <strong>{template.name}</strong>. This
-                determines colours, fonts, and illustration style for your
-                images.
+                This sets the colours, fonts, and illustration style for{" "}
+                <strong>{template.name}</strong>. You can skip this and let the
+                AI decide.
               </p>
 
               <StylePicker
@@ -170,7 +171,7 @@ export function TemplatePreviewDialog({
                   {isCreating ? (
                     <>
                       <Loader2
-                        className="size-4 animate-spin mr-2"
+                        className="size-4 animate-spin motion-reduce:animate-none mr-2"
                         aria-hidden="true"
                       />
                       Creating...
@@ -182,13 +183,15 @@ export function TemplatePreviewDialog({
                 <button
                   type="button"
                   onClick={() => setStep("preview")}
+                  disabled={isCreating}
                   className={cn(
                     "text-xs text-muted-foreground hover:text-foreground cursor-pointer",
                     "transition-colors duration-150 motion-reduce:transition-none",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded"
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 rounded",
+                    isCreating && "opacity-50 pointer-events-none"
                   )}
                 >
-                  Back to preview
+                  Back to template
                 </button>
               </div>
             </>

@@ -31,8 +31,8 @@ Priorities only. Higher number = lower priority.
 
 ## Priority 4 — New Resource Types
 
-- [ ] **Visual schedules** — daily routine cards/strips for sequencing activities. High demand in ASD and anxiety work.
-- [ ] **Certificates/achievement cards** — reward progress milestones. Quick to implement, single-image with text fields.
+- [x] **Visual schedules** — daily routine cards/strips for sequencing activities. High demand in ASD and anxiety work.
+- [x] **Certificates/achievement cards** — reward progress milestones. Quick to implement, single-image with text fields.
 - [ ] **Coloring pages** — generate outline-only versions of images for kids to color in session. Could extend existing types with an "outline mode" toggle.
 
 ## Priority 5 — Workflow & Productivity

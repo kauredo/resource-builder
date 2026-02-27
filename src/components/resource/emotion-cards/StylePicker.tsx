@@ -51,7 +51,7 @@ function StyleOption({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={cn(
-        "group block text-left rounded-lg cursor-pointer border border-transparent",
+        "group flex flex-col text-left rounded-lg cursor-pointer border border-transparent h-full min-w-0",
         "transition-colors duration-150 motion-reduce:transition-none",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         accentColor === "coral" ? "focus-visible:ring-coral" : "focus-visible:ring-teal",
@@ -63,7 +63,7 @@ function StyleOption({
       )}
     >
       {/* Color bar - the palette at a glance */}
-      <div className="flex h-3 rounded-t-lg overflow-hidden">
+      <div className="flex h-3 rounded-t-lg overflow-hidden w-full">
         <div className="flex-1" style={{ backgroundColor: style.colors.primary }} />
         <div className="flex-1" style={{ backgroundColor: style.colors.secondary }} />
         <div className="flex-1" style={{ backgroundColor: style.colors.accent }} />
@@ -73,39 +73,41 @@ function StyleOption({
 
       {/* Card body */}
       <div
-        className="relative px-4 py-4 rounded-b-lg border border-t-0 border-border/50"
+        className="relative px-4 py-4 rounded-b-lg border border-t-0 border-border/50 flex-1 flex flex-col"
         style={{ backgroundColor: style.colors.background }}
       >
-        {/* Typography preview */}
-        <p
-          className="text-base font-medium leading-snug"
-          style={{
-            fontFamily: `"${style.typography.headingFont}", system-ui, sans-serif`,
-            color: style.colors.text,
-          }}
-        >
-          Feelings can be
-        </p>
-        <p
-          className="text-sm mt-0.5"
-          style={{
-            fontFamily: `"${style.typography.bodyFont}", system-ui, sans-serif`,
-            color: style.colors.text,
-            opacity: 0.7,
-          }}
-        >
-          expressed in many ways
-        </p>
+        {/* Typography preview — fixed height to prevent font-dependent sizing */}
+        <div className="h-12 overflow-hidden">
+          <p
+            className="text-base font-medium leading-snug"
+            style={{
+              fontFamily: `"${style.typography.headingFont}", system-ui, sans-serif`,
+              color: style.colors.text,
+            }}
+          >
+            Feelings can be
+          </p>
+          <p
+            className="text-sm mt-0.5"
+            style={{
+              fontFamily: `"${style.typography.bodyFont}", system-ui, sans-serif`,
+              color: style.colors.text,
+              opacity: 0.7,
+            }}
+          >
+            expressed in many ways
+          </p>
+        </div>
 
         {/* Style name and selection indicator */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-current/10">
+        <div className="flex items-center justify-between gap-2 pt-3 mt-auto border-t border-current/10">
           <span
-            className="text-sm font-medium"
+            className="text-sm font-medium truncate min-w-0"
             style={{ color: style.colors.text }}
           >
             {style.name}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {style.isPreset && (
               <Lock
                 className="size-3.5 opacity-50"
@@ -172,7 +174,7 @@ export function StylePicker({
       {presetStyles.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-            Preset Styles
+            Built-in Styles
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedPresets.map((style) => (
