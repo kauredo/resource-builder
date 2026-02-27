@@ -20,6 +20,7 @@ const BookDetail = dynamic(() => import("@/components/resource/book/BookDetail")
 const BehaviorChartDetail = dynamic(() => import("@/components/resource/behavior-chart/BehaviorChartDetail").then(m => m.BehaviorChartDetail));
 const VisualScheduleDetail = dynamic(() => import("@/components/resource/visual-schedule/VisualScheduleDetail").then(m => m.VisualScheduleDetail));
 const CertificateDetail = dynamic(() => import("@/components/resource/certificate/CertificateDetail").then(m => m.CertificateDetail));
+const ColoringPagesDetail = dynamic(() => import("@/components/resource/coloring-pages/ColoringPagesDetail").then(m => m.ColoringPagesDetail));
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -107,6 +108,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
       return <VisualScheduleDetail resourceId={resourceId} />;
     case "certificate":
       return <CertificateDetail resourceId={resourceId} />;
+    case "coloring_pages":
+      return <ColoringPagesDetail resourceId={resourceId} />;
     default:
       return null;
   }

@@ -237,7 +237,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     try {
       // Only poster, flashcards, card_game, board_game supported
-      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart", "visual_schedule", "certificate"] as const;
+      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart", "visual_schedule", "certificate", "coloring_pages"] as const;
       type ValidType = (typeof validTypes)[number];
       if (!validTypes.includes(resourceType as ValidType)) {
         throw new Error(`Content generation not supported for ${resourceType}`);
@@ -605,6 +605,15 @@ function linkCharactersToContent(
       linked.activities = activities;
       break;
     }
+    case "coloring_pages": {
+      const cpPages = [...((linked.pages as Array<Record<string, unknown>>) || [])];
+      cpPages.forEach((page, i) => {
+        const charIds = keyToChars.get(`page_${i}`);
+        if (charIds) cpPages[i] = { ...page, characterIds: charIds };
+      });
+      linked.pages = cpPages;
+      break;
+    }
     // poster and card_game: resource-level character (handled via characterSelection)
     default:
       break;
@@ -645,6 +654,10 @@ function unlinkCharacterFromContent(
     }
     case "visual_schedule": {
       unlinked.activities = removeChar((unlinked.activities as Array<Record<string, unknown>>) || []);
+      break;
+    }
+    case "coloring_pages": {
+      unlinked.pages = removeChar((unlinked.pages as Array<Record<string, unknown>>) || []);
       break;
     }
     default:
@@ -907,6 +920,25 @@ function extractImageItems(
         includeText: false,
         aspect: "4:3",
         status: "pending",
+      });
+      break;
+    }
+
+    case "coloring_pages": {
+      const pages = (content.pages as Array<Record<string, unknown>>) || [];
+      pages.forEach((page, i) => {
+        const prompt = (page.imagePrompt as string) || `Coloring page illustration: ${page.title as string}`;
+        const pageCharIds = (page.characterIds as string[] | undefined)?.map((id) => id as Id<"characters">);
+        items.push({
+          assetKey: (page.imageAssetKey as string) || `coloring_page_${i}`,
+          assetType: "coloring_page_image",
+          prompt,
+          characterIds: pageCharIds?.length ? pageCharIds : resourceCharacterIds,
+          includeText: false,
+          aspect: "3:4",
+          label: (page.title as string) || `Page ${i + 1}`,
+          status: "pending",
+        });
       });
       break;
     }

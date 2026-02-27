@@ -79,7 +79,7 @@ export function ExportModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`sm:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col ${settingsPanel ? "" : "sm:max-w-3xl"}`}
+        className={`sm:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col ${settingsPanel ? "" : "sm:max-w-4xl"}`}
         showCloseButton
       >
         <DialogHeader>

@@ -54,7 +54,7 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
     };
   }, []);
 
-  const heightClass = className?.match(/h-\[/) ? "" : "h-[600px]";
+  const heightClass = className?.match(/h-\[/) ? "" : "h-[700px]";
 
   if (!generatePdf || isGenerating) {
     return (
@@ -96,10 +96,10 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
   if (!url) return null;
 
   return (
-    <div className={`relative ${className ?? ""}`}>
+    <div className={`relative ${heightClass} ${className ?? ""}`}>
       <iframe
         src={url}
-        className={`h-full w-full border border-border/60 rounded-xl bg-white ${heightClass}`}
+        className="h-full w-full border border-border/60 rounded-xl bg-white"
         title="PDF Preview"
       />
       <Button

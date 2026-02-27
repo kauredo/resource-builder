@@ -15,6 +15,7 @@ import { BookWizard } from "@/components/resource/book/BookWizard";
 import { BehaviorChartAIWizard } from "@/components/resource/behavior-chart/BehaviorChartAIWizard";
 import { VisualScheduleAIWizard } from "@/components/resource/visual-schedule/VisualScheduleAIWizard";
 import { CertificateAIWizard } from "@/components/resource/certificate/CertificateAIWizard";
+import { ColoringPagesAIWizard } from "@/components/resource/coloring-pages/ColoringPagesAIWizard";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -50,6 +51,8 @@ export default function EditResourcePage({ params }: PageProps) {
       return <VisualScheduleAIWizard resourceId={resourceId} />;
     case "certificate":
       return <CertificateAIWizard resourceId={resourceId} />;
+    case "coloring_pages":
+      return <ColoringPagesAIWizard resourceId={resourceId} />;
     default:
       return null;
   }

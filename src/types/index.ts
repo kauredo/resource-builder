@@ -156,7 +156,8 @@ export type AssetType =
   | "chart_token_image"
   | "schedule_header_image"
   | "schedule_activity_icon"
-  | "certificate_image";
+  | "certificate_image"
+  | "coloring_page_image";
 
 export type AssetKey = string;
 
@@ -193,7 +194,8 @@ export type ResourceType =
   | "book"
   | "behavior_chart"
   | "visual_schedule"
-  | "certificate";
+  | "certificate"
+  | "coloring_pages";
 
 export type SubscriptionStatus = "free" | "pro";
 
@@ -504,5 +506,20 @@ export interface CertificateContent {
   signatoryLabel?: string;
   imagePrompt: string;
   imageAssetKey: AssetKey;
+  characters?: CharacterSelection;
+}
+
+// Coloring pages resource types
+export interface ColoringPageItem {
+  id: string;
+  title: string;
+  description?: string;
+  imagePrompt: string;
+  imageAssetKey: AssetKey;
+  characterIds?: string[];
+}
+
+export interface ColoringPagesContent {
+  pages: ColoringPageItem[];
   characters?: CharacterSelection;
 }

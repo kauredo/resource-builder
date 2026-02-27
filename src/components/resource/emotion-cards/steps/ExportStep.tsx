@@ -304,7 +304,7 @@ export function ExportStep({ state, onUpdate }: ExportStepProps) {
           {pdfUrl && (
             <iframe
               src={pdfUrl}
-              className="w-full h-[600px] border border-border/60 rounded-xl bg-white"
+              className="w-full h-[700px] border border-border/60 rounded-xl bg-white"
               title="PDF Preview"
             />
           )}

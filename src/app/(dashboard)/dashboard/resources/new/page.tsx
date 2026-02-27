@@ -19,6 +19,7 @@ import {
   Star,
   CalendarDays,
   Award,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StarterLibrary } from "@/components/resource/starter-library/StarterLibrary";
@@ -104,6 +105,14 @@ const RESOURCE_TYPES = [
     route: "/dashboard/resources/new/certificate",
     icon: Award,
     accent: "coral" as const,
+  },
+  {
+    id: "coloring-pages",
+    title: "Coloring Pages",
+    description: "Line-art illustrations children color in during therapy sessions.",
+    route: "/dashboard/resources/new/coloring-pages",
+    icon: Palette,
+    accent: "neutral" as const,
   },
   {
     id: "free-prompt",

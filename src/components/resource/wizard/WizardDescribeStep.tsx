@@ -37,6 +37,8 @@ const PLACEHOLDER_MAP: Record<string, string> = {
     "A morning routine visual schedule for a 6-year-old with ASD, showing wake up, brush teeth, get dressed, eat breakfast, and pack bag...",
   certificate:
     "A colorful achievement certificate for a 7-year-old who completed an anxiety coping skills program, with a warm encouraging tone...",
+  coloring_pages:
+    "A set of calming coloring pages about emotions for a 6-year-old, with scenes of animals showing different feelings in nature settings...",
 };
 
 export function WizardDescribeStep({

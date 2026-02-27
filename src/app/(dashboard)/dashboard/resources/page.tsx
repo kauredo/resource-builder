@@ -36,6 +36,11 @@ const TYPE_FILTERS = [
   "board_game",
   "card_game",
   "free_prompt",
+  "book",
+  "behavior_chart",
+  "visual_schedule",
+  "certificate",
+  "coloring_pages",
 ] as const;
 const SORT_OPTIONS = ["newest", "oldest", "name-asc", "name-desc"] as const;
 
@@ -52,6 +57,11 @@ const TYPE_LABELS: Record<TypeFilter, string> = {
   board_game: "Board Games",
   card_game: "Card Games",
   free_prompt: "Free Prompt",
+  book: "Books",
+  behavior_chart: "Behavior Charts",
+  visual_schedule: "Visual Schedules",
+  certificate: "Certificates",
+  coloring_pages: "Coloring Pages",
 };
 
 const SORT_LABELS: Record<SortOption, string> = {

@@ -10,6 +10,7 @@ import type {
   BehaviorChartContent,
   VisualScheduleContent,
   CertificateContent,
+  ColoringPagesContent,
 } from "@/types";
 
 export interface StarterTemplate {
@@ -55,6 +56,7 @@ export const RESOURCE_TYPE_LABELS: Record<Exclude<ResourceType, "free_prompt">, 
   behavior_chart: "Behavior Chart",
   visual_schedule: "Visual Schedule",
   certificate: "Certificate",
+  coloring_pages: "Coloring Pages",
 };
 
 // --- Emotion Cards ---
@@ -595,6 +597,88 @@ const firstThenTransition: VisualScheduleContent = {
   headerImageAssetKey: "schedule_header",
 };
 
+// --- Coloring Pages ---
+
+const feelingsColoringBook: ColoringPagesContent = {
+  pages: [
+    {
+      id: "cp-feelings-1",
+      title: "Feeling Happy",
+      description: "A child playing joyfully in a sunny garden",
+      imagePrompt: "A child jumping happily in a garden full of sunflowers and butterflies, arms wide open, surrounded by friendly pets and blooming flowers",
+      imageAssetKey: "coloring_page_0",
+    },
+    {
+      id: "cp-feelings-2",
+      title: "Feeling Sad",
+      description: "A child sitting quietly on a rainy day",
+      imagePrompt: "A child sitting by a window watching rain drops fall, hugging a teddy bear, with a cozy blanket and a cup of hot cocoa nearby",
+      imageAssetKey: "coloring_page_1",
+    },
+    {
+      id: "cp-feelings-3",
+      title: "Feeling Angry",
+      description: "A child learning to manage big feelings",
+      imagePrompt: "A child standing with clenched fists near a volcano-shaped pillow, with a calm-down corner nearby featuring deep breathing instructions on the wall and a feelings thermometer",
+      imageAssetKey: "coloring_page_2",
+    },
+    {
+      id: "cp-feelings-4",
+      title: "Feeling Scared",
+      description: "A child facing something new with courage",
+      imagePrompt: "A child peeking around a doorway into a new classroom, with a friendly teacher waving and other children playing at tables with toys and art supplies",
+      imageAssetKey: "coloring_page_3",
+    },
+    {
+      id: "cp-feelings-5",
+      title: "Feeling Calm",
+      description: "A child practicing peaceful breathing",
+      imagePrompt: "A child sitting cross-legged on a cushion in a peaceful meadow, eyes closed with a gentle smile, surrounded by floating dandelion seeds, gentle clouds, and a sleeping cat nearby",
+      imageAssetKey: "coloring_page_4",
+    },
+    {
+      id: "cp-feelings-6",
+      title: "Feeling Proud",
+      description: "A child celebrating an achievement",
+      imagePrompt: "A child standing on a small stage holding up a drawing they made, with friends and family clapping in the audience, surrounded by balloons and a congratulations banner",
+      imageAssetKey: "coloring_page_5",
+    },
+  ],
+};
+
+const mindfulAnimals: ColoringPagesContent = {
+  pages: [
+    {
+      id: "cp-mindful-1",
+      title: "Bear Breathing",
+      description: "A bear practicing deep belly breathing",
+      imagePrompt: "A large friendly bear sitting peacefully in a forest clearing, paws resting on its belly, taking a deep breath with eyes closed, surrounded by tall pine trees and wildflowers",
+      imageAssetKey: "coloring_page_0",
+    },
+    {
+      id: "cp-mindful-2",
+      title: "Owl Listening",
+      description: "An owl listening to the sounds of nature",
+      imagePrompt: "A wise owl perched on a tree branch at dusk, eyes wide open and ears alert, listening carefully to the sounds of nature — crickets, a stream, rustling leaves, and distant birds",
+      imageAssetKey: "coloring_page_1",
+    },
+    {
+      id: "cp-mindful-3",
+      title: "Turtle in Their Shell",
+      description: "A turtle retreating to a safe space",
+      imagePrompt: "A friendly sea turtle swimming slowly through an underwater garden of coral and sea plants, retreating partway into its shell, surrounded by small fish and gentle bubbles",
+      imageAssetKey: "coloring_page_2",
+    },
+    {
+      id: "cp-mindful-4",
+      title: "Cat Stretching",
+      description: "A cat doing a mindful body scan stretch",
+      imagePrompt: "A fluffy cat doing a long stretch on a cozy windowsill, sunlight streaming in, with houseplants on the sill and a view of a peaceful garden outside with birds and butterflies",
+      imageAssetKey: "coloring_page_3",
+    },
+  ],
+};
+
 // --- Assemble all templates ---
 
 export const STARTER_TEMPLATES: StarterTemplate[] = [
@@ -823,5 +907,25 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     theme: "social-skills",
     contentSummary: "Achievement certificate",
     content: kindnessCertificate as unknown as Record<string, unknown>,
+  },
+
+  // Coloring Pages
+  {
+    id: "feelings-coloring-book",
+    type: "coloring_pages",
+    name: "My Feelings Coloring Book",
+    description: "Six coloring pages exploring different emotions through scenes children can relate to.",
+    theme: "emotions",
+    contentSummary: "6 coloring pages",
+    content: feelingsColoringBook as unknown as Record<string, unknown>,
+  },
+  {
+    id: "mindful-animals",
+    type: "coloring_pages",
+    name: "Mindful Animals",
+    description: "Four coloring pages of animals practicing mindfulness techniques.",
+    theme: "mindfulness",
+    contentSummary: "4 coloring pages",
+    content: mindfulAnimals as unknown as Record<string, unknown>,
   },
 ];

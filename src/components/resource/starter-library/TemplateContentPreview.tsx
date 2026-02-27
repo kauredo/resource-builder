@@ -8,6 +8,7 @@ import type {
   CardGameContent,
   BookContent,
   BehaviorChartContent,
+  ColoringPagesContent,
 } from "@/types";
 
 interface TemplateContentPreviewProps {
@@ -34,6 +35,8 @@ export function TemplateContentPreview({
       return <BookPreview content={template.content as unknown as BookContent} />;
     case "behavior_chart":
       return <BehaviorChartPreview content={template.content as unknown as BehaviorChartContent} />;
+    case "coloring_pages":
+      return <ColoringPagesPreview content={template.content as unknown as ColoringPagesContent} />;
     default:
       return null;
   }
@@ -311,6 +314,29 @@ function BehaviorChartPreview({ content }: { content: BehaviorChartContent }) {
               <span className="text-xs text-muted-foreground ml-1.5">
                 — {b.description}
               </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function ColoringPagesPreview({ content }: { content: ColoringPagesContent }) {
+  return (
+    <div>
+      <SectionHeader count={content.pages.length} label="pages" />
+      <ol className="space-y-2">
+        {content.pages.map((page, i) => (
+          <li key={page.id} className="text-sm">
+            <span className="text-muted-foreground/60 text-xs mr-1.5">
+              {i + 1}.
+            </span>
+            <span className="font-medium text-foreground">{page.title}</span>
+            {page.description && (
+              <p className="text-xs text-muted-foreground mt-0.5 ml-4">
+                {page.description}
+              </p>
             )}
           </li>
         ))}

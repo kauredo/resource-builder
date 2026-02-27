@@ -626,6 +626,7 @@ const SCENE_ASSET_TYPES = new Set([
   "book_page_image",
   "book_cover_image",
   "free_prompt_image",
+  "coloring_page_image",
 ]);
 
 function getAssetContext(assetType: string): string {
@@ -652,6 +653,8 @@ function getAssetContext(assetType: string): string {
       return "This is a book cover illustration. Fill the entire frame with a visually striking scene. Do not leave blank or white space.";
     case "free_prompt_image":
       return "Generate the illustration as described. Fill the entire frame — no borders, frames, or unnecessary white space.";
+    case "coloring_page_image":
+      return "This is a coloring page illustration. Generate PURE BLACK AND WHITE LINE ART with thick, clear outlines. NO shading, NO fills, NO colors, NO gradients, NO gray tones. Only black outlines on a white background. The lines should be bold and clean, suitable for a child to color in with crayons or markers. Fill the entire frame with the scene.";
     default:
       return "Generate only the illustration — no borders, frames, or text overlays.";
   }
@@ -823,7 +826,13 @@ function buildGenericPrompt({
 
   parts.push(prompt);
 
-  if (style) {
+  if (assetType === "coloring_page_image") {
+    parts.push(
+      "CRITICAL STYLE OVERRIDE: This MUST be pure black and white line art. " +
+      "Use ONLY black outlines on a white background. NO colors, NO shading, NO fills, NO gradients, NO gray tones. " +
+      "Thick, clear, bold outlines suitable for children to color in. IGNORE any illustration style or color guidance.",
+    );
+  } else if (style) {
     parts.push(
       "IMPORTANT: follow the illustration style guidance EXACTLY: ",
       style.illustrationStyle,

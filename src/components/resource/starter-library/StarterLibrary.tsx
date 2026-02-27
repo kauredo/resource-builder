@@ -12,6 +12,7 @@ import {
   Star,
   CalendarDays,
   Award,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +41,7 @@ const TYPE_META: Record<
   behavior_chart: { icon: Star, accent: "teal" },
   visual_schedule: { icon: CalendarDays, accent: "teal" },
   certificate: { icon: Award, accent: "coral" },
+  coloring_pages: { icon: Palette, accent: "neutral" },
 };
 
 interface StarterLibraryProps {

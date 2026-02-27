@@ -351,6 +351,34 @@ IMPORTANT GUIDELINES:
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
 "detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["certificate"]}]
 If no named characters appear, omit "detectedCharacters".`,
+
+  coloring_pages: `You are a creative assistant helping a therapist design coloring pages for children/adolescent therapy.
+Coloring pages are line-art illustrations that children color in during therapy sessions — calming, engaging, and therapeutic.
+
+Given a description, generate coloring page content as JSON:
+{
+  "name": "coloring book name",
+  "pages": [
+    {
+      "title": "Page title",
+      "description": "Optional brief description of the scene",
+      "imagePrompt": "detailed scene description for illustration — describe the scene, characters, and composition without mentioning line art or coloring style (the image generator handles that)"
+    }
+  ]
+}
+
+IMPORTANT GUIDELINES:
+- Generate 1-12 pages depending on topic complexity and description.
+- Each page should depict a distinct therapeutic scene or concept.
+- Image prompts should describe SCENES, not style — do NOT mention "line art", "black and white", "outline", or "coloring page" in prompts. The image generation system handles the style automatically.
+- Scenes should be age-appropriate, calming, and therapeutically relevant.
+- Include enough detail for interesting coloring (objects, patterns, backgrounds) but avoid overwhelming complexity.
+- Titles should be short and child-friendly.
+- Good themes: emotions, coping skills, safe places, nature, mindfulness, social situations, animals, daily routines.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["page_0", "page_1"]}]
+"appearsOn" uses "page_N" where N is the page index. If no named characters appear, omit "detectedCharacters".`,
 };
 
 export const refinePrompt = action({
@@ -427,6 +455,7 @@ export const generateResourceContent = action({
       v.literal("behavior_chart"),
       v.literal("visual_schedule"),
       v.literal("certificate"),
+      v.literal("coloring_pages"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -550,6 +579,8 @@ export const generateResourceContent = action({
       content = postProcessVisualScheduleContent(rawParsed);
     } else if (args.resourceType === "certificate") {
       content = postProcessCertificateContent(rawParsed);
+    } else if (args.resourceType === "coloring_pages") {
+      content = postProcessColoringPagesContent(rawParsed);
     } else {
       content = rawParsed;
     }
@@ -794,5 +825,26 @@ function postProcessCertificateContent(raw: Record<string, unknown>): Record<str
     imageAssetKey: "certificate_main",
     recipientPlaceholder: (raw.recipientPlaceholder as string) || "Child's Name",
     datePlaceholder: (raw.datePlaceholder as string) || "Date",
+  };
+}
+
+/** Post-process AI-generated coloring pages content: assign UUIDs and asset keys to pages */
+function postProcessColoringPagesContent(raw: Record<string, unknown>): Record<string, unknown> {
+  const pages = (raw.pages as Array<Record<string, unknown>>) || [];
+
+  const processedPages = pages.map((page, i) => {
+    const id = makeId();
+    return {
+      id,
+      title: (page.title as string) || `Page ${i + 1}`,
+      description: (page.description as string) || undefined,
+      imagePrompt: (page.imagePrompt as string) || "",
+      imageAssetKey: `coloring_page_${i}`,
+    };
+  });
+
+  return {
+    ...raw,
+    pages: processedPages,
   };
 }
