@@ -123,7 +123,7 @@ export function ExportModal({
             <PDFPreview
               key={previewKey}
               generatePdf={buildPdfBlob}
-              className="h-[500px]"
+              className="h-[800px]"
             />
           </div>
         </div>

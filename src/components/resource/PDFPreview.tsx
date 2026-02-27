@@ -99,7 +99,7 @@ export function PDFPreview({ generatePdf, visible = true, className }: PDFPrevie
     <div className={`relative ${className ?? ""}`}>
       <iframe
         src={url}
-        className={`w-full border border-border/60 rounded-xl bg-white ${heightClass}`}
+        className={`h-full w-full border border-border/60 rounded-xl bg-white ${heightClass}`}
         title="PDF Preview"
       />
       <Button
