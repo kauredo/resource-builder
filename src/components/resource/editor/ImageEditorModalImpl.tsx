@@ -59,7 +59,6 @@ export function ImageEditorModalImpl({
   aspectRatio = 1,
   title = "Edit image",
 }: ImageEditorModalProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   const [stageSize, setStageSize] = useState({ width: 560, height: 560 });
@@ -111,25 +110,18 @@ export function ImageEditorModalImpl({
     });
   }, [imageElement, stageSize]);
 
-  // Measure container for stage sizing
+  // Compute stage size from viewport constraints
   useEffect(() => {
-    if (!containerRef.current || !open) return;
-    const measure = () => {
-      if (!containerRef.current) return;
-      const { width } = containerRef.current.getBoundingClientRect();
-      const available = width - 24; // p-3 padding
-      const maxHeight = window.innerHeight * 0.55;
-      let targetWidth = Math.max(280, available);
-      let targetHeight = Math.round(targetWidth / aspectRatio);
-      if (targetHeight > maxHeight) {
-        targetHeight = Math.round(maxHeight);
-        targetWidth = Math.round(targetHeight * aspectRatio);
-      }
-      setStageSize({ width: targetWidth, height: targetHeight });
-    };
-    measure();
-    const timer = setTimeout(measure, 250);
-    return () => clearTimeout(timer);
+    if (!open) return;
+    const maxWidth = Math.min(window.innerWidth - 400, 720);
+    const maxHeight = window.innerHeight * 0.7;
+    let w = Math.max(280, maxWidth);
+    let h = Math.round(w / aspectRatio);
+    if (h > maxHeight) {
+      h = Math.round(maxHeight);
+      w = Math.round(h * aspectRatio);
+    }
+    setStageSize({ width: w, height: Math.max(200, h) });
   }, [aspectRatio, open]);
 
   // Reset state when modal opens
@@ -265,7 +257,7 @@ export function ImageEditorModalImpl({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="w-fit max-w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -273,13 +265,10 @@ export function ImageEditorModalImpl({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Canvas */}
-          <div className="space-y-3 min-w-0">
-            <div
-              ref={containerRef}
-              className="rounded-xl border bg-muted/20 p-3 overflow-hidden"
-            >
+          <div className="space-y-3 shrink-0">
+            <div className="w-fit rounded-xl border bg-muted/20 p-3 overflow-hidden">
               <Stage
                 width={stageSize.width}
                 height={stageSize.height}
@@ -375,7 +364,7 @@ export function ImageEditorModalImpl({
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4">
+          <div className="w-60 shrink-0 space-y-4">
             <Button
               variant="outline"
               size="sm"
