@@ -18,6 +18,7 @@ const CardGameDetail = dynamic(() => import("@/components/resource/card-game/Car
 const FreePromptDetail = dynamic(() => import("@/components/resource/free-prompt/FreePromptDetail").then(m => m.FreePromptDetail));
 const BookDetail = dynamic(() => import("@/components/resource/book/BookDetail").then(m => m.BookDetail));
 const BehaviorChartDetail = dynamic(() => import("@/components/resource/behavior-chart/BehaviorChartDetail").then(m => m.BehaviorChartDetail));
+const VisualScheduleDetail = dynamic(() => import("@/components/resource/visual-schedule/VisualScheduleDetail").then(m => m.VisualScheduleDetail));
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -101,6 +102,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
       return <BookDetail resourceId={resourceId} />;
     case "behavior_chart":
       return <BehaviorChartDetail resourceId={resourceId} />;
+    case "visual_schedule":
+      return <VisualScheduleDetail resourceId={resourceId} />;
     default:
       return null;
   }

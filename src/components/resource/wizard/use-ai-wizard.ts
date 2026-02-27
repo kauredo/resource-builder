@@ -237,7 +237,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     try {
       // Only poster, flashcards, card_game, board_game supported
-      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart"] as const;
+      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart", "visual_schedule"] as const;
       type ValidType = (typeof validTypes)[number];
       if (!validTypes.includes(resourceType as ValidType)) {
         throw new Error(`Content generation not supported for ${resourceType}`);
@@ -596,6 +596,15 @@ function linkCharactersToContent(
       linked.behaviors = behaviors;
       break;
     }
+    case "visual_schedule": {
+      const activities = [...((linked.activities as Array<Record<string, unknown>>) || [])];
+      activities.forEach((a, i) => {
+        const charIds = keyToChars.get(`activity_${i}`);
+        if (charIds) activities[i] = { ...a, characterIds: charIds };
+      });
+      linked.activities = activities;
+      break;
+    }
     // poster and card_game: resource-level character (handled via characterSelection)
     default:
       break;
@@ -632,6 +641,10 @@ function unlinkCharacterFromContent(
     }
     case "behavior_chart": {
       unlinked.behaviors = removeChar((unlinked.behaviors as Array<Record<string, unknown>>) || []);
+      break;
+    }
+    case "visual_schedule": {
+      unlinked.activities = removeChar((unlinked.activities as Array<Record<string, unknown>>) || []);
       break;
     }
     default:
@@ -845,6 +858,42 @@ function extractImageItems(
           status: "pending",
         });
       }
+      break;
+    }
+
+    case "visual_schedule": {
+      // Header illustration
+      const schedHeaderPrompt = (content.headerImagePrompt as string) || "Cheerful decorative header for a visual schedule";
+      items.push({
+        assetKey: (content.headerImageAssetKey as string) || "schedule_header",
+        assetType: "schedule_header_image",
+        prompt: `Visual schedule header illustration: ${schedHeaderPrompt}`,
+        characterIds: resourceCharacterIds,
+        includeText: false,
+        aspect: "4:3",
+        label: "Header",
+        group: "Header",
+        status: "pending",
+      });
+
+      // Per-activity icons (green screen for transparency)
+      const activities = (content.activities as Array<Record<string, unknown>>) || [];
+      activities.forEach((activity, i) => {
+        const prompt = (activity.imagePrompt as string) || `Icon for activity: ${activity.name as string}`;
+        const actCharIds = (activity.characterIds as string[] | undefined)?.map((id) => id as Id<"characters">);
+        items.push({
+          assetKey: (activity.imageAssetKey as string) || `schedule_activity_icon:activity_${i}`,
+          assetType: "schedule_activity_icon",
+          prompt,
+          characterIds: actCharIds?.length ? actCharIds : undefined,
+          includeText: false,
+          aspect: "1:1",
+          greenScreen: true,
+          label: (activity.name as string) || `Activity ${i + 1}`,
+          group: "Activity Icons",
+          status: "pending",
+        });
+      });
       break;
     }
 

@@ -153,7 +153,9 @@ export type AssetType =
   | "chart_header_image"
   | "chart_behavior_icon"
   | "chart_reward_image"
-  | "chart_token_image";
+  | "chart_token_image"
+  | "schedule_header_image"
+  | "schedule_activity_icon";
 
 export type AssetKey = string;
 
@@ -188,7 +190,8 @@ export type ResourceType =
   | "poster"
   | "flashcards"
   | "book"
-  | "behavior_chart";
+  | "behavior_chart"
+  | "visual_schedule";
 
 export type SubscriptionStatus = "free" | "pro";
 
@@ -458,5 +461,33 @@ export interface BehaviorChartContent {
   headerImagePrompt?: string;
   headerImageAssetKey?: AssetKey;
 
+  characters?: CharacterSelection;
+}
+
+// Visual schedule resource types
+export type ScheduleFormat = "routine_strip" | "schedule_board" | "first_then";
+
+export interface VisualScheduleActivity {
+  id: string;
+  name: string;
+  description?: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+  time?: string;
+  duration?: string;
+  characterIds?: string[];
+}
+
+export interface VisualScheduleContent {
+  scheduleFormat: ScheduleFormat;
+  title: string;
+  instructions?: string;
+  activities: VisualScheduleActivity[];
+  timeLabels?: boolean;
+  checkboxes?: boolean;
+  firstLabel?: string;
+  thenLabel?: string;
+  headerImagePrompt?: string;
+  headerImageAssetKey?: AssetKey;
   characters?: CharacterSelection;
 }

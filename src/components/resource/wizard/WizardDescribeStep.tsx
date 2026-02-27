@@ -33,6 +33,8 @@ const PLACEHOLDER_MAP: Record<string, string> = {
     "A set of emotion cards showing different feelings like happy, sad, angry, and scared, for young children to identify and name...",
   behavior_chart:
     "A sticker chart for a 6-year-old with ADHD to track morning routine behaviors like brushing teeth, getting dressed, and eating breakfast...",
+  visual_schedule:
+    "A morning routine visual schedule for a 6-year-old with ASD, showing wake up, brush teeth, get dressed, eat breakfast, and pack bag...",
 };
 
 export function WizardDescribeStep({

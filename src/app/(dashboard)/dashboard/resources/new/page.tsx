@@ -17,6 +17,7 @@ import {
   Wand2,
   BookOpen,
   Star,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StarterLibrary } from "@/components/resource/starter-library/StarterLibrary";
@@ -85,6 +86,14 @@ const RESOURCE_TYPES = [
     description: "Sticker charts, token boards, and progress trackers for behavior management.",
     route: "/dashboard/resources/new/behavior-chart",
     icon: Star,
+    accent: "teal" as const,
+  },
+  {
+    id: "visual-schedule",
+    title: "Visual Schedule",
+    description: "Daily routine strips, schedule boards, and first-then boards for visual sequencing.",
+    route: "/dashboard/resources/new/visual-schedule",
+    icon: CalendarDays,
     accent: "teal" as const,
   },
   {

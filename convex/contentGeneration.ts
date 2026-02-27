@@ -284,6 +284,44 @@ IMPORTANT GUIDELINES:
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
 "detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["block_0", "block_5"]}]
 "appearsOn" uses "block_N" where N is the block index. If no named characters appear, omit "detectedCharacters".`,
+
+  visual_schedule: `You are a creative assistant helping a therapist design a visual schedule for children/adolescents.
+Visual schedules are daily routine cards/strips used in ASD therapy (predictability reduces anxiety), ADHD management, anxiety work, and play therapy.
+
+Given a description, generate visual schedule content as JSON:
+{
+  "name": "schedule name",
+  "scheduleFormat": "routine_strip" | "schedule_board" | "first_then",
+  "title": "Title displayed on the schedule",
+  "instructions": "Brief instructions for the therapist/child",
+  "activities": [
+    {
+      "name": "Activity name",
+      "description": "What this activity involves",
+      "imagePrompt": "illustration prompt for a square icon representing this activity"
+    }
+  ],
+  "timeLabels": false,
+  "checkboxes": true,
+  "firstLabel": "First",
+  "thenLabel": "Then",
+  "headerImagePrompt": "illustration prompt for a decorative header"
+}
+
+IMPORTANT GUIDELINES:
+- Choose scheduleFormat based on the description:
+  - "routine_strip": Horizontal sequence of activity cards (morning routine, bedtime, coping steps). Best for step-by-step sequences. Generate 4-8 activities.
+  - "schedule_board": Vertical list with optional time slots and checkboxes (classroom schedule, therapy session, daily planner). Best for timed schedules. Generate 4-10 activities.
+  - "first_then": Simplified 2-panel board for transitions/motivation ("First tidy up, Then playtime!"). Always generate exactly 2 activities.
+- Each activity imagePrompt should describe a simple, clear icon-style illustration of the activity.
+- For schedule_board: optionally include "time" (e.g., "8:00 AM") and "duration" (e.g., "15 min") per activity. Set "timeLabels": true if times are provided, "checkboxes": true for a done column.
+- For first_then: set "firstLabel" and "thenLabel" (customizable, e.g., "First"/"Then" or "Do"/"Earn").
+- Only include format-specific fields for the chosen format.
+- headerImagePrompt: a cheerful, motivational banner illustration matching the schedule theme.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["header", "activity_0", "activity_1"]}]
+"appearsOn" uses "header" or "activity_N" (activity index). If no named characters appear, omit "detectedCharacters".`,
 };
 
 export const refinePrompt = action({
@@ -358,6 +396,7 @@ export const generateResourceContent = action({
       v.literal("book"),
       v.literal("worksheet"),
       v.literal("behavior_chart"),
+      v.literal("visual_schedule"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -477,6 +516,8 @@ export const generateResourceContent = action({
       content = postProcessWorksheetContent(rawParsed);
     } else if (args.resourceType === "behavior_chart") {
       content = postProcessBehaviorChartContent(rawParsed);
+    } else if (args.resourceType === "visual_schedule") {
+      content = postProcessVisualScheduleContent(rawParsed);
     } else {
       content = rawParsed;
     }
@@ -687,5 +728,29 @@ function postProcessWorksheetContent(raw: Record<string, unknown>): Record<strin
   return {
     ...raw,
     blocks: processedBlocks,
+  };
+}
+
+/** Post-process AI-generated visual schedule content: assign IDs and asset keys */
+function postProcessVisualScheduleContent(raw: Record<string, unknown>): Record<string, unknown> {
+  const activities = (raw.activities as Array<Record<string, unknown>>) || [];
+
+  const processedActivities = activities.map((a, i) => {
+    const id = makeId();
+    return {
+      id,
+      name: (a.name as string) || "",
+      description: (a.description as string) || undefined,
+      imagePrompt: (a.imagePrompt as string) || undefined,
+      imageAssetKey: a.imagePrompt ? `schedule_activity_icon:activity_${i}` : undefined,
+      time: (a.time as string) || undefined,
+      duration: (a.duration as string) || undefined,
+    };
+  });
+
+  return {
+    ...raw,
+    activities: processedActivities,
+    headerImageAssetKey: raw.headerImagePrompt ? "schedule_header" : undefined,
   };
 }

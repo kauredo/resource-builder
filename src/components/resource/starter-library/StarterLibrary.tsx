@@ -10,6 +10,7 @@ import {
   Gamepad2,
   BookOpen,
   Star,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -36,6 +37,7 @@ const TYPE_META: Record<
   card_game: { icon: Gamepad2, accent: "neutral" },
   book: { icon: BookOpen, accent: "coral" },
   behavior_chart: { icon: Star, accent: "teal" },
+  visual_schedule: { icon: CalendarDays, accent: "teal" },
 };
 
 interface StarterLibraryProps {

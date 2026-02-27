@@ -8,6 +8,7 @@ import type {
   CardGameContent,
   BookContent,
   BehaviorChartContent,
+  VisualScheduleContent,
 } from "@/types";
 
 export interface StarterTemplate {
@@ -51,6 +52,7 @@ export const RESOURCE_TYPE_LABELS: Record<Exclude<ResourceType, "free_prompt">, 
   card_game: "Card Game",
   book: "Book",
   behavior_chart: "Behavior Chart",
+  visual_schedule: "Visual Schedule",
 };
 
 // --- Emotion Cards ---
@@ -506,6 +508,56 @@ const kindnessProgressTracker: BehaviorChartContent = {
   headerImageAssetKey: "chart_header",
 };
 
+// --- Visual Schedules ---
+
+const morningRoutineStrip: VisualScheduleContent = {
+  scheduleFormat: "routine_strip",
+  title: "My Morning Routine",
+  instructions: "Follow the steps from left to right. Put a sticker on each one when you're done!",
+  activities: [
+    { id: "a1", name: "Wake Up", description: "Open your eyes and stretch", imagePrompt: "A cheerful child stretching and yawning in bed with morning sunlight coming through the window, simple icon-style illustration" },
+    { id: "a2", name: "Brush Teeth", description: "2 minutes of brushing", imagePrompt: "A happy toothbrush with sparkles and a tube of toothpaste, simple icon-style illustration" },
+    { id: "a3", name: "Get Dressed", description: "Pick your clothes and put them on", imagePrompt: "A neatly folded stack of colorful children's clothes with a small hanger, simple icon-style illustration" },
+    { id: "a4", name: "Eat Breakfast", description: "Sit at the table and eat", imagePrompt: "A bowl of cereal with a glass of juice on a cheerful placemat, simple icon-style illustration" },
+    { id: "a5", name: "Pack Bag", description: "Put everything you need in your bag", imagePrompt: "A colorful school backpack with books and a lunchbox peeking out, simple icon-style illustration" },
+    { id: "a6", name: "Shoes On", description: "Put on your shoes by the door", imagePrompt: "A pair of bright children's sneakers ready by the front door, simple icon-style illustration" },
+  ],
+  headerImagePrompt: "A bright, cheerful sunrise scene with a cozy house and a path leading to school, warm morning colors, simple illustration",
+  headerImageAssetKey: "schedule_header",
+};
+
+const therapySessionBoard: VisualScheduleContent = {
+  scheduleFormat: "schedule_board",
+  title: "Our Therapy Session",
+  instructions: "We'll work through each activity together. Tick each box when we finish.",
+  timeLabels: true,
+  checkboxes: true,
+  activities: [
+    { id: "a1", name: "Check In", description: "How are you feeling today?", time: "10:00", duration: "5 min", imagePrompt: "A friendly waving hand with a speech bubble containing a smiley face, simple icon illustration" },
+    { id: "a2", name: "Talk Time", description: "Share what's on your mind", time: "10:05", duration: "10 min", imagePrompt: "Two chairs facing each other with a warm lamp nearby, simple icon illustration" },
+    { id: "a3", name: "Activity", description: "Today's fun activity", time: "10:15", duration: "15 min", imagePrompt: "Art supplies including crayons, paper, and scissors arranged neatly, simple icon illustration" },
+    { id: "a4", name: "Break", description: "Stretch and have some water", time: "10:30", duration: "5 min", imagePrompt: "A glass of water with a small plant and a stretching figure, simple icon illustration" },
+    { id: "a5", name: "Practice", description: "Try our new skill", time: "10:35", duration: "10 min", imagePrompt: "A lightbulb with a star badge showing a thumbs up, simple icon illustration" },
+    { id: "a6", name: "Wrap Up", description: "Review what we learned and say goodbye", time: "10:45", duration: "5 min", imagePrompt: "A calendar with a checkmark and a small gift box, simple icon illustration" },
+  ],
+  headerImagePrompt: "A welcoming therapy room with comfortable chairs, soft cushions, and warm lighting, calming illustration",
+  headerImageAssetKey: "schedule_header",
+};
+
+const firstThenTransition: VisualScheduleContent = {
+  scheduleFormat: "first_then",
+  title: "First-Then Board",
+  instructions: "First we do the task, then we earn the reward!",
+  firstLabel: "First",
+  thenLabel: "Then",
+  activities: [
+    { id: "a1", name: "Tidy Up", description: "Put the toys back in the box", imagePrompt: "A toy box with colorful toys being placed inside by small hands, cheerful icon illustration" },
+    { id: "a2", name: "Playtime!", description: "Free play with your favourite toys", imagePrompt: "A happy child playing with building blocks and stuffed animals, cheerful icon illustration" },
+  ],
+  headerImagePrompt: "A bright and encouraging banner with stars and a rainbow, motivational illustration for children",
+  headerImageAssetKey: "schedule_header",
+};
+
 // --- Assemble all templates ---
 
 export const STARTER_TEMPLATES: StarterTemplate[] = [
@@ -676,5 +728,34 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     theme: "social-skills",
     contentSummary: "Progress tracker · 3 behaviors · 4 levels",
     content: kindnessProgressTracker as unknown as Record<string, unknown>,
+  },
+
+  // Visual Schedules
+  {
+    id: "morning-routine-strip",
+    type: "visual_schedule",
+    name: "Morning Routine",
+    description: "A horizontal routine strip with 6 morning activities from wake up to shoes on. Great for ASD and ADHD morning structure.",
+    theme: "social-skills",
+    contentSummary: "Routine strip · 6 activities",
+    content: morningRoutineStrip as unknown as Record<string, unknown>,
+  },
+  {
+    id: "therapy-session-schedule",
+    type: "visual_schedule",
+    name: "Therapy Session Schedule",
+    description: "A schedule board with timed activities for a 50-minute therapy session. Helps children anticipate what comes next.",
+    theme: "mindfulness",
+    contentSummary: "Schedule board · 6 activities",
+    content: therapySessionBoard as unknown as Record<string, unknown>,
+  },
+  {
+    id: "first-then-transition",
+    type: "visual_schedule",
+    name: "First-Then Transition Board",
+    description: "A simple two-panel board for transitions and motivation. First complete the task, then earn the reward.",
+    theme: "social-skills",
+    contentSummary: "First-Then · 2 activities",
+    content: firstThenTransition as unknown as Record<string, unknown>,
   },
 ];

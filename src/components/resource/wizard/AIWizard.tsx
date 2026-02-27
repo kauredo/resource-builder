@@ -11,6 +11,7 @@ import { FlashcardsReview } from "./review/FlashcardsReview";
 import { CardGameReview } from "./review/CardGameReview";
 import { BoardGameReview } from "./review/BoardGameReview";
 import { BehaviorChartReview } from "./review/BehaviorChartReview";
+import { VisualScheduleReview } from "./review/VisualScheduleReview";
 import { DetectedCharactersReview } from "./DetectedCharactersReview";
 import {
   useAIWizard,
@@ -26,6 +27,7 @@ const TITLE_MAP: Record<string, string> = {
   card_game: "Card Game",
   board_game: "Board Game",
   behavior_chart: "Behavior Chart",
+  visual_schedule: "Visual Schedule",
 };
 
 const NEXT_LABELS = [
@@ -151,6 +153,8 @@ function ReviewStep({
       return <BoardGameReview state={state} onUpdate={onUpdate} />;
     case "behavior_chart":
       return <BehaviorChartReview state={state} onUpdate={onUpdate} />;
+    case "visual_schedule":
+      return <VisualScheduleReview state={state} onUpdate={onUpdate} />;
     default:
       return (
         <div className="text-center py-12 text-muted-foreground">

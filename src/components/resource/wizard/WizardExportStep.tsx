@@ -8,9 +8,10 @@ import { Download, Check, Loader2 } from "lucide-react";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import { generateBehaviorChartPDF } from "@/lib/pdf-behavior-chart";
+import { generateVisualSchedulePDF } from "@/lib/pdf-visual-schedule";
 import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { AIWizardState } from "./use-ai-wizard";
-import type { CardGameContent, BehaviorChartContent } from "@/types";
+import type { CardGameContent, BehaviorChartContent, VisualScheduleContent } from "@/types";
 
 interface WizardExportStepProps {
   state: AIWizardState;
@@ -79,6 +80,21 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
 
       return generateBehaviorChartPDF({
         content: state.generatedContent as unknown as BehaviorChartContent,
+        assetMap,
+        watermark: user?.subscription !== "pro",
+      });
+    }
+
+    if (state.resourceType === "visual_schedule" && state.generatedContent) {
+      const assetMap = new Map<string, string>();
+      for (const asset of assets) {
+        if (asset.currentVersion?.url) {
+          assetMap.set(asset.assetKey, asset.currentVersion.url);
+        }
+      }
+
+      return generateVisualSchedulePDF({
+        content: state.generatedContent as unknown as VisualScheduleContent,
         assetMap,
         watermark: user?.subscription !== "pro",
       });
