@@ -16,6 +16,7 @@ import {
   Gamepad2,
   Wand2,
   BookOpen,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StarterLibrary } from "@/components/resource/starter-library/StarterLibrary";
@@ -77,6 +78,14 @@ const RESOURCE_TYPES = [
     route: "/dashboard/resources/new/book",
     icon: BookOpen,
     accent: "coral" as const,
+  },
+  {
+    id: "behavior-chart",
+    title: "Behavior Chart",
+    description: "Sticker charts, token boards, and progress trackers for behavior management.",
+    route: "/dashboard/resources/new/behavior-chart",
+    icon: Star,
+    accent: "teal" as const,
   },
   {
     id: "free-prompt",

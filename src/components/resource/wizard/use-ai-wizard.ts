@@ -237,7 +237,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     try {
       // Only poster, flashcards, card_game, board_game supported
-      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book"] as const;
+      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart"] as const;
       type ValidType = (typeof validTypes)[number];
       if (!validTypes.includes(resourceType as ValidType)) {
         throw new Error(`Content generation not supported for ${resourceType}`);
@@ -587,6 +587,15 @@ function linkCharactersToContent(
       linked.cards = cards;
       break;
     }
+    case "behavior_chart": {
+      const behaviors = [...((linked.behaviors as Array<Record<string, unknown>>) || [])];
+      behaviors.forEach((b, i) => {
+        const charIds = keyToChars.get(`behavior_${i}`);
+        if (charIds) behaviors[i] = { ...b, characterIds: charIds };
+      });
+      linked.behaviors = behaviors;
+      break;
+    }
     // poster and card_game: resource-level character (handled via characterSelection)
     default:
       break;
@@ -619,6 +628,10 @@ function unlinkCharacterFromContent(
     case "board_game": {
       unlinked.tokens = removeChar((unlinked.tokens as Array<Record<string, unknown>>) || []);
       unlinked.cards = removeChar((unlinked.cards as Array<Record<string, unknown>>) || []);
+      break;
+    }
+    case "behavior_chart": {
+      unlinked.behaviors = removeChar((unlinked.behaviors as Array<Record<string, unknown>>) || []);
       break;
     }
     default:
@@ -767,6 +780,71 @@ function extractImageItems(
         aspect: "1:1",
         status: "pending",
       });
+      break;
+    }
+
+    case "behavior_chart": {
+      // Header illustration
+      const headerPrompt = (content.headerImagePrompt as string) || "Cheerful decorative header banner for a behavior chart";
+      items.push({
+        assetKey: (content.headerImageAssetKey as string) || "chart_header",
+        assetType: "chart_header_image",
+        prompt: `Behavior chart header illustration: ${headerPrompt}`,
+        characterIds: resourceCharacterIds,
+        includeText: false,
+        aspect: "4:3",
+        label: "Header",
+        group: "Header",
+        status: "pending",
+      });
+
+      // Per-behavior icons (green screen for transparency)
+      const behaviors = (content.behaviors as Array<Record<string, unknown>>) || [];
+      behaviors.forEach((behavior, i) => {
+        const prompt = (behavior.imagePrompt as string) || `Icon for behavior: ${behavior.name as string}`;
+        items.push({
+          assetKey: (behavior.imageAssetKey as string) || `chart_behavior_icon:behavior_${i}`,
+          assetType: "chart_behavior_icon",
+          prompt,
+          includeText: false,
+          aspect: "1:1",
+          greenScreen: true,
+          label: (behavior.name as string) || `Behavior ${i + 1}`,
+          group: "Behavior Icons",
+          status: "pending",
+        });
+      });
+
+      // Reward illustration (green screen)
+      const reward = (content.reward as Record<string, unknown>) || {};
+      if (reward.imagePrompt) {
+        items.push({
+          assetKey: (reward.imageAssetKey as string) || "chart_reward",
+          assetType: "chart_reward_image",
+          prompt: (reward.imagePrompt as string),
+          includeText: false,
+          aspect: "1:1",
+          greenScreen: true,
+          label: "Reward",
+          group: "Reward",
+          status: "pending",
+        });
+      }
+
+      // Token image (token board only, green screen)
+      if ((content.chartFormat as string) === "token_board" && content.tokenImagePrompt) {
+        items.push({
+          assetKey: (content.tokenImageAssetKey as string) || "chart_token",
+          assetType: "chart_token_image",
+          prompt: (content.tokenImagePrompt as string),
+          includeText: false,
+          aspect: "1:1",
+          greenScreen: true,
+          label: "Token",
+          group: "Token",
+          status: "pending",
+        });
+      }
       break;
     }
 

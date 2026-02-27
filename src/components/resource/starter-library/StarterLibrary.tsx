@@ -9,6 +9,7 @@ import {
   Grid3x3,
   Gamepad2,
   BookOpen,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,6 +35,7 @@ const TYPE_META: Record<
   board_game: { icon: Grid3x3, accent: "neutral" },
   card_game: { icon: Gamepad2, accent: "neutral" },
   book: { icon: BookOpen, accent: "coral" },
+  behavior_chart: { icon: Star, accent: "teal" },
 };
 
 interface StarterLibraryProps {

@@ -7,6 +7,7 @@ import type {
   BoardGameContent,
   CardGameContent,
   BookContent,
+  BehaviorChartContent,
 } from "@/types";
 
 interface TemplateContentPreviewProps {
@@ -31,6 +32,8 @@ export function TemplateContentPreview({
       return <CardGamePreview content={template.content as unknown as CardGameContent} />;
     case "book":
       return <BookPreview content={template.content as unknown as BookContent} />;
+    case "behavior_chart":
+      return <BehaviorChartPreview content={template.content as unknown as BehaviorChartContent} />;
     default:
       return null;
   }
@@ -267,6 +270,48 @@ function BookPreview({ content }: { content: BookContent }) {
                 ? page.text.slice(0, 100) + "..."
                 : page.text}
             </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+const FORMAT_LABELS: Record<string, string> = {
+  sticker_chart: "Sticker Chart",
+  token_board: "Token Board",
+  progress_tracker: "Progress Tracker",
+};
+
+function BehaviorChartPreview({ content }: { content: BehaviorChartContent }) {
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        What&apos;s included ({FORMAT_LABELS[content.chartFormat] || content.chartFormat})
+      </h4>
+      <ul className="space-y-1.5 text-sm text-muted-foreground mb-3">
+        <li>{content.behaviors.length} behaviors</li>
+        {content.chartFormat === "sticker_chart" && content.columns && (
+          <li>{content.columns} tracking columns</li>
+        )}
+        {content.chartFormat === "token_board" && content.totalSlots && (
+          <li>{content.totalSlots} {content.tokenName || "token"} slots</li>
+        )}
+        {content.chartFormat === "progress_tracker" && content.levels && (
+          <li>{content.levels.length} levels</li>
+        )}
+        <li>Reward: {content.reward.name}</li>
+      </ul>
+      <p className="text-xs text-muted-foreground/70 mb-2">Behaviors:</p>
+      <ol className="space-y-1.5">
+        {content.behaviors.map((b, i) => (
+          <li key={b.id || i} className="text-sm">
+            <span className="font-medium text-foreground">{b.name}</span>
+            {b.description && (
+              <span className="text-xs text-muted-foreground ml-1.5">
+                — {b.description}
+              </span>
+            )}
           </li>
         ))}
       </ol>

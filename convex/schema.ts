@@ -129,6 +129,7 @@ export default defineSchema({
       v.literal("poster"),
       v.literal("flashcards"),
       v.literal("book"),
+      v.literal("behavior_chart"),
     ),
     name: v.string(),
     description: v.string(),

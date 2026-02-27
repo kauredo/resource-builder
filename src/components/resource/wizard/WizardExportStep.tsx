@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Download, Check, Loader2 } from "lucide-react";
 import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
+import { generateBehaviorChartPDF } from "@/lib/pdf-behavior-chart";
 import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { AIWizardState } from "./use-ai-wizard";
-import type { CardGameContent } from "@/types";
+import type { CardGameContent, BehaviorChartContent } from "@/types";
 
 interface WizardExportStepProps {
   state: AIWizardState;
@@ -64,6 +65,21 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
         assetMap,
         cardsPerPage: 9,
         includeCardBacks: !!(state.generatedContent as Record<string, unknown>).cardBack,
+        watermark: user?.subscription !== "pro",
+      });
+    }
+
+    if (state.resourceType === "behavior_chart" && state.generatedContent) {
+      const assetMap = new Map<string, string>();
+      for (const asset of assets) {
+        if (asset.currentVersion?.url) {
+          assetMap.set(asset.assetKey, asset.currentVersion.url);
+        }
+      }
+
+      return generateBehaviorChartPDF({
+        content: state.generatedContent as unknown as BehaviorChartContent,
+        assetMap,
         watermark: user?.subscription !== "pro",
       });
     }

@@ -12,6 +12,7 @@ import { BoardGameAIWizard } from "@/components/resource/board-game/BoardGameAIW
 import { CardGameAIWizard } from "@/components/resource/card-game/CardGameAIWizard";
 import { FreePromptWizard } from "@/components/resource/free-prompt/FreePromptWizard";
 import { BookWizard } from "@/components/resource/book/BookWizard";
+import { BehaviorChartAIWizard } from "@/components/resource/behavior-chart/BehaviorChartAIWizard";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export default function EditResourcePage({ params }: PageProps) {
       return <FreePromptWizard resourceId={resourceId} />;
     case "book":
       return <BookWizard resourceId={resourceId} />;
+    case "behavior_chart":
+      return <BehaviorChartAIWizard resourceId={resourceId} />;
     default:
       return null;
   }

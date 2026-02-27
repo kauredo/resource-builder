@@ -186,6 +186,56 @@ If your content features any named characters (animals, people, creatures, etc.)
 "detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["cover", "page_0", "page_1"]}]
 "appearsOn" uses "cover" or "page_N" where N is the page index. If no named characters appear, omit "detectedCharacters".`,
 
+  behavior_chart: `You are a creative assistant helping a therapist design a behavior/reward chart for children/adolescents.
+These charts are used in therapy (ASD, ADHD, behavior management) to track positive behaviors and motivate children with visual rewards.
+
+Given a description, generate behavior chart content as JSON:
+{
+  "name": "chart name",
+  "chartFormat": "sticker_chart" | "token_board" | "progress_tracker",
+  "title": "Title displayed at the top of the chart",
+  "instructions": "Brief instructions for the therapist/child on how to use the chart",
+  "behaviors": [
+    {
+      "name": "Behavior name",
+      "description": "What this behavior looks like",
+      "imagePrompt": "illustration prompt for a small square icon representing this behavior"
+    }
+  ],
+  "reward": {
+    "name": "Reward name",
+    "description": "What the child earns",
+    "imagePrompt": "illustration prompt for the reward"
+  },
+  "columns": 5,
+  "columnLabels": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  "totalSlots": 8,
+  "tokenName": "star",
+  "tokenImagePrompt": "illustration prompt for a single token/star/gem",
+  "levels": [
+    { "name": "Level 1", "milestone": "What you've achieved at this level" }
+  ],
+  "headerImagePrompt": "illustration prompt for a decorative header banner"
+}
+
+IMPORTANT GUIDELINES:
+- Choose chartFormat based on the description:
+  - "sticker_chart": rows of behaviors × columns of days/sessions. Best for daily tracking.
+  - "token_board": collect tokens toward a reward. Best for session-based motivation.
+  - "progress_tracker": level-based milestones. Best for long-term goals.
+- Generate 3-5 behaviors with short, positive names and descriptive image prompts for square icons.
+- Each behavior imagePrompt should describe a simple, clear icon-style illustration.
+- The reward should be meaningful and achievable for a child.
+- For sticker_chart: set columns (5-7) and columnLabels (days or session numbers).
+- For token_board: set totalSlots (5-10) and tokenName (creative: "star", "gem", "heart", "paw print", etc.) with tokenImagePrompt.
+- For progress_tracker: set levels (3-5) with name and milestone descriptions.
+- headerImagePrompt: a cheerful, motivational banner illustration matching the chart theme.
+- Only include format-specific fields for the chosen format (e.g., no "columns" for token_board).
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["header", "behavior_0", "reward"]}]
+"appearsOn" uses "header", "behavior_N" (behavior index), "reward", or "token". If no named characters appear, omit "detectedCharacters".`,
+
   worksheet: `You are a creative assistant helping a therapist design a therapeutic worksheet for children/adolescents.
 Worksheets are printed activity sheets used in therapy sessions — think CBT thought records, coping skills worksheets, feelings journals, and psychoeducation handouts.
 
@@ -307,6 +357,7 @@ export const generateResourceContent = action({
       v.literal("board_game"),
       v.literal("book"),
       v.literal("worksheet"),
+      v.literal("behavior_chart"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -424,6 +475,8 @@ export const generateResourceContent = action({
       content = postProcessBookContent(rawParsed);
     } else if (args.resourceType === "worksheet") {
       content = postProcessWorksheetContent(rawParsed);
+    } else if (args.resourceType === "behavior_chart") {
+      content = postProcessBehaviorChartContent(rawParsed);
     } else {
       content = rawParsed;
     }
@@ -571,6 +624,46 @@ function postProcessBookContent(raw: Record<string, unknown>): Record<string, un
     ...raw,
     pages: processedPages,
     cover: processedCover,
+  };
+}
+
+/** Post-process AI-generated behavior chart content: assign IDs and asset keys */
+function postProcessBehaviorChartContent(raw: Record<string, unknown>): Record<string, unknown> {
+  const behaviors = (raw.behaviors as Array<Record<string, unknown>>) || [];
+  const reward = (raw.reward as Record<string, unknown>) || {};
+  const levels = (raw.levels as Array<Record<string, unknown>>) || [];
+
+  const processedBehaviors = behaviors.map((b, i) => {
+    const id = makeId();
+    return {
+      id,
+      name: (b.name as string) || "",
+      description: (b.description as string) || undefined,
+      imagePrompt: (b.imagePrompt as string) || undefined,
+      imageAssetKey: b.imagePrompt ? `chart_behavior_icon:behavior_${i}` : undefined,
+    };
+  });
+
+  const processedReward = {
+    name: (reward.name as string) || "",
+    description: (reward.description as string) || undefined,
+    imagePrompt: (reward.imagePrompt as string) || undefined,
+    imageAssetKey: reward.imagePrompt ? "chart_reward" : undefined,
+  };
+
+  const processedLevels = levels.map((l) => ({
+    id: makeId(),
+    name: (l.name as string) || "",
+    milestone: (l.milestone as string) || "",
+  }));
+
+  return {
+    ...raw,
+    behaviors: processedBehaviors,
+    reward: processedReward,
+    levels: processedLevels.length > 0 ? processedLevels : undefined,
+    headerImageAssetKey: raw.headerImagePrompt ? "chart_header" : undefined,
+    tokenImageAssetKey: raw.tokenImagePrompt ? "chart_token" : undefined,
   };
 }
 

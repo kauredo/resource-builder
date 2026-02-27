@@ -31,6 +31,8 @@ const PLACEHOLDER_MAP: Record<string, string> = {
     "A CBT thought record worksheet for teens, with sections for situation, thoughts, feelings, and coping responses...",
   emotion_cards:
     "A set of emotion cards showing different feelings like happy, sad, angry, and scared, for young children to identify and name...",
+  behavior_chart:
+    "A sticker chart for a 6-year-old with ADHD to track morning routine behaviors like brushing teeth, getting dressed, and eating breakfast...",
 };
 
 export function WizardDescribeStep({

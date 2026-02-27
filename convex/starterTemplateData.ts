@@ -15,7 +15,8 @@ type ResourceType =
   | "worksheet"
   | "poster"
   | "flashcards"
-  | "book";
+  | "book"
+  | "behavior_chart";
 
 interface TemplateData {
   type: ResourceType;
@@ -336,6 +337,78 @@ export const TEMPLATE_DATA: Record<string, TemplateData> = {
         { id: "p-4", text: "When something is hard, I can try again. Trying is what makes me brave, not getting it perfect.", imagePrompt: "A child climbing a gentle hill, looking determined, with a flag at the top saying 'I tried!'" },
         { id: "p-5", text: "The things that make me different are the things that make me special.", imagePrompt: "A diverse group of children, each shown with unique talents and qualities glowing around them" },
       ],
+    },
+  },
+
+  // --- Behavior Charts ---
+  "morning-routine-sticker-chart": {
+    type: "behavior_chart",
+    name: "Morning Routine Stars",
+    description: "A sticker chart tracking 4 morning routine behaviors across 5 weekdays. Earns a special reward at the end of the week.",
+    tags: ["social-skills"],
+    content: {
+      chartFormat: "sticker_chart",
+      title: "My Morning Routine Stars",
+      instructions: "Each time you complete a morning task, place a sticker in the box. Fill the whole week to earn your reward!",
+      behaviors: [
+        { id: "b1", name: "Brush teeth", description: "Brush for two full minutes", imagePrompt: "A cheerful cartoon toothbrush with sparkles and a big smile", imageAssetKey: "chart_behavior_icon:behavior_0" },
+        { id: "b2", name: "Get dressed", description: "Choose and put on clothes by yourself", imagePrompt: "A bright, colorful t-shirt and shorts neatly folded with a happy face", imageAssetKey: "chart_behavior_icon:behavior_1" },
+        { id: "b3", name: "Eat breakfast", description: "Sit and eat your breakfast calmly", imagePrompt: "A warm bowl of cereal with a spoon and a glass of juice, friendly style", imageAssetKey: "chart_behavior_icon:behavior_2" },
+        { id: "b4", name: "Pack bag", description: "Put everything you need in your school bag", imagePrompt: "A colourful school backpack with a star on it, ready to go", imageAssetKey: "chart_behavior_icon:behavior_3" },
+      ],
+      reward: { name: "Extra 15 minutes of play", description: "Choose any game or activity for bonus playtime", imagePrompt: "A joyful child playing with toys surrounded by colourful stars and confetti", imageAssetKey: "chart_reward" },
+      columns: 5,
+      columnLabels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      headerImagePrompt: "A bright, cheerful sunrise over a cosy house with a smiling sun, warm colours, child-friendly illustration",
+      headerImageAssetKey: "chart_header",
+    },
+  },
+  "calm-body-token-board": {
+    type: "behavior_chart",
+    name: "Calm Body Token Board",
+    description: "A token board for practising calm body skills. Collect 8 star tokens to earn a reward.",
+    tags: ["anxiety"],
+    content: {
+      chartFormat: "token_board",
+      title: "My Calm Body Tokens",
+      instructions: "Each time you use a calm body skill, you earn a star token. Fill all the stars to earn your reward!",
+      behaviors: [
+        { id: "b1", name: "Deep breaths", description: "Take 3 slow, deep belly breaths", imagePrompt: "A pair of lungs with gentle wind swirls, peaceful and calming style", imageAssetKey: "chart_behavior_icon:behavior_0" },
+        { id: "b2", name: "Quiet hands", description: "Keep hands still and gentle", imagePrompt: "Two open hands resting quietly with a soft glow around them", imageAssetKey: "chart_behavior_icon:behavior_1" },
+        { id: "b3", name: "Walking feet", description: "Walk calmly instead of running", imagePrompt: "A pair of friendly sneakers walking gently on a path with flowers", imageAssetKey: "chart_behavior_icon:behavior_2" },
+      ],
+      reward: { name: "Choose a sticker", description: "Pick any sticker from the treasure box", imagePrompt: "A treasure chest overflowing with colourful stickers and stars", imageAssetKey: "chart_reward" },
+      totalSlots: 8,
+      tokenName: "star",
+      tokenImagePrompt: "A bright golden star with a warm glow and gentle sparkle, simple icon style",
+      tokenImageAssetKey: "chart_token",
+      headerImagePrompt: "A peaceful meadow scene with soft clouds, butterflies, and a gentle rainbow, child-friendly illustration",
+      headerImageAssetKey: "chart_header",
+    },
+  },
+  "kindness-progress-tracker": {
+    type: "behavior_chart",
+    name: "Kindness Quest",
+    description: "A progress tracker with 4 levels of kindness milestones. Encourages social skills through achievable goals.",
+    tags: ["social-skills"],
+    content: {
+      chartFormat: "progress_tracker",
+      title: "Kindness Quest",
+      instructions: "Complete acts of kindness to level up! Check off each level when you reach its milestone.",
+      behaviors: [
+        { id: "b1", name: "Share with others", description: "Share a toy, snack, or idea with someone", imagePrompt: "Two hands exchanging a heart-shaped gift, warm and friendly style", imageAssetKey: "chart_behavior_icon:behavior_0" },
+        { id: "b2", name: "Use kind words", description: "Say something nice to someone", imagePrompt: "A speech bubble with a smiley face and hearts floating out", imageAssetKey: "chart_behavior_icon:behavior_1" },
+        { id: "b3", name: "Help someone", description: "Offer to help without being asked", imagePrompt: "A child helping another child pick up dropped books, warm illustration", imageAssetKey: "chart_behavior_icon:behavior_2" },
+      ],
+      reward: { name: "Kindness Champion Badge", description: "You are an official Kindness Champion!", imagePrompt: "A shiny gold badge with a heart in the center and the word Champion on a ribbon", imageAssetKey: "chart_reward" },
+      levels: [
+        { id: "l1", name: "Kindness Starter", milestone: "Complete 3 kind acts" },
+        { id: "l2", name: "Kindness Helper", milestone: "Complete 6 kind acts across at least 2 types" },
+        { id: "l3", name: "Kindness Hero", milestone: "Complete 10 kind acts and help someone new" },
+        { id: "l4", name: "Kindness Champion", milestone: "Complete 15 kind acts — you're a true champion!" },
+      ],
+      headerImagePrompt: "A winding path through a magical garden with stepping stones, flowers, and a castle in the distance, warm and inviting illustration",
+      headerImageAssetKey: "chart_header",
     },
   },
 };

@@ -149,7 +149,11 @@ export type AssetType =
   | "book_page_image"
   | "book_cover_image"
   | "frame_border"
-  | "frame_full_card";
+  | "frame_full_card"
+  | "chart_header_image"
+  | "chart_behavior_icon"
+  | "chart_reward_image"
+  | "chart_token_image";
 
 export type AssetKey = string;
 
@@ -183,7 +187,8 @@ export type ResourceType =
   | "worksheet"
   | "poster"
   | "flashcards"
-  | "book";
+  | "book"
+  | "behavior_chart";
 
 export type SubscriptionStatus = "free" | "pro";
 
@@ -400,5 +405,58 @@ export interface BookContent {
   layout: BookLayout;
   cover?: BookCover;
   pages: BookPage[];
+  characters?: CharacterSelection;
+}
+
+// Behavior chart resource types
+export type ChartFormat = "sticker_chart" | "token_board" | "progress_tracker";
+
+export interface BehaviorChartBehavior {
+  id: string;
+  name: string;
+  description?: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+}
+
+export interface BehaviorChartReward {
+  name: string;
+  description?: string;
+  imagePrompt?: string;
+  imageAssetKey?: AssetKey;
+}
+
+export interface BehaviorChartLevel {
+  id: string;
+  name: string;
+  milestone: string;
+}
+
+export interface BehaviorChartContent {
+  chartFormat: ChartFormat;
+  title: string;
+  instructions?: string;
+
+  // Shared
+  behaviors: BehaviorChartBehavior[];
+  reward: BehaviorChartReward;
+
+  // Sticker chart
+  columns?: number;
+  columnLabels?: string[];
+
+  // Token board
+  totalSlots?: number;
+  tokenName?: string;
+  tokenImagePrompt?: string;
+  tokenImageAssetKey?: AssetKey;
+
+  // Progress tracker
+  levels?: BehaviorChartLevel[];
+
+  // Header/decorative image
+  headerImagePrompt?: string;
+  headerImageAssetKey?: AssetKey;
+
   characters?: CharacterSelection;
 }
