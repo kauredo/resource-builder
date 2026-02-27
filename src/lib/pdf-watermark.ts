@@ -9,18 +9,20 @@ import { View, Text } from "@react-pdf/renderer";
 import { createElement } from "react";
 
 /**
- * Returns a View element positioned absolutely in the bottom-right
- * corner of the page with a subtle watermark text.
+ * Returns a fixed View element positioned as a centered footer in
+ * the bottom page margin, below all content.
  */
 export function createWatermarkOverlay() {
   return createElement(
     View,
     {
+      fixed: true,
       style: {
         position: "absolute",
-        bottom: 18,
-        right: 24,
-        transform: "rotate(-20deg)",
+        bottom: 12,
+        left: 0,
+        right: 0,
+        alignItems: "center",
       },
     },
     createElement(
@@ -28,9 +30,10 @@ export function createWatermarkOverlay() {
       {
         style: {
           fontFamily: "Helvetica",
-          fontSize: 7.5,
+          fontSize: 8.5,
           color: "#000000",
-          opacity: 0.13,
+          opacity: 0.2,
+          textAlign: "center",
         },
       },
       "Created with Resource Builder",

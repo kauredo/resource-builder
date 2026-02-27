@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CardPreview } from "../CardPreview";
 import { GenerationProgress } from "../GenerationProgress";
 import { StyleContextBar } from "../StyleContextBar";
-import { Wand2, RefreshCw } from "lucide-react";
+import { Wand2, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getEmotionDescription } from "@/lib/emotions";
 import type { WizardState } from "../use-emotion-cards-wizard";
@@ -425,10 +425,17 @@ export function GenerateReviewStep({ state, onUpdate }: GenerateReviewStepProps)
             <Button
               size="lg"
               onClick={startGeneration}
+              disabled={isGenerating}
               className="btn-coral gap-2 text-base px-8 min-h-[48px]"
             >
-              <Wand2 className="size-5" aria-hidden="true" />
-              Create {state.selectedEmotions.length} Card{state.selectedEmotions.length !== 1 ? "s" : ""}
+              {isGenerating ? (
+                <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : (
+                <Wand2 className="size-5" aria-hidden="true" />
+              )}
+              {isGenerating
+                ? "Generating..."
+                : `Create ${state.selectedEmotions.length} Card${state.selectedEmotions.length !== 1 ? "s" : ""}`}
             </Button>
           </div>
         </div>
