@@ -13,8 +13,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, Download, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
+import { DuplicateResourceDialog } from "./DuplicateResourceDialog";
 
 export function DetailPageSkeleton() {
   return (
@@ -33,6 +34,7 @@ export function DetailPageSkeleton() {
           <div className="flex gap-2">
             <div className="h-9 w-24 bg-muted rounded animate-pulse motion-reduce:animate-none" />
             <div className="h-9 w-20 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+            <div className="size-9 bg-muted rounded animate-pulse motion-reduce:animate-none" />
             <div className="size-9 bg-muted rounded animate-pulse motion-reduce:animate-none" />
           </div>
         </div>
@@ -99,12 +101,26 @@ export function DetailPageHeader({
             <Download className="size-4" aria-hidden="true" />
             Export
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="gap-1.5">
             <Link href={`/dashboard/resources/${resourceId}/edit`}>
               <Pencil className="size-4" aria-hidden="true" />
               Edit
             </Link>
           </Button>
+          <DuplicateResourceDialog
+            resourceId={resourceId}
+            resourceName={resourceName}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                <span className="sr-only">Duplicate</span>
+              </Button>
+            }
+          />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button

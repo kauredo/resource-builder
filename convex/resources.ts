@@ -273,6 +273,91 @@ export const addImageToResource = mutation({
   },
 });
 
+export const duplicateResource = mutation({
+  args: {
+    resourceId: v.id("resources"),
+    userId: v.id("users"),
+    newName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const original = await ctx.db.get(args.resourceId);
+    if (!original) throw new Error("Resource not found");
+    if (original.userId !== args.userId) throw new Error("Not your resource");
+
+    const now = Date.now();
+
+    // Enforce free tier limit (counts as new resource creation)
+    const user = await ctx.db.get(args.userId);
+    if (user && user.subscription !== "pro") {
+      const monthStart = getMonthStart(now);
+      let resourcesThisMonth = user.resourcesCreatedThisMonth ?? 0;
+      if (!user.monthResetAt || user.monthResetAt < monthStart) {
+        resourcesThisMonth = 0;
+      }
+      if (resourcesThisMonth >= FREE_LIMITS.resourcesPerMonth) {
+        throw new Error(
+          "LIMIT_REACHED:resource:You've used your 2 free resources this month. Upgrade to Pro for unlimited resources."
+        );
+      }
+      await ctx.db.patch(user._id, {
+        resourcesCreatedThisMonth: resourcesThisMonth + 1,
+        monthResetAt: monthStart,
+      });
+    }
+
+    // Insert cloned resource
+    const newResourceId = await ctx.db.insert("resources", {
+      userId: args.userId,
+      styleId: original.styleId,
+      type: original.type,
+      name: args.newName || `${original.name} (Copy)`,
+      description: original.description,
+      tags: original.tags ?? [],
+      content: original.content,
+      images: original.images, // backwards compat — share storage references
+      status: "draft",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Copy assets (lightweight — reuse storage files)
+    const originalAssets = await ctx.db
+      .query("assets")
+      .withIndex("by_owner", (q) =>
+        q.eq("ownerType", "resource").eq("ownerId", args.resourceId),
+      )
+      .collect();
+
+    for (const asset of originalAssets) {
+      if (!asset.currentVersionId) continue;
+      const currentVersion = await ctx.db.get(asset.currentVersionId);
+      if (!currentVersion) continue;
+
+      const newAssetId = await ctx.db.insert("assets", {
+        ownerType: "resource",
+        ownerId: newResourceId,
+        assetType: asset.assetType,
+        assetKey: asset.assetKey,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const newVersionId = await ctx.db.insert("assetVersions", {
+        assetId: newAssetId,
+        storageId: currentVersion.storageId,
+        prompt: currentVersion.prompt,
+        params: currentVersion.params,
+        source: "generated",
+        createdAt: now,
+      });
+
+      await ctx.db.patch(newAssetId, { currentVersionId: newVersionId });
+    }
+
+    return newResourceId;
+  },
+});
+
 export const deleteResource = mutation({
   args: { resourceId: v.id("resources") },
   handler: async (ctx, args) => {

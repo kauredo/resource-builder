@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
+  Copy,
   Download,
   Pencil,
   Trash2,
@@ -42,6 +43,7 @@ import {
   EmotionCardsSettings,
   type EmotionCardsExportSettings,
 } from "@/components/resource/ExportModal";
+import { DuplicateResourceDialog } from "@/components/resource/DuplicateResourceDialog";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
@@ -206,6 +208,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
               <div className="h-9 w-28 bg-muted rounded animate-pulse motion-reduce:animate-none" />
               <div className="h-9 w-20 bg-muted rounded animate-pulse motion-reduce:animate-none" />
               <div className="size-9 bg-muted rounded animate-pulse motion-reduce:animate-none" />
+              <div className="size-9 bg-muted rounded animate-pulse motion-reduce:animate-none" />
             </div>
           </div>
         </div>
@@ -332,12 +335,27 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
               Export
             </Button>
 
-            <Button asChild variant="outline" className="gap-2">
+            <Button asChild variant="outline" className="gap-1.5">
               <Link href={`/dashboard/resources/${resource._id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
                 Edit
               </Link>
             </Button>
+
+            <DuplicateResourceDialog
+              resourceId={resource._id}
+              resourceName={resource.name}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Copy className="size-4" aria-hidden="true" />
+                  <span className="sr-only">Duplicate</span>
+                </Button>
+              }
+            />
 
             <AlertDialog>
               <AlertDialogTrigger asChild>

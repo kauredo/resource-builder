@@ -25,7 +25,7 @@ Priorities only. Higher number = lower priority.
 
 ## Priority 3 — Next Up
 
-- [ ] **Duplicate resource** — copy any existing resource and tweak it (new name, same content/settings, draft state)
+- [x] **Duplicate resource** — copy any existing resource and tweak it (new name, same content/settings, draft state)
 - [ ] **Starter library** — pre-built resources for common therapy scenarios (anxiety coping cards, feelings wheels, social skills flashcards, etc.) so therapists don't start from zero. Different from the existing "resource templates" (blank starting points per type) — these are fully built, ready to use or customize.
 - [ ] **Behavior/reward charts** — new resource type. Sticker charts, token boards, progress trackers. Extremely common in child therapy (ASD, ADHD, behavior management).
 
