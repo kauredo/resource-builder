@@ -35,6 +35,8 @@ const PLACEHOLDER_MAP: Record<string, string> = {
     "A sticker chart for a 6-year-old with ADHD to track morning routine behaviors like brushing teeth, getting dressed, and eating breakfast...",
   visual_schedule:
     "A morning routine visual schedule for a 6-year-old with ASD, showing wake up, brush teeth, get dressed, eat breakfast, and pack bag...",
+  certificate:
+    "A colorful achievement certificate for a 7-year-old who completed an anxiety coping skills program, with a warm encouraging tone...",
 };
 
 export function WizardDescribeStep({

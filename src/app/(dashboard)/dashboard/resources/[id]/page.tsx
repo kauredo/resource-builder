@@ -19,6 +19,7 @@ const FreePromptDetail = dynamic(() => import("@/components/resource/free-prompt
 const BookDetail = dynamic(() => import("@/components/resource/book/BookDetail").then(m => m.BookDetail));
 const BehaviorChartDetail = dynamic(() => import("@/components/resource/behavior-chart/BehaviorChartDetail").then(m => m.BehaviorChartDetail));
 const VisualScheduleDetail = dynamic(() => import("@/components/resource/visual-schedule/VisualScheduleDetail").then(m => m.VisualScheduleDetail));
+const CertificateDetail = dynamic(() => import("@/components/resource/certificate/CertificateDetail").then(m => m.CertificateDetail));
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -104,6 +105,8 @@ export default function ResourceDetailPage({ params }: PageProps) {
       return <BehaviorChartDetail resourceId={resourceId} />;
     case "visual_schedule":
       return <VisualScheduleDetail resourceId={resourceId} />;
+    case "certificate":
+      return <CertificateDetail resourceId={resourceId} />;
     default:
       return null;
   }

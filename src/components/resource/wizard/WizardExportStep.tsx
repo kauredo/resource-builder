@@ -9,9 +9,10 @@ import { generateImagePagesPDF } from "@/lib/pdf-image-pages";
 import { generateCardGamePDF } from "@/lib/pdf-card-game";
 import { generateBehaviorChartPDF } from "@/lib/pdf-behavior-chart";
 import { generateVisualSchedulePDF } from "@/lib/pdf-visual-schedule";
+import { generateCertificatePDF } from "@/lib/pdf-certificate";
 import { PDFPreview } from "@/components/resource/PDFPreview";
 import type { AIWizardState } from "./use-ai-wizard";
-import type { CardGameContent, BehaviorChartContent, VisualScheduleContent } from "@/types";
+import type { CardGameContent, BehaviorChartContent, VisualScheduleContent, CertificateContent } from "@/types";
 
 interface WizardExportStepProps {
   state: AIWizardState;
@@ -27,9 +28,16 @@ function getLayoutMode(resourceType: string): "full_page" | "grid" {
   }
 }
 
+/** Display label for the layout (used in summary only) */
+function getLayoutLabel(resourceType: string): string {
+  if (resourceType === "certificate") return "Landscape certificate";
+  return LAYOUT_LABELS[getLayoutMode(resourceType)] ?? "Full page";
+}
+
 const LAYOUT_LABELS: Record<string, string> = {
   full_page: "Full page",
   grid: "Card grid",
+  certificate: "Landscape certificate",
 };
 
 function formatResourceType(type: string): string {
@@ -96,6 +104,22 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
       return generateVisualSchedulePDF({
         content: state.generatedContent as unknown as VisualScheduleContent,
         assetMap,
+        watermark: user?.subscription !== "pro",
+      });
+    }
+
+    if (state.resourceType === "certificate" && state.generatedContent) {
+      const certAsset = assets.find((a) => a.assetKey === "certificate_main");
+      if (!certAsset?.currentVersion?.url) throw new Error("No certificate image");
+      const certContent = state.generatedContent as unknown as CertificateContent;
+      return generateCertificatePDF({
+        imageUrl: certAsset.currentVersion.url,
+        headline: certContent.headline,
+        subtext: certContent.subtext,
+        achievement: certContent.achievement,
+        recipientPlaceholder: certContent.recipientPlaceholder,
+        datePlaceholder: certContent.datePlaceholder,
+        signatoryLabel: certContent.signatoryLabel,
         watermark: user?.subscription !== "pro",
       });
     }
@@ -195,7 +219,9 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
             <>
               <h3 className="font-medium text-foreground">Ready to export</h3>
               <p className="text-sm text-muted-foreground mt-1.5">
-                {completedImages} image{completedImages !== 1 ? "s" : ""}, {LAYOUT_LABELS[getLayoutMode(state.resourceType)].toLowerCase()} layout
+                {state.resourceType === "certificate"
+                  ? "Landscape certificate with text overlay"
+                  : `${completedImages} image${completedImages !== 1 ? "s" : ""}, ${LAYOUT_LABELS[getLayoutMode(state.resourceType)].toLowerCase()} layout`}
               </p>
               <Button
                 onClick={handleExport}
@@ -244,7 +270,7 @@ export function WizardExportStep({ state }: WizardExportStepProps) {
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Layout</dt>
               <dd className="font-medium">
-                {LAYOUT_LABELS[getLayoutMode(state.resourceType)]}
+                {getLayoutLabel(state.resourceType)}
               </dd>
             </div>
           </dl>

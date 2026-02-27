@@ -131,6 +131,7 @@ export default defineSchema({
       v.literal("book"),
       v.literal("behavior_chart"),
       v.literal("visual_schedule"),
+      v.literal("certificate"),
     ),
     name: v.string(),
     description: v.string(),

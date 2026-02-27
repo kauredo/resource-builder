@@ -322,6 +322,35 @@ IMPORTANT GUIDELINES:
 If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
 "detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["header", "activity_0", "activity_1"]}]
 "appearsOn" uses "header" or "activity_N" (activity index). If no named characters appear, omit "detectedCharacters".`,
+
+  certificate: `You are a creative assistant helping a therapist design an achievement certificate for children/adolescent therapy.
+Certificates reward progress milestones — completing a CBT program, mastering a coping skill, reaching behavior chart goals, etc.
+
+Given a description, generate certificate content as JSON:
+{
+  "name": "certificate name for the library",
+  "headline": "Certificate of Achievement",
+  "subtext": "This certifies that",
+  "achievement": "for demonstrating courage and growth throughout the anxiety management program",
+  "recipientPlaceholder": "Child's Name",
+  "datePlaceholder": "Date",
+  "signatoryLabel": "Therapist",
+  "imagePrompt": "detailed illustration prompt for a DECORATIVE BACKGROUND ONLY"
+}
+
+IMPORTANT GUIDELINES:
+- headline: The main title text (e.g., "Certificate of Achievement", "Courage Award", "Star of the Week").
+- subtext: Optional introductory phrase (e.g., "This certifies that", "Awarded to", "Presented to").
+- achievement: What the child accomplished (e.g., "for completing the Brave Steps anxiety program").
+- recipientPlaceholder: Label for where the child's name goes (default: "Child's Name").
+- datePlaceholder: Label for the date field (default: "Date").
+- signatoryLabel: Who signs it (e.g., "Therapist", "Dr. Smith", "Your Counselor").
+- imagePrompt: Describe a DECORATIVE BACKGROUND image only — ornate borders, flourishes, ribbons, stars, confetti, flowers, etc. Do NOT include any text in the image. All text is overlaid by the PDF generator. The image should be landscape orientation (4:3 aspect).
+- Make the tone warm, encouraging, and celebratory.
+
+If your content features any named characters (animals, people, creatures, etc.), include a top-level "detectedCharacters" array:
+"detectedCharacters": [{"name": "Character Name", "description": "Brief character description", "personality": "Personality traits", "visualDescription": "A detailed visual-only prompt fragment (4-6 sentences). Be EXTREMELY specific: exact species/body type, exact colors (e.g., 'bright orange fur with cream chest'), exact proportions (e.g., 'small and round, about half the height of a door'), distinctive markings, clothing items with colors and patterns, and any accessories. The more precise and unique the description, the better. No emotions, poses, or scene context.", "appearsOn": ["certificate"]}]
+If no named characters appear, omit "detectedCharacters".`,
 };
 
 export const refinePrompt = action({
@@ -397,6 +426,7 @@ export const generateResourceContent = action({
       v.literal("worksheet"),
       v.literal("behavior_chart"),
       v.literal("visual_schedule"),
+      v.literal("certificate"),
     ),
     description: v.string(),
     styleId: v.optional(v.id("styles")),
@@ -518,6 +548,8 @@ export const generateResourceContent = action({
       content = postProcessBehaviorChartContent(rawParsed);
     } else if (args.resourceType === "visual_schedule") {
       content = postProcessVisualScheduleContent(rawParsed);
+    } else if (args.resourceType === "certificate") {
+      content = postProcessCertificateContent(rawParsed);
     } else {
       content = rawParsed;
     }
@@ -752,5 +784,15 @@ function postProcessVisualScheduleContent(raw: Record<string, unknown>): Record<
     ...raw,
     activities: processedActivities,
     headerImageAssetKey: raw.headerImagePrompt ? "schedule_header" : undefined,
+  };
+}
+
+/** Post-process AI-generated certificate content: assign imageAssetKey */
+function postProcessCertificateContent(raw: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...raw,
+    imageAssetKey: "certificate_main",
+    recipientPlaceholder: (raw.recipientPlaceholder as string) || "Child's Name",
+    datePlaceholder: (raw.datePlaceholder as string) || "Date",
   };
 }

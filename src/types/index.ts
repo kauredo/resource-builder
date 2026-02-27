@@ -155,7 +155,8 @@ export type AssetType =
   | "chart_reward_image"
   | "chart_token_image"
   | "schedule_header_image"
-  | "schedule_activity_icon";
+  | "schedule_activity_icon"
+  | "certificate_image";
 
 export type AssetKey = string;
 
@@ -191,7 +192,8 @@ export type ResourceType =
   | "flashcards"
   | "book"
   | "behavior_chart"
-  | "visual_schedule";
+  | "visual_schedule"
+  | "certificate";
 
 export type SubscriptionStatus = "free" | "pro";
 
@@ -489,5 +491,18 @@ export interface VisualScheduleContent {
   thenLabel?: string;
   headerImagePrompt?: string;
   headerImageAssetKey?: AssetKey;
+  characters?: CharacterSelection;
+}
+
+// Certificate / achievement card resource types
+export interface CertificateContent {
+  headline: string;
+  subtext?: string;
+  achievement?: string;
+  recipientPlaceholder: string;
+  datePlaceholder: string;
+  signatoryLabel?: string;
+  imagePrompt: string;
+  imageAssetKey: AssetKey;
   characters?: CharacterSelection;
 }

@@ -11,6 +11,7 @@ import {
   BookOpen,
   Star,
   CalendarDays,
+  Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +39,7 @@ const TYPE_META: Record<
   book: { icon: BookOpen, accent: "coral" },
   behavior_chart: { icon: Star, accent: "teal" },
   visual_schedule: { icon: CalendarDays, accent: "teal" },
+  certificate: { icon: Award, accent: "coral" },
 };
 
 interface StarterLibraryProps {

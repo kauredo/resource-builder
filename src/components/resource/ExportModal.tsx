@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -373,6 +374,55 @@ export function WorksheetSettings({
             <SelectItem value="landscape">Landscape</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+    </div>
+  );
+}
+
+// --- Certificate ---
+
+export interface CertificateExportSettings {
+  recipientName: string;
+  date: string;
+}
+
+export function CertificateSettings({
+  settings,
+  onSettingsChange,
+}: SettingsProps<CertificateExportSettings>) {
+  return (
+    <div className="space-y-4">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        Personalize
+      </p>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Fill in below to pre-print these fields. Leave blank to get a handwrite line instead.
+      </p>
+      <div className="space-y-1.5">
+        <Label htmlFor="cert-recipient">Recipient name</Label>
+        <Input
+          id="cert-recipient"
+          value={settings.recipientName}
+          onChange={(e) =>
+            onSettingsChange({ ...settings, recipientName: e.target.value })
+          }
+          maxLength={60}
+          placeholder="Child's name (or leave blank)"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="cert-date">Date</Label>
+        <Input
+          id="cert-date"
+          type="date"
+          value={settings.date}
+          onChange={(e) =>
+            onSettingsChange({ ...settings, date: e.target.value })
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          Clear to get a blank date line.
+        </p>
       </div>
     </div>
   );

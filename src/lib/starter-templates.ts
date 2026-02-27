@@ -9,6 +9,7 @@ import type {
   BookContent,
   BehaviorChartContent,
   VisualScheduleContent,
+  CertificateContent,
 } from "@/types";
 
 export interface StarterTemplate {
@@ -53,6 +54,7 @@ export const RESOURCE_TYPE_LABELS: Record<Exclude<ResourceType, "free_prompt">, 
   book: "Book",
   behavior_chart: "Behavior Chart",
   visual_schedule: "Visual Schedule",
+  certificate: "Certificate",
 };
 
 // --- Emotion Cards ---
@@ -544,6 +546,41 @@ const therapySessionBoard: VisualScheduleContent = {
   headerImageAssetKey: "schedule_header",
 };
 
+// --- Certificates ---
+
+const courageAward: CertificateContent = {
+  headline: "Courage Award",
+  subtext: "This certifies that",
+  achievement: "for showing incredible bravery and completing the anxiety management program",
+  recipientPlaceholder: "Child's Name",
+  datePlaceholder: "Date",
+  signatoryLabel: "Therapist",
+  imagePrompt: "An ornate certificate background with golden borders, laurel wreaths on the sides, decorative stars and ribbons, warm cream center area — NO TEXT in the image",
+  imageAssetKey: "certificate_main",
+};
+
+const copingSkillsChampion: CertificateContent = {
+  headline: "Coping Skills Champion",
+  subtext: "Awarded to",
+  achievement: "for mastering new coping strategies and building emotional resilience",
+  recipientPlaceholder: "Child's Name",
+  datePlaceholder: "Date",
+  signatoryLabel: "Therapist",
+  imagePrompt: "A cheerful certificate background with colourful confetti, small trophy icons, and rainbow border decorations, light background — NO TEXT in the image",
+  imageAssetKey: "certificate_main",
+};
+
+const kindnessCertificate: CertificateContent = {
+  headline: "Kindness Certificate",
+  subtext: "Presented to",
+  achievement: "for demonstrating outstanding kindness, empathy, and care for others",
+  recipientPlaceholder: "Child's Name",
+  datePlaceholder: "Date",
+  signatoryLabel: "Therapist",
+  imagePrompt: "A warm certificate background with heart-shaped border decorations, small flowers, butterflies, and gentle pastel flourishes — NO TEXT in the image",
+  imageAssetKey: "certificate_main",
+};
+
 const firstThenTransition: VisualScheduleContent = {
   scheduleFormat: "first_then",
   title: "First-Then Board",
@@ -757,5 +794,34 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     theme: "social-skills",
     contentSummary: "First-Then · 2 activities",
     content: firstThenTransition as unknown as Record<string, unknown>,
+  },
+
+  // Certificates
+  {
+    id: "courage-award",
+    type: "certificate",
+    name: "Courage Award",
+    description: "A warm achievement certificate for completing an anxiety or fear-facing program. Celebrates bravery and growth.",
+    theme: "anxiety",
+    contentSummary: "Achievement certificate",
+    content: courageAward as unknown as Record<string, unknown>,
+  },
+  {
+    id: "coping-skills-champion",
+    type: "certificate",
+    name: "Coping Skills Champion",
+    description: "Reward mastering coping strategies. Great for graduating from a CBT skills program or reaching a milestone.",
+    theme: "cbt",
+    contentSummary: "Achievement certificate",
+    content: copingSkillsChampion as unknown as Record<string, unknown>,
+  },
+  {
+    id: "kindness-certificate",
+    type: "certificate",
+    name: "Kindness Certificate",
+    description: "Celebrate empathy and social skills achievements. Perfect for social skills groups and kindness programs.",
+    theme: "social-skills",
+    contentSummary: "Achievement certificate",
+    content: kindnessCertificate as unknown as Record<string, unknown>,
   },
 ];

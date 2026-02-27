@@ -18,6 +18,7 @@ export const getUserResources = query({
         v.literal("book"),
         v.literal("behavior_chart"),
         v.literal("visual_schedule"),
+        v.literal("certificate"),
       ),
     ),
     tag: v.optional(v.string()),
@@ -97,7 +98,8 @@ export const getResourcesByType = query({
       v.literal("flashcards"),
       v.literal("book"),
       v.literal("behavior_chart"),
-      v.literal("visual_schedule")
+      v.literal("visual_schedule"),
+      v.literal("certificate")
     ),
   },
   handler: async (ctx, args) => {
@@ -178,7 +180,8 @@ export const createResource = mutation({
       v.literal("flashcards"),
       v.literal("book"),
       v.literal("behavior_chart"),
-      v.literal("visual_schedule")
+      v.literal("visual_schedule"),
+      v.literal("certificate")
     ),
     name: v.string(),
     description: v.string(),

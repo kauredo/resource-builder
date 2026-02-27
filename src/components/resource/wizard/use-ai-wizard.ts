@@ -237,7 +237,7 @@ export function useAIWizard({ resourceType, editResourceId }: UseAIWizardArgs) {
 
     try {
       // Only poster, flashcards, card_game, board_game supported
-      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart", "visual_schedule"] as const;
+      const validTypes = ["poster", "flashcards", "card_game", "board_game", "book", "behavior_chart", "visual_schedule", "certificate"] as const;
       type ValidType = (typeof validTypes)[number];
       if (!validTypes.includes(resourceType as ValidType)) {
         throw new Error(`Content generation not supported for ${resourceType}`);
@@ -893,6 +893,20 @@ function extractImageItems(
           group: "Activity Icons",
           status: "pending",
         });
+      });
+      break;
+    }
+
+    case "certificate": {
+      const certPrompt = (content.imagePrompt as string) || "Decorative certificate background with ornate borders and flourishes";
+      items.push({
+        assetKey: (content.imageAssetKey as string) || "certificate_main",
+        assetType: "certificate_image",
+        prompt: `Decorative certificate background (NO TEXT): ${certPrompt}`,
+        characterIds: resourceCharacterIds,
+        includeText: false,
+        aspect: "4:3",
+        status: "pending",
       });
       break;
     }

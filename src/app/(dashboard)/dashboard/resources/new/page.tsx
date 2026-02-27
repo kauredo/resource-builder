@@ -18,6 +18,7 @@ import {
   BookOpen,
   Star,
   CalendarDays,
+  Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StarterLibrary } from "@/components/resource/starter-library/StarterLibrary";
@@ -95,6 +96,14 @@ const RESOURCE_TYPES = [
     route: "/dashboard/resources/new/visual-schedule",
     icon: CalendarDays,
     accent: "teal" as const,
+  },
+  {
+    id: "certificate",
+    title: "Certificate",
+    description: "Achievement certificates and reward cards for celebrating therapy milestones.",
+    route: "/dashboard/resources/new/certificate",
+    icon: Award,
+    accent: "coral" as const,
   },
   {
     id: "free-prompt",

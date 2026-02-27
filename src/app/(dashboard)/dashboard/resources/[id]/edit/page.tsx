@@ -14,6 +14,7 @@ import { FreePromptWizard } from "@/components/resource/free-prompt/FreePromptWi
 import { BookWizard } from "@/components/resource/book/BookWizard";
 import { BehaviorChartAIWizard } from "@/components/resource/behavior-chart/BehaviorChartAIWizard";
 import { VisualScheduleAIWizard } from "@/components/resource/visual-schedule/VisualScheduleAIWizard";
+import { CertificateAIWizard } from "@/components/resource/certificate/CertificateAIWizard";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -47,6 +48,8 @@ export default function EditResourcePage({ params }: PageProps) {
       return <BehaviorChartAIWizard resourceId={resourceId} />;
     case "visual_schedule":
       return <VisualScheduleAIWizard resourceId={resourceId} />;
+    case "certificate":
+      return <CertificateAIWizard resourceId={resourceId} />;
     default:
       return null;
   }
