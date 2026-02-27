@@ -23,6 +23,8 @@ import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as presetData from "../presetData.js";
 import type * as resources from "../resources.js";
+import type * as starterTemplateData from "../starterTemplateData.js";
+import type * as starterTemplates from "../starterTemplates.js";
 import type * as styleActions from "../styleActions.js";
 import type * as styles from "../styles.js";
 import type * as userActions from "../userActions.js";
@@ -50,6 +52,8 @@ declare const fullApi: ApiFromModules<{
   images: typeof images;
   presetData: typeof presetData;
   resources: typeof resources;
+  starterTemplateData: typeof starterTemplateData;
+  starterTemplates: typeof starterTemplates;
   styleActions: typeof styleActions;
   styles: typeof styles;
   userActions: typeof userActions;
