@@ -23,11 +23,34 @@ Priorities only. Higher number = lower priority.
 - [x] **Card game builder** — make your own deck, UNO-like rules, new game templates
 - [x] **Free prompt section** — open-ended promptable resource generator
 
-## Priority 3
+## Priority 3 — Next Up
 
-- [x] **Resource templates** — starting points per resource type
-- [x] **Library organization** — tags and search by type
+- [ ] **Duplicate resource** — copy any existing resource and tweak it (new name, same content/settings, draft state)
+- [ ] **Starter library** — pre-built resources for common therapy scenarios (anxiety coping cards, feelings wheels, social skills flashcards, etc.) so therapists don't start from zero. Different from the existing "resource templates" (blank starting points per type) — these are fully built, ready to use or customize.
+- [ ] **Behavior/reward charts** — new resource type. Sticker charts, token boards, progress trackers. Extremely common in child therapy (ASD, ADHD, behavior management).
+
+## Priority 4 — New Resource Types
+
+- [ ] **Visual schedules** — daily routine cards/strips for sequencing activities. High demand in ASD and anxiety work.
+- [ ] **Certificates/achievement cards** — reward progress milestones. Quick to implement, single-image with text fields.
+- [ ] **Coloring pages** — generate outline-only versions of images for kids to color in session. Could extend existing types with an "outline mode" toggle.
+
+## Priority 5 — Workflow & Productivity
+
+- [ ] **Batch export** — select multiple resources from the library and download as a single PDF or ZIP
+- [ ] **Resource collections** — group resources into therapy programs or session kits (e.g., "Anxiety Toolkit", "Social Skills Program")
 - [ ] **Folder organization** — optional grouping in the library
+
+## Priority 6 — Polish & Stickiness
+
+- [ ] **Favorites/pinning** — quick access to most-used resources from the library
+- [ ] **Usage history / recently printed** — track which resources were exported/printed recently, helps therapists find what they used last session
+- [ ] **Custom fonts** — upload or pick from a broader font set for their brand
+- [ ] **Resource sharing** — generate a read-only link to share resources with colleagues (also a viral growth lever)
+
+## Priority 7 — Marketplace
+
+- [ ] **Resource marketplace** — therapists share/sell their templates to other therapists. Major feature, needs its own design phase.
 
 ## Completed (verify if any regressions)
 
