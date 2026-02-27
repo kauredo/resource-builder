@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, use, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { StyleCharacters } from "@/components/style/StyleCharacters";
 import { StyleResources } from "@/components/style/StyleResources";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
@@ -47,7 +46,6 @@ import {
   Type,
   Paintbrush,
   Layers,
-  Users,
   FileStack,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -86,7 +84,7 @@ export default function StyleDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = (searchParams.get("tab") ?? "overview") as "overview" | "characters" | "resources";
+  const activeTab = (searchParams.get("tab") ?? "overview") as "overview" | "resources";
   const user = useQuery(api.users.currentUser);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -416,7 +414,6 @@ export default function StyleDetailPage({ params }: PageProps) {
       <nav className="flex gap-1 mb-8 border-b border-border/50" aria-label="Style sections">
         {([
           { key: "overview" as const, label: "Overview", icon: Palette, count: undefined as number | undefined },
-          { key: "characters" as const, label: "Characters", icon: Users, count: styleSummary?.characterCount },
           { key: "resources" as const, label: "Resources", icon: FileStack, count: styleSummary?.resourceCount },
         ]).map(({ key, label, icon: Icon, count }) => (
           <Link
@@ -442,10 +439,6 @@ export default function StyleDetailPage({ params }: PageProps) {
       </nav>
 
       {/* Tab Content */}
-      {activeTab === "characters" && user?._id && (
-        <StyleCharacters styleId={styleId} userId={user._id} />
-      )}
-
       {activeTab === "resources" && (
         <StyleResources styleId={styleId} />
       )}

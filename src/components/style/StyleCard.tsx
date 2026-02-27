@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, Users, FileStack } from "lucide-react";
+import { Lock, FileStack } from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { StyleFrames } from "@/types";
@@ -25,7 +25,6 @@ interface StyleCardProps {
   illustrationStyle: string;
   frames?: StyleFrames;
   updatedAt?: number;
-  characterCount?: number;
   resourceCount?: number;
 }
 
@@ -37,7 +36,6 @@ export function StyleCard({
   typography,
   frames,
   updatedAt,
-  characterCount,
   resourceCount,
 }: StyleCardProps) {
   // Load Google Fonts for typography preview
@@ -115,18 +113,6 @@ export function StyleCard({
                 }}
               >
                 {frameCount} frame{frameCount !== 1 ? "s" : ""}
-              </span>
-            )}
-            {(characterCount ?? 0) > 0 && (
-              <span
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded tabular-nums"
-                style={{
-                  backgroundColor: `color-mix(in oklch, ${colors.text} 6%, transparent)`,
-                  color: `color-mix(in oklch, ${colors.text} 70%, ${colors.background})`,
-                }}
-              >
-                <Users className="size-2.5" aria-hidden="true" />
-                {characterCount}
               </span>
             )}
             {(resourceCount ?? 0) > 0 && (

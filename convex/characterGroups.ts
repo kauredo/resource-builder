@@ -97,7 +97,6 @@ export const createGroup = mutation({
     userId: v.id("users"),
     name: v.string(),
     description: v.string(),
-    sharedStyleId: v.optional(v.id("styles")),
     characterIds: v.array(v.id("characters")),
   },
   handler: async (ctx, args) => {
@@ -106,7 +105,6 @@ export const createGroup = mutation({
       userId: args.userId,
       name: args.name,
       description: args.description,
-      sharedStyleId: args.sharedStyleId,
       characterIds: args.characterIds,
       createdAt: now,
     });
@@ -118,7 +116,6 @@ export const updateGroup = mutation({
     groupId: v.id("characterGroups"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    sharedStyleId: v.optional(v.id("styles")),
     characterIds: v.optional(v.array(v.id("characters"))),
   },
   handler: async (ctx, args) => {

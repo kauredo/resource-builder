@@ -1,58 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Check, User, UserX, Plus, AlertCircle, Palette } from "lucide-react";
+import { Check, User, UserX, Plus, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WizardState } from "../use-emotion-cards-wizard";
 
 interface CharacterStepProps {
   characterId: Id<"characters"> | null;
-  styleId: Id<"styles"> | null;
   onUpdate: (updates: Partial<WizardState>) => void;
 }
 
 export function CharacterStep({
   characterId,
-  styleId,
   onUpdate,
 }: CharacterStepProps) {
-  const [dismissedStyleHint, setDismissedStyleHint] = useState(false);
   const user = useQuery(api.users.currentUser);
   const characters = useQuery(
     api.characters.getUserCharactersWithThumbnails,
     user?._id ? { userId: user._id } : "skip"
   );
 
-  // Get the selected character's linked style (if different from current)
-  const selectedChar = characters?.find(c => c._id === characterId);
-  const charStyleId = selectedChar?.styleId;
-  const charStyle = useQuery(
-    api.styles.getStyle,
-    charStyleId && charStyleId !== styleId ? { styleId: charStyleId } : "skip"
-  );
-  const showStyleHint = charStyle && charStyleId !== styleId && !dismissedStyleHint;
-
   const handleCharacterSelect = (id: Id<"characters"> | null) => {
-    setDismissedStyleHint(false);
     onUpdate({ characterIds: id ? [id] : null });
-  };
-
-  const handleApplyCharacterStyle = () => {
-    if (!charStyle || !charStyleId) return;
-    onUpdate({
-      styleId: charStyleId,
-      stylePreset: {
-        name: charStyle.name,
-        colors: charStyle.colors,
-        typography: charStyle.typography,
-        illustrationStyle: charStyle.illustrationStyle,
-      },
-    });
   };
 
   if (!user) {
@@ -85,12 +57,7 @@ export function CharacterStep({
             : "border-border bg-card"
         )}
       >
-        <div
-          className={cn(
-            "size-12 rounded-xl flex items-center justify-center shrink-0",
-            characterId === null ? "bg-muted" : "bg-muted"
-          )}
-        >
+        <div className="size-12 rounded-xl flex items-center justify-center shrink-0 bg-muted">
           <UserX
             className="size-6 text-muted-foreground"
             aria-hidden="true"
@@ -170,40 +137,6 @@ export function CharacterStep({
                 </button>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Style hint — character has a linked style different from current */}
-      {showStyleHint && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-teal/5 border border-teal/20">
-          <Palette className="size-4 text-teal shrink-0 mt-0.5" aria-hidden="true" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground">
-              <span className="font-medium">{selectedChar?.name}</span> is linked to the{" "}
-              <span className="font-medium">{charStyle.name}</span> style.
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Switch to it for the best visual match.
-            </p>
-            <div className="flex gap-2 mt-2.5">
-              <Button
-                size="sm"
-                onClick={handleApplyCharacterStyle}
-                className="gap-1.5 bg-teal text-white hover:bg-teal/90 text-xs"
-              >
-                <Check className="size-3" aria-hidden="true" />
-                Use {charStyle.name}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setDismissedStyleHint(true)}
-                className="text-xs text-muted-foreground"
-              >
-                Keep current
-              </Button>
-            </div>
           </div>
         </div>
       )}

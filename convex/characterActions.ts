@@ -260,7 +260,6 @@ export const analyzeAndUpdatePrompt = action({
 export const createDetectedCharacters = action({
   args: {
     userId: v.id("users"),
-    styleId: v.optional(v.id("styles")),
     characters: v.array(
       v.object({
         name: v.string(),
@@ -319,7 +318,6 @@ export const createDetectedCharacters = action({
         const charId = await ctx.runMutation(api.characters.createCharacter, {
           userId: args.userId,
           name: char.name,
-          ...(args.styleId ? { styleId: args.styleId } : {}),
         });
         await ctx.runMutation(api.characters.updateCharacter, {
           characterId: charId,
@@ -360,12 +358,11 @@ export const ensureCharacterReference = action({
       if (!character) return { storageId: null };
 
       // Return cached if style matches (skip cache when forced)
-      if (
-        !args.force &&
-        character.styledReferenceImageId &&
-        character.styledReferenceStyleId === args.styleId
-      ) {
-        return { storageId: character.styledReferenceImageId };
+      const cachedPortrait = (character.styledPortraits ?? []).find(
+        (p) => p.styleId === args.styleId,
+      );
+      if (!args.force && cachedPortrait) {
+        return { storageId: cachedPortrait.storageId };
       }
 
       // No prompt fragment → can't generate a meaningful reference
@@ -424,16 +421,9 @@ export const ensureCharacterReference = action({
       const blob = new Blob([bytes], { type: mimeType });
       const storageId: Id<"_storage"> = await ctx.storage.store(blob);
 
-      await ctx.runMutation(api.characters.updateCharacter, {
+      await ctx.runMutation(api.characters.addStyledPortrait, {
         characterId: args.characterId,
-        styledReferenceImageId: storageId,
-        styledReferenceStyleId: args.styleId,
-      });
-
-      // Also add to referenceImages array so it shows on the character page,
-      // and set as primaryImageId if none exists yet
-      await ctx.runMutation(api.characters.addReferenceImage, {
-        characterId: args.characterId,
+        styleId: args.styleId,
         storageId,
       });
 
@@ -487,7 +477,6 @@ export const generateCharacterGroup = action({
     groupName: v.string(),
     groupDescription: v.string(),
     count: v.number(),
-    styleId: v.optional(v.id("styles")),
   },
   handler: async (
     ctx,
@@ -567,7 +556,6 @@ Respond in EXACTLY this JSON format, no other text:
         description: char.description,
         personality: char.personality,
         promptFragment: char.promptFragment,
-        ...(args.styleId ? { styleId: args.styleId } : {}),
       });
       characterIds.push(charId);
     }
@@ -578,7 +566,6 @@ Respond in EXACTLY this JSON format, no other text:
       name: args.groupName,
       description: args.groupDescription,
       characterIds,
-      ...(args.styleId ? { sharedStyleId: args.styleId } : {}),
     });
 
     return { groupId, characterIds };

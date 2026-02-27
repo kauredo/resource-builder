@@ -195,13 +195,8 @@ export default function CharacterDetailPage({ params }: PageProps) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const styleId = character?.styleId;
       await deleteCharacter({ characterId });
-      router.push(
-        styleId
-          ? `/dashboard/styles/${styleId}?tab=characters`
-          : "/dashboard/styles"
-      );
+      router.push("/dashboard/characters");
     } catch (error) {
       console.error("Failed to delete character:", error);
       setIsDeleting(false);
@@ -409,17 +404,13 @@ export default function CharacterDetailPage({ params }: PageProps) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back link — navigate to parent style when possible */}
+      {/* Back link */}
       <Link
-        href={
-          character.styleId
-            ? `/dashboard/styles/${character.styleId}?tab=characters`
-            : "/dashboard/styles"
-        }
+        href="/dashboard/characters"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
       >
         <ArrowLeft className="size-3.5" aria-hidden="true" />
-        {character.styleId ? "Back to Style" : "Styles"}
+        Characters
       </Link>
 
       {/* Hero: Portrait anchors the character's identity */}
@@ -941,6 +932,46 @@ export default function CharacterDetailPage({ params }: PageProps) {
             </div>
           )}
         </section>
+
+        {/* Styled Portraits Gallery */}
+        {character.styledPortraitsWithUrls && character.styledPortraitsWithUrls.length > 0 && (
+          <section className="p-5 rounded-xl bg-muted/30 border border-border/50">
+            <div className="flex items-center gap-2 mb-4">
+              <Paintbrush className="size-4 text-teal" aria-hidden="true" />
+              <h2 className="text-sm font-medium text-foreground">
+                Styled Portraits
+              </h2>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                ({character.styledPortraitsWithUrls.length})
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {character.styledPortraitsWithUrls.map((portrait) => (
+                <Link
+                  key={portrait.storageId}
+                  href={`/dashboard/styles/${portrait.styleId}`}
+                  className="group relative aspect-[3/4] rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-teal/40 transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                >
+                  {portrait.url ? (
+                    <img
+                      src={portrait.url}
+                      alt={`${character.name} in ${portrait.styleName} style`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="size-8 text-muted-foreground/30" aria-hidden="true" />
+                    </div>
+                  )}
+                  <span className="absolute bottom-2 left-2 right-2 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-black/50 text-white backdrop-blur-sm truncate">
+                    <Paintbrush className="size-2.5 shrink-0" aria-hidden="true" />
+                    {portrait.styleName}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -406,7 +406,6 @@ export default function StylesPage() {
                   illustrationStyle={style.illustrationStyle}
                   frames={style.frames as StyleFrames | undefined}
                   updatedAt={style.updatedAt ?? style.createdAt}
-                  characterCount={style.characterCount}
                   resourceCount={style.resourceCount}
                 />
               ))}

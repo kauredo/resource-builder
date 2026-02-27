@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Check,
@@ -13,33 +11,26 @@ import {
   UserX,
   Plus,
   AlertCircle,
-  Palette,
   Users,
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CharacterSelection, StylePreset } from "@/types";
+import type { CharacterSelection } from "@/types";
 
 interface CharacterPickerProps {
   selection: CharacterSelection | null;
   onChange: (selection: CharacterSelection | null) => void;
-  styleId: Id<"styles"> | null;
   userId: Id<"users">;
   /** Allow per-item character mode (for multi-item resource types) */
   allowPerItem?: boolean;
-  onStyleChange?: (styleId: Id<"styles">, preset: StylePreset) => void;
 }
 
 export function CharacterPicker({
   selection,
   onChange,
-  styleId,
   userId,
   allowPerItem = true,
-  onStyleChange,
 }: CharacterPickerProps) {
-  const [dismissedStyleHint, setDismissedStyleHint] = useState(false);
-
   const characters = useQuery(
     api.characters.getUserCharactersWithThumbnails,
     { userId },
@@ -50,21 +41,12 @@ export function CharacterPicker({
     { userId },
   );
 
-  // Get the first selected character's linked style (if different from current)
+  // Get the first selected character for stale prompt warning
   const selectedCharId =
     selection?.characterIds?.[0] as Id<"characters"> | undefined;
   const selectedChar = characters?.find((c) => c._id === selectedCharId);
-  const charStyleId = selectedChar?.styleId;
-  const charStyle = useQuery(
-    api.styles.getStyle,
-    charStyleId && charStyleId !== styleId ? { styleId: charStyleId } : "skip",
-  );
-  const showStyleHint =
-    !!charStyle && charStyleId !== styleId && !dismissedStyleHint;
 
   const handleToggleCharacter = (charId: Id<"characters">) => {
-    setDismissedStyleHint(false);
-
     if (!selection) {
       // First character selected
       onChange({ mode: "resource", characterIds: [charId] });
@@ -90,7 +72,6 @@ export function CharacterPicker({
   };
 
   const handleClearSelection = () => {
-    setDismissedStyleHint(false);
     onChange(null);
   };
 
@@ -280,54 +261,6 @@ export function CharacterPicker({
                 </button>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Style hint */}
-      {showStyleHint && (
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-teal/5 border border-teal/20">
-          <Palette
-            className="size-4 text-teal shrink-0 mt-0.5"
-            aria-hidden="true"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground">
-              <span className="font-medium">{selectedChar?.name}</span> is
-              linked to the{" "}
-              <span className="font-medium">{charStyle?.name}</span> style.
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Switch to it for the best visual match.
-            </p>
-            <div className="flex gap-2 mt-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  if (charStyle && charStyleId && onStyleChange) {
-                    onStyleChange(charStyleId, {
-                      name: charStyle.name,
-                      colors: charStyle.colors,
-                      typography: charStyle.typography,
-                      illustrationStyle: charStyle.illustrationStyle,
-                    });
-                    setDismissedStyleHint(true);
-                  }
-                }}
-                className="gap-1.5 bg-teal text-white hover:bg-teal/90 text-xs"
-              >
-                <Check className="size-3" aria-hidden="true" />
-                Use {charStyle?.name}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setDismissedStyleHint(true)}
-                className="text-xs text-muted-foreground"
-              >
-                Keep current
-              </Button>
-            </div>
           </div>
         </div>
       )}

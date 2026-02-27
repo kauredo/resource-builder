@@ -67,9 +67,12 @@ export const generateEmotionCard = action({
           promptFragment: character.promptFragment || undefined,
           description: character.description || undefined,
         };
-        // Fetch styled reference image for visual consistency
-        if (character.styledReferenceImageId) {
-          const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
+        // Fetch styled portrait for visual consistency
+        const styledPortrait = (character.styledPortraits ?? []).find(
+          (p) => args.styleId && p.styleId === args.styleId,
+        );
+        if (styledPortrait) {
+          const refUrl = await ctx.storage.getUrl(styledPortrait.storageId);
           if (refUrl) {
             try {
               const resp = await fetch(refUrl);
@@ -253,8 +256,11 @@ export const generateStyledImage = action({
         promptFragment: character.promptFragment || undefined,
         description: character.description || undefined,
       });
-      if (character.styledReferenceImageId) {
-        const refUrl = await ctx.storage.getUrl(character.styledReferenceImageId);
+      const styledPortrait = (character.styledPortraits ?? []).find(
+        (p) => args.styleId && p.styleId === args.styleId,
+      );
+      if (styledPortrait) {
+        const refUrl = await ctx.storage.getUrl(styledPortrait.storageId);
         if (refUrl) {
           try {
             const resp = await fetch(refUrl);

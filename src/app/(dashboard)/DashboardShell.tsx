@@ -14,6 +14,7 @@ import { LogOut, Loader2, Menu, X } from "lucide-react";
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", exact: true },
   { href: "/dashboard/resources", label: "Library" },
+  { href: "/dashboard/characters", label: "Characters" },
   { href: "/dashboard/styles", label: "Styles" },
 ];
 

@@ -106,9 +106,7 @@ export function BookSetupStep({ state, onUpdate, onStyleChange, userId }: BookSe
       <CharacterPicker
         selection={state.characterSelection}
         onChange={handleCharacterChange}
-        styleId={state.styleId}
         userId={userId}
-        onStyleChange={(id, preset) => onStyleChange(id, preset)}
       />
 
       {/* Book type */}

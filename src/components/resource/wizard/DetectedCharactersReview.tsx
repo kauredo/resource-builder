@@ -99,23 +99,31 @@ export function DetectedCharactersReview({
   );
 }
 
-/** Reactive thumbnail that auto-updates when the character's styled reference changes */
+/** Reactive thumbnail that auto-updates when the character's styled portrait changes */
 function CharacterThumbnail({
   characterId,
   name,
+  styleId,
   size,
 }: {
   characterId: string;
   name: string;
+  styleId?: string;
   size: "sm" | "lg";
 }) {
   const character = useQuery(api.characters.getCharacter, {
     characterId: characterId as Id<"characters">,
   });
+
+  // Find the styled portrait for the current style
+  const portraitStorageId = styleId
+    ? (character?.styledPortraits ?? []).find((p) => p.styleId === styleId)?.storageId
+    : undefined;
+
   const imageUrl = useQuery(
     api.images.getImageUrl,
-    character?.styledReferenceImageId
-      ? { storageId: character.styledReferenceImageId }
+    portraitStorageId
+      ? { storageId: portraitStorageId }
       : "skip",
   );
 
@@ -123,7 +131,7 @@ function CharacterThumbnail({
   const iconSize = size === "sm" ? "size-4" : "size-8";
 
   // Loading: character query pending, or image URL resolving
-  if (character === undefined || (character?.styledReferenceImageId && imageUrl === undefined)) {
+  if (character === undefined || (portraitStorageId && imageUrl === undefined)) {
     return (
       <div
         className={`${sizeClass} rounded-lg bg-muted/50 animate-pulse motion-reduce:animate-none shrink-0`}
@@ -143,6 +151,12 @@ function CharacterThumbnail({
     );
   }
 
+  // Fallback: try primary/reference image
+  const fallbackId = character?.primaryImageId ?? character?.referenceImages[0];
+  if (fallbackId) {
+    return <FallbackThumbnail storageId={fallbackId} name={name} sizeClass={sizeClass} />;
+  }
+
   // No reference image — placeholder
   return (
     <div
@@ -152,6 +166,14 @@ function CharacterThumbnail({
       <User className={iconSize} strokeWidth={1.5} />
     </div>
   );
+}
+
+function FallbackThumbnail({ storageId, name, sizeClass }: { storageId: Id<"_storage">; name: string; sizeClass: string }) {
+  const url = useQuery(api.images.getImageUrl, { storageId });
+  if (url) {
+    return <img src={url} alt={`Portrait of ${name}`} className={`${sizeClass} rounded-lg object-cover shrink-0`} />;
+  }
+  return <div className={`${sizeClass} rounded-lg bg-muted/40 shrink-0`} aria-hidden="true" />;
 }
 
 function CharacterCard({
@@ -242,7 +264,7 @@ function CharacterCard({
       >
         <div className="flex items-center gap-2.5 min-w-0">
           {!isExpanded && (
-            <CharacterThumbnail characterId={character.characterId} name={character.name} size="sm" />
+            <CharacterThumbnail characterId={character.characterId} name={character.name} styleId={styleId} size="sm" />
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -275,7 +297,7 @@ function CharacterCard({
           className="px-4 pb-4 space-y-3 border-t border-border/40"
         >
           <div className="flex items-start gap-4 pt-3">
-            <CharacterThumbnail characterId={character.characterId} name={character.name} size="lg" />
+            <CharacterThumbnail characterId={character.characterId} name={character.name} styleId={styleId} size="lg" />
             <div className="flex-1 space-y-1.5 min-w-0">
               <label htmlFor={textareaId} className="text-xs font-medium text-muted-foreground">
                 Appearance

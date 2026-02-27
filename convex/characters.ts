@@ -25,48 +25,13 @@ export const getUserCharactersWithThumbnails = query({
       characters.map(async (character) => {
         let thumbnailUrl: string | null = null;
         const primaryId =
-          character.primaryImageId ?? character.referenceImages[0] ?? character.styledReferenceImageId;
+          character.primaryImageId ?? character.referenceImages[0];
         if (primaryId) {
           thumbnailUrl = await ctx.storage.getUrl(primaryId);
         }
         return { ...character, thumbnailUrl };
       })
     );
-  },
-});
-
-// Get characters by style with thumbnails (for style detail page)
-export const getCharactersByStyle = query({
-  args: { styleId: v.id("styles") },
-  handler: async (ctx, args) => {
-    const characters = await ctx.db
-      .query("characters")
-      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-      .collect();
-
-    return await Promise.all(
-      characters.map(async (character) => {
-        let thumbnailUrl: string | null = null;
-        const primaryId =
-          character.primaryImageId ?? character.referenceImages[0] ?? character.styledReferenceImageId;
-        if (primaryId) {
-          thumbnailUrl = await ctx.storage.getUrl(primaryId);
-        }
-        return { ...character, thumbnailUrl };
-      })
-    );
-  },
-});
-
-// Count characters for a style (for badge display)
-export const getCharacterCountByStyle = query({
-  args: { styleId: v.id("styles") },
-  handler: async (ctx, args) => {
-    const characters = await ctx.db
-      .query("characters")
-      .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-      .collect();
-    return characters.length;
   },
 });
 
@@ -92,7 +57,22 @@ export const getCharacterWithImageUrls = query({
     );
     const imageUrls: Record<string, string | null> = Object.fromEntries(urlEntries);
 
-    return { ...character, imageUrls };
+    // Resolve styled portrait URLs + style names
+    const styledPortraitsWithUrls = await Promise.all(
+      (character.styledPortraits ?? []).map(async (portrait) => {
+        const [url, style] = await Promise.all([
+          ctx.storage.getUrl(portrait.storageId),
+          ctx.db.get(portrait.styleId),
+        ]);
+        return {
+          ...portrait,
+          url,
+          styleName: style?.name ?? "Unknown style",
+        };
+      })
+    );
+
+    return { ...character, imageUrls, styledPortraitsWithUrls };
   },
 });
 
@@ -100,7 +80,6 @@ export const createCharacter = mutation({
   args: {
     userId: v.id("users"),
     name: v.string(),
-    styleId: v.optional(v.id("styles")),
   },
   handler: async (ctx, args) => {
     // Enforce free tier character limit
@@ -121,7 +100,6 @@ export const createCharacter = mutation({
     return await ctx.db.insert("characters", {
       userId: args.userId,
       name: args.name,
-      styleId: args.styleId,
       description: "",
       personality: "",
       referenceImages: [],
@@ -135,14 +113,11 @@ export const createCharacter = mutation({
 export const updateCharacter = mutation({
   args: {
     characterId: v.id("characters"),
-    styleId: v.optional(v.id("styles")),
     primaryImageId: v.optional(v.id("_storage")),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     personality: v.optional(v.string()),
     promptFragment: v.optional(v.string()),
-    styledReferenceImageId: v.optional(v.id("_storage")),
-    styledReferenceStyleId: v.optional(v.id("styles")),
   },
   handler: async (ctx, args) => {
     const { characterId, ...updates } = args;
@@ -170,9 +145,9 @@ export const deleteCharacter = mutation({
       for (const storageId of character.referenceImages) {
         await ctx.storage.delete(storageId);
       }
-      // Delete styled reference image if present
-      if (character.styledReferenceImageId) {
-        await ctx.storage.delete(character.styledReferenceImageId);
+      // Delete styled portraits from storage
+      for (const portrait of character.styledPortraits ?? []) {
+        await ctx.storage.delete(portrait.storageId);
       }
     }
     await ctx.db.delete(args.characterId);
@@ -248,28 +223,30 @@ export const removeReferenceImage = mutation({
   },
 });
 
-// One-time migration: copy styledReferenceImageId into referenceImages[]
-// and set as primaryImageId for characters that have a styled reference
-// but an empty referenceImages array. Safe to run multiple times.
-export const migrateStyledReferencesToReferenceImages = mutation({
-  handler: async (ctx) => {
-    const characters = await ctx.db.query("characters").collect();
-    let migrated = 0;
+// Add or replace a styled portrait for a given style
+export const addStyledPortrait = mutation({
+  args: {
+    characterId: v.id("characters"),
+    styleId: v.id("styles"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const character = await ctx.db.get(args.characterId);
+    if (!character) throw new Error("Character not found");
 
-    for (const character of characters) {
-      if (
-        character.styledReferenceImageId &&
-        character.referenceImages.length === 0
-      ) {
-        await ctx.db.patch(character._id, {
-          referenceImages: [character.styledReferenceImageId],
-          primaryImageId: character.primaryImageId ?? character.styledReferenceImageId,
-          updatedAt: Date.now(),
-        });
-        migrated++;
-      }
+    const existing = character.styledPortraits ?? [];
+    // Replace existing entry for this style, or append
+    const oldEntry = existing.find((p) => p.styleId === args.styleId);
+    if (oldEntry) {
+      await ctx.storage.delete(oldEntry.storageId);
     }
-
-    return { total: characters.length, migrated };
+    const filtered = existing.filter((p) => p.styleId !== args.styleId);
+    await ctx.db.patch(args.characterId, {
+      styledPortraits: [
+        ...filtered,
+        { storageId: args.storageId, styleId: args.styleId, createdAt: Date.now() },
+      ],
+      updatedAt: Date.now(),
+    });
   },
 });

@@ -163,11 +163,6 @@ Visual prompt fragment: ${character.promptFragment || "N/A"}`;
       },
     );
 
-    await ctx.runMutation(api.characters.updateCharacter, {
-      characterId: args.characterId,
-      styleId: newStyleId,
-    });
-
     return { styleId: newStyleId };
   },
 });

@@ -306,7 +306,6 @@ export function useWorksheetWizard({ editResourceId }: UseWorksheetWizardArgs) {
         try {
           const charResults = await createDetectedCharacters({
             userId: user._id,
-            styleId: state.styleId ?? undefined,
             characters: rawDetected.map((c) => ({
               name: (c.name as string) || "",
               description: (c.description as string) || "",

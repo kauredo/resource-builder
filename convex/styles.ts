@@ -201,48 +201,32 @@ export const getStyleSummary = query({
     const style = await ctx.db.get(args.styleId);
     if (!style) return null;
 
-    let characters;
     let resources;
 
     if (args.userId) {
-      // Scoped counts: filter to this user only (needed for shared presets)
-      const [allChars, allRes] = await Promise.all([
-        ctx.db
-          .query("characters")
-          .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-          .collect(),
-        ctx.db
-          .query("resources")
-          .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-          .collect(),
-      ]);
-      characters = allChars.filter((c) => c.userId === args.userId);
+      const allRes = await ctx.db
+        .query("resources")
+        .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+        .collect();
       resources = allRes.filter((r) => r.userId === args.userId);
     } else {
-      [characters, resources] = await Promise.all([
-        ctx.db
-          .query("characters")
-          .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-          .collect(),
-        ctx.db
-          .query("resources")
-          .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
-          .collect(),
-      ]);
+      resources = await ctx.db
+        .query("resources")
+        .withIndex("by_style", (q) => q.eq("styleId", args.styleId))
+        .collect();
     }
 
     return {
-      characterCount: characters.length,
       resourceCount: resources.length,
     };
   },
 });
 
-// Get all styles with character/resource counts (single query for listing page)
+// Get all styles with resource counts (single query for listing page)
 export const getUserStylesWithSummaries = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const [customStyles, sharedPresets, allCharacters, allResources] = await Promise.all([
+    const [customStyles, sharedPresets, allResources] = await Promise.all([
       ctx.db
         .query("styles")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -253,10 +237,6 @@ export const getUserStylesWithSummaries = query({
         .filter((q) => q.eq(q.field("userId"), undefined))
         .collect(),
       ctx.db
-        .query("characters")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .collect(),
-      ctx.db
         .query("resources")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .collect(),
@@ -264,11 +244,6 @@ export const getUserStylesWithSummaries = query({
 
     const styles = [...sharedPresets, ...customStyles];
 
-    // Single-pass counting via Maps
-    const charCounts = new Map<string, number>();
-    for (const c of allCharacters) {
-      if (c.styleId) charCounts.set(c.styleId, (charCounts.get(c.styleId) ?? 0) + 1);
-    }
     const resCounts = new Map<string, number>();
     for (const r of allResources) {
       if (r.styleId) resCounts.set(r.styleId, (resCounts.get(r.styleId) ?? 0) + 1);
@@ -276,7 +251,6 @@ export const getUserStylesWithSummaries = query({
 
     return styles.map((style) => ({
       ...style,
-      characterCount: charCounts.get(style._id) ?? 0,
       resourceCount: resCounts.get(style._id) ?? 0,
     }));
   },
@@ -427,15 +401,9 @@ export const migratePresetsToShared = mutation({
       .collect();
 
     let remappedResources = 0;
-    let remappedCharacters = 0;
-    let remappedCharacterGroups = 0;
     let remappedAssets = 0;
     let deletedPresets = 0;
     let deletedStorageFiles = 0;
-
-    // Pre-load all characters and character groups once (avoid O(N*M) in loop)
-    const allChars = await ctx.db.query("characters").collect();
-    const allGroups = await ctx.db.query("characterGroups").collect();
 
     // Fallback for orphaned presets (names no longer in PRESET_STYLES)
     const fallbackSharedId = sharedPresets[0]?._id;
@@ -454,36 +422,6 @@ export const migratePresetsToShared = mutation({
       for (const r of resources) {
         await ctx.db.patch(r._id, { styleId: sharedId });
         remappedResources++;
-      }
-
-      // 3b. Remap characters (styleId + styledReferenceStyleId)
-      const characters = await ctx.db
-        .query("characters")
-        .withIndex("by_style", (q) => q.eq("styleId", oldId))
-        .collect();
-      for (const c of characters) {
-        const patch: Record<string, unknown> = { styleId: sharedId };
-        if (c.styledReferenceStyleId === oldId) {
-          patch.styledReferenceStyleId = sharedId;
-        }
-        await ctx.db.patch(c._id, patch);
-        remappedCharacters++;
-      }
-
-      // Also remap characters that only have styledReferenceStyleId matching
-      // (styleId might be different — loaded once outside loop)
-      for (const c of allChars) {
-        if (c.styledReferenceStyleId === oldId && c.styleId !== oldId) {
-          await ctx.db.patch(c._id, { styledReferenceStyleId: sharedId });
-        }
-      }
-
-      // 3b2. Remap character groups with sharedStyleId
-      for (const g of allGroups) {
-        if (g.sharedStyleId === oldId) {
-          await ctx.db.patch(g._id, { sharedStyleId: sharedId });
-          remappedCharacterGroups++;
-        }
       }
 
       // 3c. Delete frame storage files from per-user copy
@@ -528,8 +466,6 @@ export const migratePresetsToShared = mutation({
 
     return {
       remappedResources,
-      remappedCharacters,
-      remappedCharacterGroups,
       remappedAssets,
       deletedPresets,
       deletedStorageFiles,

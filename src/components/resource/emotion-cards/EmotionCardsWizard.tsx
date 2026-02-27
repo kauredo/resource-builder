@@ -82,7 +82,6 @@ export function EmotionCardsWizard({
               <>
                 <CharacterStep
                   characterId={state.characterIds?.[0] ?? null}
-                  styleId={state.styleId}
                   onUpdate={updateState}
                 />
                 <hr className="border-border/50" />

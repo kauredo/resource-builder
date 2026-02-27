@@ -94,7 +94,6 @@ export default defineSchema({
 
   characters: defineTable({
     userId: v.id("users"),
-    styleId: v.optional(v.id("styles")),
     primaryImageId: v.optional(v.id("_storage")),
     name: v.string(),
     description: v.string(),
@@ -104,13 +103,19 @@ export default defineSchema({
     imageDescriptions: v.optional(v.record(v.string(), v.string())),
     promptFragment: v.string(),
     promptFragmentUpdatedAt: v.optional(v.number()),
-    styledReferenceImageId: v.optional(v.id("_storage")),
-    styledReferenceStyleId: v.optional(v.id("styles")),
+    // Styled portrait gallery: one per style, generated on demand
+    styledPortraits: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          styleId: v.id("styles"),
+          createdAt: v.number(),
+        }),
+      ),
+    ),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_style", ["styleId"]),
+  }).index("by_user", ["userId"]),
 
   resources: defineTable({
     userId: v.id("users"),
@@ -149,7 +154,6 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     description: v.string(),
-    sharedStyleId: v.optional(v.id("styles")),
     characterIds: v.array(v.id("characters")),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
