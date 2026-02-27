@@ -209,14 +209,24 @@ export const adminGetStats = query({
     await requireAdmin(ctx);
 
     const allUsers = await ctx.db.query("users").collect();
+    const adminEmails = getAdminEmails();
+    const realUsers = allUsers.filter(
+      (u) => !adminEmails.includes(u.email.toLowerCase()),
+    );
+    const realUserIds = new Set(realUsers.map((u) => u._id));
+
     const allResources = await ctx.db.query("resources").collect();
     const allStyles = await ctx.db.query("styles").collect();
     const allCharacters = await ctx.db.query("characters").collect();
 
+    const userResources = allResources.filter((r) => realUserIds.has(r.userId));
+    const userStyles = allStyles.filter((s) => !s.isPreset && s.userId && realUserIds.has(s.userId));
+    const userCharacters = allCharacters.filter((c) => realUserIds.has(c.userId));
+
     const byType: Record<string, number> = {};
     let complete = 0;
     let draft = 0;
-    for (const r of allResources) {
+    for (const r of userResources) {
       byType[r.type] = (byType[r.type] ?? 0) + 1;
       if (r.status === "complete") complete++;
       else draft++;
@@ -224,21 +234,21 @@ export const adminGetStats = query({
 
     return {
       users: {
-        total: allUsers.length,
-        pro: allUsers.filter((u) => u.subscription === "pro").length,
-        free: allUsers.filter((u) => u.subscription === "free").length,
+        total: realUsers.length,
+        pro: realUsers.filter((u) => u.subscription === "pro").length,
+        free: realUsers.filter((u) => u.subscription === "free").length,
       },
       resources: {
-        total: allResources.length,
+        total: userResources.length,
         complete,
         draft,
         byType,
       },
       styles: {
-        total: allStyles.filter((s) => !s.isPreset).length,
-        custom: allStyles.filter((s) => !s.isPreset).length,
+        total: userStyles.length,
+        custom: userStyles.length,
       },
-      characters: { total: allCharacters.length },
+      characters: { total: userCharacters.length },
     };
   },
 });
@@ -249,6 +259,7 @@ export const adminListUsers = query({
     await requireAdmin(ctx);
 
     const allUsers = await ctx.db.query("users").collect();
+    const adminEmails = getAdminEmails();
 
     return await Promise.all(
       allUsers.map(async (user) => {
@@ -286,6 +297,7 @@ export const adminListUsers = query({
           createdAt: user.createdAt,
           onboardingCompleted: user.onboardingCompleted ?? false,
           resourcesCreatedThisMonth: user.resourcesCreatedThisMonth ?? 0,
+          isAdmin: adminEmails.includes(user.email.toLowerCase()),
           counts: {
             resources: resources.length,
             resourcesComplete,

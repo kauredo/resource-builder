@@ -44,9 +44,11 @@ export default function AdminPage() {
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const [isMigrating, setIsMigrating] = useState(false);
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    let list = [...users];
+  const { filteredUsers, adminUsers } = useMemo(() => {
+    if (!users) return { filteredUsers: [], adminUsers: [] };
+
+    const admins = users.filter((u) => u.isAdmin);
+    let list = users.filter((u) => !u.isAdmin);
 
     // Filter by plan
     if (filter !== "all") {
@@ -65,7 +67,8 @@ export default function AdminPage() {
 
     // Sort newest first
     list.sort((a, b) => b.createdAt - a.createdAt);
-    return list;
+    admins.sort((a, b) => b.createdAt - a.createdAt);
+    return { filteredUsers: list, adminUsers: admins };
   }, [users, filter, search]);
 
   if (isAdminUser === undefined) return null;
@@ -237,8 +240,8 @@ export default function AdminPage() {
                 {users && (
                   <span className="ml-1 tabular-nums">
                     {f.value === "all"
-                      ? users.length
-                      : users.filter((u) => u.subscription === f.value).length}
+                      ? users.filter((u) => !u.isAdmin).length
+                      : users.filter((u) => !u.isAdmin && u.subscription === f.value).length}
                   </span>
                 )}
               </button>
@@ -262,157 +265,211 @@ export default function AdminPage() {
         )}
 
         {filteredUsers.length > 0 && (
-          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
-            {filteredUsers.map((user) => {
-              const isExpanded = expandedUserId === user._id;
-              const isUpdating = updatingUser === user.email;
-
-              return (
-                <div key={user._id}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedUserId(isExpanded ? null : user._id)
-                    }
-                    aria-expanded={isExpanded}
-                    className={`w-full text-left px-5 py-3.5 flex items-center gap-4 cursor-pointer transition-colors duration-150 motion-reduce:transition-none hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-inset ${
-                      isExpanded ? "border-l-2 border-l-coral" : ""
-                    }`}
-                  >
-                    {/* Name + Email */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {user.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {user.email}
-                      </div>
-                    </div>
-
-                    {/* Plan badge */}
-                    <PlanBadge plan={user.subscription} />
-
-                    {/* Joined */}
-                    <div className="hidden sm:block text-xs text-muted-foreground w-20 text-right">
-                      {formatRelativeDate(user.createdAt)}
-                    </div>
-
-                    {/* Resources count */}
-                    <div className="hidden sm:block text-xs text-muted-foreground w-16 text-right tabular-nums">
-                      {user.counts.resources} res.
-                    </div>
-
-                    {/* Last activity */}
-                    <div className="hidden md:block text-xs text-muted-foreground w-20 text-right">
-                      {user.lastActivity
-                        ? formatRelativeDate(user.lastActivity)
-                        : "—"}
-                    </div>
-
-                    {/* Chevron */}
-                    <ChevronDown
-                      className={`size-4 text-muted-foreground shrink-0 transition-transform duration-150 motion-reduce:transition-none ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
-
-                  {/* Expanded Detail */}
-                  {isExpanded && (
-                    <div className="px-5 py-4 bg-muted/20 border-l-2 border-l-coral space-y-4">
-                      {/* Activity stats */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <span className="text-muted-foreground text-xs block mb-0.5">
-                            Resources
-                          </span>
-                          <span className="font-medium tabular-nums">
-                            {user.counts.resourcesComplete} complete,{" "}
-                            {user.counts.resources -
-                              user.counts.resourcesComplete}{" "}
-                            draft
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground text-xs block mb-0.5">
-                            Custom styles
-                          </span>
-                          <span className="font-medium tabular-nums">
-                            {user.counts.styles}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground text-xs block mb-0.5">
-                            Characters
-                          </span>
-                          <span className="font-medium tabular-nums">
-                            {user.counts.characters}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground text-xs block mb-0.5">
-                            This month
-                          </span>
-                          <span className="font-medium tabular-nums">
-                            {user.resourcesCreatedThisMonth} resources
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Subscription info + actions */}
-                      <div className="flex items-center gap-3 pt-2 border-t border-border">
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <PlanBadge plan={user.subscription} />
-                            {user.subscription === "pro" &&
-                              !user.dodoCustomerId && (
-                                <span className="text-xs text-muted-foreground">
-                                  Manually granted
-                                </span>
-                              )}
-                            {user.dodoCustomerId && (
-                              <span className="text-xs text-muted-foreground font-mono">
-                                {user.dodoCustomerId}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() =>
-                            handleToggleSubscription(
-                              user.email,
-                              user.subscription,
-                            )
-                          }
-                          disabled={isUpdating}
-                          variant={
-                            user.subscription === "pro" ? "outline" : "default"
-                          }
-                          size="sm"
-                          className={`cursor-pointer ${
-                            user.subscription === "pro" ? "" : "btn-coral"
-                          }`}
-                        >
-                          {isUpdating && (
-                            <Loader2
-                              className="size-3.5 animate-spin motion-reduce:animate-none mr-1.5"
-                              aria-hidden="true"
-                            />
-                          )}
-                          {user.subscription === "pro"
-                            ? "Downgrade to Free"
-                            : "Upgrade to Pro"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <UserList
+            users={filteredUsers}
+            expandedUserId={expandedUserId}
+            setExpandedUserId={setExpandedUserId}
+            updatingUser={updatingUser}
+            onToggleSubscription={handleToggleSubscription}
+          />
         )}
       </div>
+
+      {/* Admin Accounts */}
+      {adminUsers.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Admin accounts
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Not counted in stats above. Toggle subscription for testing.
+            </p>
+          </div>
+          <UserList
+            users={adminUsers}
+            expandedUserId={expandedUserId}
+            setExpandedUserId={setExpandedUserId}
+            updatingUser={updatingUser}
+            onToggleSubscription={handleToggleSubscription}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+type UserData = {
+  _id: string;
+  email: string;
+  name: string;
+  subscription: string;
+  dodoCustomerId: string | null;
+  createdAt: number;
+  resourcesCreatedThisMonth: number;
+  isAdmin: boolean;
+  counts: {
+    resources: number;
+    resourcesComplete: number;
+    styles: number;
+    characters: number;
+  };
+  lastActivity: number | null;
+};
+
+function UserList({
+  users,
+  expandedUserId,
+  setExpandedUserId,
+  updatingUser,
+  onToggleSubscription,
+}: {
+  users: UserData[];
+  expandedUserId: string | null;
+  setExpandedUserId: (id: string | null) => void;
+  updatingUser: string | null;
+  onToggleSubscription: (email: string, current: string) => void;
+}) {
+  return (
+    <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+      {users.map((user) => {
+        const isExpanded = expandedUserId === user._id;
+        const isUpdating = updatingUser === user.email;
+
+        return (
+          <div key={user._id}>
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedUserId(isExpanded ? null : user._id)
+              }
+              aria-expanded={isExpanded}
+              className={`w-full text-left px-5 py-3.5 flex items-center gap-4 cursor-pointer transition-colors duration-150 motion-reduce:transition-none hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-inset ${
+                isExpanded ? "border-l-2 border-l-coral" : ""
+              }`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">
+                  {user.name}
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {user.email}
+                </div>
+              </div>
+
+              <PlanBadge plan={user.subscription} />
+
+              <div className="hidden sm:block text-xs text-muted-foreground w-20 text-right">
+                {formatRelativeDate(user.createdAt)}
+              </div>
+
+              <div className="hidden sm:block text-xs text-muted-foreground w-16 text-right tabular-nums">
+                {user.counts.resources} res.
+              </div>
+
+              <div className="hidden md:block text-xs text-muted-foreground w-20 text-right">
+                {user.lastActivity
+                  ? formatRelativeDate(user.lastActivity)
+                  : "—"}
+              </div>
+
+              <ChevronDown
+                className={`size-4 text-muted-foreground shrink-0 transition-transform duration-150 motion-reduce:transition-none ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {isExpanded && (
+              <div className="px-5 py-4 bg-muted/20 border-l-2 border-l-coral space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground text-xs block mb-0.5">
+                      Resources
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {user.counts.resourcesComplete} complete,{" "}
+                      {user.counts.resources -
+                        user.counts.resourcesComplete}{" "}
+                      draft
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs block mb-0.5">
+                      Custom styles
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {user.counts.styles}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs block mb-0.5">
+                      Characters
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {user.counts.characters}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs block mb-0.5">
+                      This month
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {user.resourcesCreatedThisMonth} resources
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-border">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <PlanBadge plan={user.subscription} />
+                      {user.subscription === "pro" &&
+                        !user.dodoCustomerId && (
+                          <span className="text-xs text-muted-foreground">
+                            Manually granted
+                          </span>
+                        )}
+                      {user.dodoCustomerId && (
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {user.dodoCustomerId}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() =>
+                      onToggleSubscription(
+                        user.email,
+                        user.subscription,
+                      )
+                    }
+                    disabled={isUpdating}
+                    variant={
+                      user.subscription === "pro" ? "outline" : "default"
+                    }
+                    size="sm"
+                    className={`cursor-pointer ${
+                      user.subscription === "pro" ? "" : "btn-coral"
+                    }`}
+                  >
+                    {isUpdating && (
+                      <Loader2
+                        className="size-3.5 animate-spin motion-reduce:animate-none mr-1.5"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {user.subscription === "pro"
+                      ? "Downgrade to Free"
+                      : "Upgrade to Pro"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
