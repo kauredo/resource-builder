@@ -56,36 +56,19 @@ function EmotionCardPreview({
   );
 }
 
-// Style preset chip
-function StylePreviewChip({
-  name,
-  colors,
-}: {
-  name: string;
-  colors: [string, string, string];
-}) {
-  return (
-    <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white border border-border shadow-sm">
-      <div className="flex -space-x-1.5" aria-hidden="true">
-        {colors.map((color, i) => (
-          <div
-            key={i}
-            className="size-4 rounded-full border-2 border-white shadow-sm"
-            style={{ backgroundColor: color }}
-          />
-        ))}
-      </div>
-      <span className="text-sm font-medium text-foreground/80">{name}</span>
-    </div>
-  );
-}
-
 // Feature icon with specific illustrations instead of generic checkmarks
-function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
+function FeatureIcon({ type }: { type: "palette" | "printer" | "character" | "collection" }) {
+  const config = {
+    palette: { color: "text-coral", bg: "bg-coral/10" },
+    printer: { color: "text-teal", bg: "bg-teal/10" },
+    character: { color: "text-coral", bg: "bg-coral/10" },
+    collection: { color: "text-teal", bg: "bg-teal/10" },
+  };
+
   const icons = {
     palette: (
       <svg
-        className="size-5 text-coral"
+        className={`size-5 ${config.palette.color}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -101,7 +84,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
     ),
     printer: (
       <svg
-        className="size-5 text-coral"
+        className={`size-5 ${config.printer.color}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -117,7 +100,7 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
     ),
     character: (
       <svg
-        className="size-5 text-coral"
+        className={`size-5 ${config.character.color}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -131,40 +114,78 @@ function FeatureIcon({ type }: { type: "palette" | "printer" | "character" }) {
         />
       </svg>
     ),
+    collection: (
+      <svg
+        className={`size-5 ${config.collection.color}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+        />
+      </svg>
+    ),
   };
 
   return (
-    <div className="size-11 rounded-xl bg-coral/10 flex items-center justify-center shrink-0">
+    <div className={`size-11 rounded-xl ${config[type].bg} flex items-center justify-center shrink-0`}>
       {icons[type]}
     </div>
   );
 }
 
-// Resource type card for "What you can create"
-function ResourceTypeCard({
-  title,
+// Resource type list item — colored left border + name + description
+function ResourceTypeItem({
+  name,
   description,
-  color,
-  icon,
 }: {
-  title: string;
+  name: string;
   description: string;
-  color: string;
-  icon: React.ReactNode;
 }) {
   return (
-    <div className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 flex flex-col gap-4">
-      <div
-        className="size-12 rounded-xl flex items-center justify-center"
-        style={{ backgroundColor: `color-mix(in oklch, ${color}, transparent 85%)` }}
+    <li className="py-2.5">
+      <span className="font-medium text-foreground">{name}</span>
+      <span className="text-muted-foreground text-sm block mt-0.5">
+        {description}
+      </span>
+    </li>
+  );
+}
+
+// Template example row for starter templates section
+function TemplateExample({
+  type,
+  name,
+  detail,
+  accentColor,
+}: {
+  type: string;
+  name: string;
+  detail: string;
+  accentColor: string;
+}) {
+  return (
+    <div
+      className="flex items-start gap-4 px-4 py-3.5 rounded-xl border border-border/50 bg-card transition-[translate,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-none"
+      style={{ borderLeftWidth: "3px", borderLeftColor: accentColor }}
+    >
+      <span
+        className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5"
+        style={{
+          color: accentColor,
+          backgroundColor: `color-mix(in oklch, ${accentColor}, transparent 88%)`,
+        }}
       >
-        <div style={{ color }}>{icon}</div>
-      </div>
-      <div>
-        <h3 className="text-base font-semibold mb-1.5">{title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {description}
-        </p>
+        {type}
+      </span>
+      <div className="min-w-0">
+        <p className="font-medium text-sm text-foreground">{name}</p>
+        <p className="text-sm text-muted-foreground">{detail}</p>
       </div>
     </div>
   );
@@ -274,37 +295,30 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Style presets strip */}
+        {/* Capability strip — visual bridge between hero and content */}
         <section
-          className="py-8 border-y border-border bg-secondary/30"
-          aria-label="Available style presets"
+          className="py-5 border-y border-border/60 bg-secondary/30"
+          aria-label="Key capabilities"
         >
           <div className="max-w-6xl mx-auto px-6">
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <span className="text-sm text-muted-foreground mr-2">
-                Start with a style:
-              </span>
-              <StylePreviewChip
-                name="Warm & Playful"
-                colors={["#FF6B6B", "#4ECDC4", "#FFE66D"]}
-              />
-              <StylePreviewChip
-                name="Calm & Minimal"
-                colors={["#6B9080", "#A4C3B2", "#CCE3DE"]}
-              />
-              <StylePreviewChip
-                name="Bold & Colorful"
-                colors={["#7400B8", "#5390D9", "#56CFE1"]}
-              />
-              <StylePreviewChip
-                name="Nature & Earthy"
-                colors={["#606C38", "#DDA15E", "#FEFAE0"]}
-              />
-              <StylePreviewChip
-                name="Whimsical Fantasy"
-                colors={["#E0AAFF", "#C77DFF", "#9D4EDD"]}
-              />
-            </div>
+            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted-foreground" role="list">
+              <li className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-coral" aria-hidden="true" />
+                12 resource types
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-teal" aria-hidden="true" />
+                25+ starter templates
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-coral" aria-hidden="true" />
+                AI illustrations in your style
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-teal" aria-hidden="true" />
+                Print-ready PDF export
+              </li>
+            </ul>
           </div>
         </section>
 
@@ -381,9 +395,60 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Value props — More specific copy */}
+        {/* Starter templates */}
         <section
           className="py-24 px-6 bg-secondary/30"
+          aria-labelledby="templates-heading"
+        >
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              <div>
+                <p className="text-sm font-medium text-coral mb-3 tracking-wide">
+                  Ready-made resources
+                </p>
+                <h2 id="templates-heading">
+                  Start with 25+ starter templates
+                </h2>
+                <p className="mt-4 text-lg text-muted-foreground max-w-lg">
+                  Pre-built by clinicians, covering anxiety, social skills,
+                  emotional regulation, and more. Just choose your style and
+                  create — no blank canvas, no writer&apos;s block.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <TemplateExample
+                  type="Emotion Cards"
+                  name="Anxiety Feelings Deck"
+                  detail="12 cards exploring the physical and emotional signs of anxiety"
+                  accentColor="oklch(65% 0.18 25)"
+                />
+                <TemplateExample
+                  type="Worksheet"
+                  name="Thought Detective Worksheet"
+                  detail="CBT thought record with guided prompts for identifying cognitive distortions"
+                  accentColor="oklch(55% 0.12 170)"
+                />
+                <TemplateExample
+                  type="Card Game"
+                  name="Social Skills Cards"
+                  detail="Scenario-based cards for practicing conversation and empathy skills"
+                  accentColor="oklch(60% 0.14 290)"
+                />
+                <TemplateExample
+                  type="Book"
+                  name="When My Worry Monster Visits"
+                  detail="Illustrated social story for normalizing anxiety in young children"
+                  accentColor="oklch(60% 0.13 50)"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Value props — More specific copy */}
+        <section
+          className="py-24 px-6"
           aria-labelledby="benefits-heading"
         >
           <div className="max-w-6xl mx-auto">
@@ -440,20 +505,35 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+
+                <div className="flex gap-4">
+                  <FeatureIcon type="collection" />
+                  <div>
+                    <h3 className="text-base font-semibold mb-1.5">
+                      Organize by program or session
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Group resources into collections — by therapy program,
+                      client, or session plan. Export everything as a single ZIP
+                      when you need it.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* What you can create */}
-        <section className="py-24 px-6" aria-labelledby="resources-heading">
+        <section className="py-24 px-6 bg-secondary/30" aria-labelledby="resources-heading">
           <div className="max-w-6xl mx-auto">
             <div className="max-w-2xl mx-auto text-center mb-16">
               <p className="text-sm font-medium text-coral mb-3 tracking-wide">
-                8 resource types, one consistent style
+                One consistent style
               </p>
               <h2 id="resources-heading">
-                Everything you need for creative therapy
+                <span className="font-serif text-coral">12</span> resource types
+                for creative therapy
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 From feelings check-ins to full board games — all matching your
@@ -461,94 +541,97 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <ResourceTypeCard
-                title="Emotion Cards"
-                description="Beautiful illustrated cards for feelings identification. Print, cut, and use in sessions."
-                color="#FF6B6B"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Board Games"
-                description="Therapeutic board games with custom tokens, cards, and game boards. Complete print-and-play sets."
-                color="#6B9080"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Flashcards"
-                description="Double-sided flashcards for CBT exercises, coping strategies, and psychoeducation."
-                color="#5390D9"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Worksheets"
-                description="Structured therapy worksheets with your illustrations. Great for homework assignments."
-                color="#C77DFF"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Posters"
-                description="Wall posters for therapy rooms — feelings wheels, coping toolkits, and regulation guides."
-                color="#DDA15E"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Card Games"
-                description="Complete therapeutic card games with custom icons, labels, and game rules. Print-and-play ready."
-                color="#606C38"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Books"
-                description="Illustrated social stories, CBT workbooks, and narrative therapy books. AI or therapist-written."
-                color="#E07A5F"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                  </svg>
-                }
-              />
-              <ResourceTypeCard
-                title="Free Prompt"
-                description="Generate any custom illustration with a free-form prompt. Full creative control for unique materials."
-                color="#8B7355"
-                icon={
-                  <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-                  </svg>
-                }
-              />
+            <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+              {/* Cards & Games */}
+              <div
+                className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm"
+                style={{ borderTopWidth: "3px", borderTopColor: "oklch(65% 0.18 25)" }}
+              >
+                <h3 className="text-sm font-semibold text-coral tracking-wide uppercase mb-4">
+                  Cards & Games
+                </h3>
+                <ul className="divide-y divide-border/40" role="list">
+                  <ResourceTypeItem
+                    name="Emotion Cards"
+                    description="Illustrated cards for feelings identification"
+                  />
+                  <ResourceTypeItem
+                    name="Flashcards"
+                    description="Double-sided cards for CBT and coping strategies"
+                  />
+                  <ResourceTypeItem
+                    name="Card Games"
+                    description="Complete therapeutic card games, print-and-play"
+                  />
+                  <ResourceTypeItem
+                    name="Board Games"
+                    description="Game boards with tokens, cards, and pieces"
+                  />
+                </ul>
+              </div>
+
+              {/* Worksheets & Activities */}
+              <div
+                className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm"
+                style={{ borderTopWidth: "3px", borderTopColor: "oklch(55% 0.12 170)" }}
+              >
+                <h3 className="text-sm font-semibold text-teal tracking-wide uppercase mb-4">
+                  Worksheets & Activities
+                </h3>
+                <ul className="divide-y divide-border/40" role="list">
+                  <ResourceTypeItem
+                    name="Worksheets"
+                    description="Structured therapy worksheets with illustrations"
+                  />
+                  <ResourceTypeItem
+                    name="Behavior Charts"
+                    description="Visual tracking for goals and positive behaviors"
+                  />
+                  <ResourceTypeItem
+                    name="Visual Schedules"
+                    description="Step-by-step routine and transition guides"
+                  />
+                  <ResourceTypeItem
+                    name="Coloring Pages"
+                    description="Line-art illustrations for therapeutic coloring"
+                  />
+                </ul>
+              </div>
+
+              {/* Creative Materials */}
+              <div
+                className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm"
+                style={{ borderTopWidth: "3px", borderTopColor: "oklch(60% 0.09 50)" }}
+              >
+                <h3 className="text-sm font-semibold text-foreground/60 tracking-wide uppercase mb-4">
+                  Creative Materials
+                </h3>
+                <ul className="divide-y divide-border/40" role="list">
+                  <ResourceTypeItem
+                    name="Posters"
+                    description="Wall posters for therapy rooms and classrooms"
+                  />
+                  <ResourceTypeItem
+                    name="Books"
+                    description="Social stories and illustrated therapeutic books"
+                  />
+                  <ResourceTypeItem
+                    name="Certificates"
+                    description="Achievement and completion awards"
+                  />
+                  <ResourceTypeItem
+                    name="Free Prompt"
+                    description="Any custom illustration with full creative control"
+                  />
+                </ul>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Pricing */}
         <section
-          className="py-24 px-6 bg-secondary/30"
+          className="py-24 px-6"
           aria-labelledby="pricing-heading"
         >
           <div className="max-w-4xl mx-auto">
@@ -581,6 +664,10 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    3 starter templates per month
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                     1 custom style + 5 presets
                   </li>
                   <li className="flex items-start gap-2.5">
@@ -589,7 +676,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <svg className="size-4 text-teal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                    All 8 resource types
+                    All 12 resource types
                   </li>
                   <li className="flex items-start gap-2.5">
                     <svg className="size-4 text-muted-foreground/40 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
@@ -636,6 +723,10 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <strong>Unlimited</strong>&nbsp;starter templates
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <svg className="size-4 text-coral mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                     Clean, watermark-free exports
                   </li>
                   <li className="flex items-start gap-2.5">
@@ -657,9 +748,14 @@ export default function Home() {
 
         {/* Final CTA */}
         <section
-          className="py-24 px-6"
+          className="py-32 px-6 relative overflow-hidden"
           aria-labelledby="cta-heading"
         >
+          {/* Decorative background — bookend to hero */}
+          <div className="absolute inset-0 -z-10" aria-hidden="true">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 rounded-full bg-coral/5" />
+            <div className="absolute top-1/4 right-1/3 size-48 rounded-full bg-teal/4" />
+          </div>
           <div className="max-w-2xl mx-auto text-center">
             <h2 id="cta-heading">Ready to create something beautiful?</h2>
             <p className="mt-4 text-lg text-muted-foreground mb-8">

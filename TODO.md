@@ -38,8 +38,8 @@ Priorities only. Higher number = lower priority.
 ## Priority 5 — Workflow & Productivity
 
 - [x] **Batch export** — select multiple resources from the library and download as a single PDF or ZIP
-- [ ] **Resource collections** — group resources into therapy programs or session kits (e.g., "Anxiety Toolkit", "Social Skills Program")
-- [ ] **Folder organization** — optional grouping in the library
+- [x] **Resource collections** — group resources into therapy programs or session kits (e.g., "Anxiety Toolkit", "Social Skills Program")
+- [x] **Folder organization** — optional grouping in the library
 
 ## Priority 6 — Polish & Stickiness
 

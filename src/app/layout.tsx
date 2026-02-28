@@ -24,12 +24,12 @@ export const metadata: Metadata = {
     template: "%s | Resource Builder",
   },
   description:
-    "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+    "Create therapy resources for children and adolescents — emotion cards, worksheets, behavior charts, board games, visual schedules, and more. AI illustrations in your style, ready to print.",
   metadataBase: new URL(siteUrl),
   openGraph: {
     title: "Resource Builder | Therapy Materials Made Beautiful",
     description:
-      "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+      "Create therapy resources for children and adolescents — emotion cards, worksheets, behavior charts, board games, visual schedules, and more. AI illustrations in your style, ready to print.",
     url: siteUrl,
     siteName: "Resource Builder",
     locale: "en_US",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Resource Builder | Therapy Materials Made Beautiful",
     description:
-      "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+      "Create therapy resources for children and adolescents — emotion cards, worksheets, behavior charts, board games, visual schedules, and more. AI illustrations in your style, ready to print.",
   },
   icons: {
     icon: [
@@ -77,21 +77,38 @@ export default function RootLayout({
               name: "Resource Builder",
               url: siteUrl,
               description:
-                "Create consistent, branded therapy resources for children and adolescents. AI-powered emotion cards, worksheets, and more — designed for print.",
+                "Create therapy resources for children and adolescents — emotion cards, worksheets, behavior charts, board games, visual schedules, and more. AI illustrations in your style, ready to print.",
               applicationCategory: "DesignApplication",
               operatingSystem: "Web",
+              featureList: [
+                "Emotion Cards",
+                "Flashcards",
+                "Card Games",
+                "Board Games",
+                "Worksheets",
+                "Behavior Charts",
+                "Visual Schedules",
+                "Coloring Pages",
+                "Posters",
+                "Books",
+                "Certificates",
+                "Free Prompt",
+                "25+ Starter Templates",
+                "Resource Collections",
+                "Batch Export",
+              ],
               offers: [
                 {
                   "@type": "Offer",
                   price: "0",
                   priceCurrency: "USD",
-                  description: "Free plan — 2 resources/month, 1 style, 1 character",
+                  description: "Free plan — 2 resources/month, 3 starter templates/month, 1 style, 1 character",
                 },
                 {
                   "@type": "Offer",
                   price: "19",
                   priceCurrency: "USD",
-                  description: "Pro monthly — unlimited resources, styles, and characters",
+                  description: "Pro monthly — unlimited resources, styles, characters, and starter templates",
                 },
                 {
                   "@type": "Offer",
