@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortDropdown } from "@/components/ui/sort-dropdown";
 import { ResourceCard } from "@/components/resource/ResourceCard";
+import { BatchExportBar } from "@/components/resource/BatchExportBar";
 import { useListFilters } from "@/hooks/use-list-filters";
+import { useBatchExport } from "@/hooks/use-batch-export";
 import {
   Plus,
   FileStack,
   Search,
   X,
   Tag,
+  ListChecks,
 } from "lucide-react";
 import type {
   EmotionCardContent,
@@ -98,6 +101,20 @@ export default function ResourcesPage() {
 
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
+
+  const {
+    isSelectMode,
+    selectedIds,
+    isExporting,
+    exportProgress,
+    enterSelectMode,
+    exitSelectMode,
+    toggleSelection,
+    selectAll,
+    deselectAll,
+    startExport,
+    cancelExport,
+  } = useBatchExport();
 
   const statusCounts = useMemo(() => {
     if (!resources) return { all: 0, draft: 0, complete: 0 };
@@ -279,17 +296,32 @@ export default function ResourcesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Header: title + create button */}
+      {/* Header: title + actions */}
       <div className="flex items-center justify-between gap-4 mb-8">
         <h1 className="font-serif text-3xl font-medium tracking-tight">
           Library
         </h1>
-        <Button asChild className="btn-coral gap-2">
-          <Link href="/dashboard/resources/new">
-            <Plus className="size-4" aria-hidden="true" />
-            Create
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasAnyResources && (
+            <Button
+              variant="outline"
+              onClick={isSelectMode ? exitSelectMode : enterSelectMode}
+              className="gap-2"
+              aria-pressed={isSelectMode}
+            >
+              <ListChecks className="size-4" aria-hidden="true" />
+              {isSelectMode ? "Done" : "Select"}
+            </Button>
+          )}
+          {!isSelectMode && (
+            <Button asChild className="btn-coral gap-2">
+              <Link href="/dashboard/resources/new">
+                <Plus className="size-4" aria-hidden="true" />
+                Create
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {hasAnyResources && (
@@ -504,10 +536,33 @@ export default function ResourcesPage() {
                 itemCount={getItemCount(resource)}
                 updatedAt={resource.updatedAt}
                 thumbnailUrl={resource.thumbnailUrl}
+                selectable={isSelectMode}
+                selected={selectedIds.has(resource._id)}
+                onSelect={toggleSelection}
               />
             ))}
           </div>
+
+          {/* Bottom spacer for batch bar */}
+          {isSelectMode && (
+            <div className="h-20" aria-hidden="true" />
+          )}
         </>
+      )}
+
+      {/* Batch export floating bar */}
+      {isSelectMode && (
+        <BatchExportBar
+          selectedCount={selectedIds.size}
+          totalCount={filteredResources.length}
+          isExporting={isExporting}
+          exportProgress={exportProgress}
+          onSelectAll={() => selectAll(filteredResources.map((r) => r._id))}
+          onDeselectAll={deselectAll}
+          onExport={() => startExport(user?.subscription !== "pro")}
+          onCancelExport={cancelExport}
+          onExit={exitSelectMode}
+        />
       )}
     </div>
   );

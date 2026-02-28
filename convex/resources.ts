@@ -512,3 +512,101 @@ export const getSampleImageForStyle = query({
     };
   },
 });
+
+// Batch fetch resources with assets + styles for ZIP export
+export const getResourcesForBatchExport = query({
+  args: {
+    resourceIds: v.array(v.id("resources")),
+  },
+  handler: async (ctx, args) => {
+    // Fetch all resources
+    const resources = await Promise.all(
+      args.resourceIds.map((id) => ctx.db.get(id))
+    );
+    const validResources = resources.filter(
+      (r): r is NonNullable<typeof r> => r !== null
+    );
+
+    // Fetch all assets for all resources in parallel
+    const allAssets = await Promise.all(
+      validResources.map((resource) =>
+        ctx.db
+          .query("assets")
+          .withIndex("by_owner", (q) =>
+            q.eq("ownerType", "resource").eq("ownerId", resource._id)
+          )
+          .collect()
+      )
+    );
+
+    // Resolve asset URLs in parallel
+    const allAssetsWithUrls = await Promise.all(
+      allAssets.map((assets) =>
+        Promise.all(
+          assets.map(async (asset) => {
+            const current = asset.currentVersionId
+              ? await ctx.db.get(asset.currentVersionId)
+              : null;
+            const url = current
+              ? await ctx.storage.getUrl(current.storageId)
+              : null;
+            return {
+              assetKey: asset.assetKey,
+              assetType: asset.assetType,
+              url,
+            };
+          })
+        )
+      )
+    );
+
+    // Deduplicate style fetches
+    const uniqueStyleIds = [
+      ...new Set(
+        validResources
+          .map((r) => r.styleId)
+          .filter((id): id is Id<"styles"> => id !== undefined)
+      ),
+    ];
+    const stylesRaw = await Promise.all(
+      uniqueStyleIds.map((id) => ctx.db.get(id))
+    );
+    const styleMap = new Map<string, NonNullable<(typeof stylesRaw)[0]>>();
+    for (let i = 0; i < uniqueStyleIds.length; i++) {
+      const s = stylesRaw[i];
+      if (s) styleMap.set(uniqueStyleIds[i], s);
+    }
+
+    // Resolve frame URLs for each style
+    const stylesWithFrames = await Promise.all(
+      [...styleMap.entries()].map(async ([id, style]) => {
+        const frameUrls: { border?: string | null; fullCard?: string | null } =
+          {};
+        if (style.frames) {
+          if (style.frames.border?.storageId) {
+            frameUrls.border = await ctx.storage.getUrl(
+              style.frames.border.storageId
+            );
+          }
+          if (style.frames.fullCard?.storageId) {
+            frameUrls.fullCard = await ctx.storage.getUrl(
+              style.frames.fullCard.storageId
+            );
+          }
+        }
+        return { id, style: { ...style, frameUrls } };
+      })
+    );
+    const styleResultMap = new Map(
+      stylesWithFrames.map((s) => [s.id, s.style])
+    );
+
+    return validResources.map((resource, i) => ({
+      resource,
+      assets: allAssetsWithUrls[i],
+      style: resource.styleId
+        ? styleResultMap.get(resource.styleId) ?? null
+        : null,
+    }));
+  },
+});
