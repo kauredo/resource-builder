@@ -21,6 +21,7 @@ import {
 import type { CertificateContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 import { toast } from "sonner";
 
 interface CertificateDetailProps {
@@ -39,6 +40,7 @@ export function CertificateDetail({ resourceId }: CertificateDetailProps) {
     recipientName: "",
     date: "",
   });
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -51,6 +53,10 @@ export function CertificateDetail({ resourceId }: CertificateDetailProps) {
     assetType: "certificate_image",
     assetKey: "certificate_main",
   });
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip",
+  );
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
@@ -141,6 +147,8 @@ export function CertificateDetail({ resourceId }: CertificateDetailProps) {
         deleteTitle="Delete this certificate?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -297,6 +305,15 @@ export function CertificateDetail({ resourceId }: CertificateDetailProps) {
             />
           )}
         </>
+      )}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
       )}
     </div>
   );

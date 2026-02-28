@@ -15,6 +15,7 @@ import type * as cardGameImages from "../cardGameImages.js";
 import type * as characterActions from "../characterActions.js";
 import type * as characterGroups from "../characterGroups.js";
 import type * as characters from "../characters.js";
+import type * as collections from "../collections.js";
 import type * as contentGeneration from "../contentGeneration.js";
 import type * as frameActions from "../frameActions.js";
 import type * as frames from "../frames.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   characterActions: typeof characterActions;
   characterGroups: typeof characterGroups;
   characters: typeof characters;
+  collections: typeof collections;
   contentGeneration: typeof contentGeneration;
   frameActions: typeof frameActions;
   frames: typeof frames;

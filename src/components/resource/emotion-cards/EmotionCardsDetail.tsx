@@ -30,6 +30,7 @@ import {
   Calendar,
   Layers,
   FileText,
+  FolderPlus,
 } from "lucide-react";
 import {
   generateEmotionCardsPDF,
@@ -46,6 +47,7 @@ import {
 import { DuplicateResourceDialog } from "@/components/resource/DuplicateResourceDialog";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 import { ImproveImageModal } from "@/components/resource/ImproveImageModal";
 import type { EmotionCardContent } from "@/types";
 import { toast } from "sonner";
@@ -62,6 +64,7 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [regeneratingEmotions, setRegeneratingEmotions] = useState<Set<string>>(new Set());
   const [improvingEmotion, setImprovingEmotion] = useState<string | null>(null);
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResourceWithImages, {
     resourceId,
@@ -73,6 +76,10 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
   const style = useQuery(
     api.styles.getStyleWithFrameUrls,
     resource?.styleId ? { styleId: resource.styleId } : "skip",
+  );
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip",
   );
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
@@ -313,6 +320,19 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
                 })}
               </time>
             </div>
+            {resourceCollections && resourceCollections.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {resourceCollections.map((c) => (
+                  <Link
+                    key={c._id}
+                    href={`/dashboard/resources/collections/${c._id}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-[color-mix(in_oklch,var(--coral)_8%,transparent)] text-coral/90 hover:bg-[color-mix(in_oklch,var(--coral)_14%,transparent)] transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -356,6 +376,16 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
                 </Button>
               }
             />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setShowCollectionDialog(true)}
+            >
+              <FolderPlus className="size-4" aria-hidden="true" />
+              <span className="sr-only">Add to collection</span>
+            </Button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -499,6 +529,15 @@ export function EmotionCardsDetail({ resourceId }: EmotionCardsDetailProps) {
           />
         );
       })()}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
+      )}
     </div>
   );
 }

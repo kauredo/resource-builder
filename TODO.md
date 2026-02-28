@@ -37,7 +37,7 @@ Priorities only. Higher number = lower priority.
 
 ## Priority 5 — Workflow & Productivity
 
-- [ ] **Batch export** — select multiple resources from the library and download as a single PDF or ZIP
+- [x] **Batch export** — select multiple resources from the library and download as a single PDF or ZIP
 - [ ] **Resource collections** — group resources into therapy programs or session kits (e.g., "Anxiety Toolkit", "Social Skills Program")
 - [ ] **Folder organization** — optional grouping in the library
 

@@ -17,6 +17,7 @@ import { ExportModal } from "@/components/resource/ExportModal";
 import type { BoardGameContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 
 interface BoardGameDetailProps {
   resourceId: Id<"resources">;
@@ -30,6 +31,7 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isImproveOpen, setIsImproveOpen] = useState(false);
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -42,6 +44,10 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
     assetType: "board_image",
     assetKey: "board_main",
   });
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip"
+  );
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
@@ -87,6 +93,8 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
         deleteTitle="Delete this board game?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -212,6 +220,15 @@ export function BoardGameDetail({ resourceId }: BoardGameDetailProps) {
             />
           )}
         </>
+      )}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
       )}
     </div>
   );

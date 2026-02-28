@@ -21,6 +21,7 @@ import {
 import type { FlashcardsContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 
 interface FlashcardsDetailProps {
   resourceId: Id<"resources">;
@@ -36,6 +37,7 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [regeneratingCards, setRegeneratingCards] = useState<Set<string>>(new Set());
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
@@ -45,6 +47,10 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
   const style = useQuery(
     api.styles.getStyleWithFrameUrls,
     resource?.styleId ? { styleId: resource.styleId as Id<"styles"> } : "skip",
+  );
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip"
   );
 
   const deleteResource = useMutation(api.resources.deleteResource);
@@ -159,6 +165,8 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
         deleteTitle="Delete this deck?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -297,6 +305,15 @@ export function FlashcardsDetail({ resourceId }: FlashcardsDetailProps) {
           />
         );
       })()}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
+      )}
     </div>
   );
 }

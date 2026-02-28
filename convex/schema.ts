@@ -155,6 +155,15 @@ export default defineSchema({
     .index("by_style", ["styleId"])
     .index("by_type", ["type"]),
 
+  collections: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    resourceIds: v.array(v.id("resources")),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }).index("by_user", ["userId"]),
+
   characterGroups: defineTable({
     userId: v.id("users"),
     name: v.string(),

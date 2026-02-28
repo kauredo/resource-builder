@@ -21,6 +21,7 @@ import {
 import type { BookContent } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 import { toast } from "sonner";
 
 interface BookDetailProps {
@@ -41,6 +42,7 @@ export function BookDetail({ resourceId }: BookDetailProps) {
   const [regeneratingPages, setRegeneratingPages] = useState<Set<string>>(
     new Set(),
   );
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
@@ -52,6 +54,10 @@ export function BookDetail({ resourceId }: BookDetailProps) {
     resource?.styleId
       ? { styleId: resource.styleId as Id<"styles"> }
       : "skip",
+  );
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip",
   );
 
   const deleteResource = useMutation(api.resources.deleteResource);
@@ -209,6 +215,8 @@ export function BookDetail({ resourceId }: BookDetailProps) {
         deleteTitle="Delete this book?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -446,6 +454,15 @@ export function BookDetail({ resourceId }: BookDetailProps) {
           />
         );
       })()}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
+      )}
     </div>
   );
 }

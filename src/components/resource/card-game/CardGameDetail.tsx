@@ -23,6 +23,7 @@ import type {
 } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 
 interface CardGameDetailProps {
   resourceId: Id<"resources">;
@@ -36,6 +37,7 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [improvingKey, setImprovingKey] = useState<string | null>(null);
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
 
   const resource = useQuery(api.resources.getResource, { resourceId });
   const style = useQuery(
@@ -46,6 +48,10 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
     ownerType: "resource",
     ownerId: resourceId,
   });
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip"
+  );
 
   const deleteResource = useMutation(api.resources.deleteResource);
   const updateResource = useMutation(api.resources.updateResource);
@@ -120,6 +126,8 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
         deleteTitle="Delete this game?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -202,6 +210,15 @@ export function CardGameDetail({ resourceId }: CardGameDetailProps) {
           />
         );
       })()}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
+      )}
     </div>
   );
 }

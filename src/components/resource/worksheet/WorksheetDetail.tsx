@@ -22,6 +22,7 @@ import {
 import type { WorksheetContent, WorksheetBlock } from "@/types";
 import { ResourceTagsEditor } from "@/components/resource/ResourceTagsEditor";
 import { ResourceStyleBadge } from "@/components/resource/ResourceStyleBadge";
+import { AddToCollectionDialog } from "@/components/resource/AddToCollectionDialog";
 
 interface WorksheetDetailProps {
   resourceId: Id<"resources">;
@@ -38,6 +39,7 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
   const [regeneratingBlocks, setRegeneratingBlocks] = useState<Set<string>>(
     new Set(),
   );
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
   const resource = useQuery(api.resources.getResource, { resourceId });
   const assets = useQuery(api.assets.getByOwner, {
     ownerType: "resource",
@@ -48,6 +50,10 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
     resource?.styleId
       ? { styleId: resource.styleId as Id<"styles"> }
       : "skip",
+  );
+  const resourceCollections = useQuery(
+    api.collections.getCollectionsForResource,
+    user?._id ? { userId: user._id, resourceId } : "skip"
   );
 
   const deleteResource = useMutation(api.resources.deleteResource);
@@ -166,6 +172,8 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
         deleteTitle="Delete this worksheet?"
         onDelete={handleDelete}
         isDeleting={isDeleting}
+        collections={resourceCollections}
+        onAddToCollection={() => setShowCollectionDialog(true)}
       />
 
       <div className="mb-6 flex flex-col gap-4">
@@ -256,6 +264,15 @@ export function WorksheetDetail({ resourceId }: WorksheetDetailProps) {
           />
         );
       })()}
+
+      {user && (
+        <AddToCollectionDialog
+          open={showCollectionDialog}
+          onOpenChange={setShowCollectionDialog}
+          resourceIds={[resourceId]}
+          userId={user._id}
+        />
+      )}
     </div>
   );
 }

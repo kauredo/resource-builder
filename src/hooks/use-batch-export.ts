@@ -61,14 +61,15 @@ export function useBatchExport() {
   }, []);
 
   const startExport = useCallback(
-    async (watermark: boolean) => {
-      if (selectedIds.size === 0) return;
+    async (watermark: boolean, overrideIds?: Id<"resources">[]) => {
+      const ids = overrideIds ?? [...selectedIds] as Id<"resources">[];
+      if (ids.length === 0) return;
 
       const controller = new AbortController();
       abortRef.current = controller;
       setIsExporting(true);
 
-      const resourceIds = [...selectedIds] as Id<"resources">[];
+      const resourceIds = ids;
 
       try {
         // Fetch all data in one query

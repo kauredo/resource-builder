@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Download, X, Loader2 } from "lucide-react";
+import { Download, FolderPlus, X, Loader2 } from "lucide-react";
 import type { ExportProgress } from "@/hooks/use-batch-export";
 
 interface BatchExportBarProps {
@@ -14,6 +14,7 @@ interface BatchExportBarProps {
   onExport: () => void;
   onCancelExport: () => void;
   onExit: () => void;
+  onAddToCollection?: () => void;
 }
 
 export function BatchExportBar({
@@ -26,6 +27,7 @@ export function BatchExportBar({
   onExport,
   onCancelExport,
   onExit,
+  onAddToCollection,
 }: BatchExportBarProps) {
   const progressPercent = exportProgress
     ? Math.round(((exportProgress.current - 1) / exportProgress.total) * 100)
@@ -112,6 +114,17 @@ export function BatchExportBar({
                   >
                     Cancel
                   </Button>
+                  {onAddToCollection && selectedCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onAddToCollection}
+                      className="gap-1.5"
+                    >
+                      <FolderPlus className="size-3.5" aria-hidden="true" />
+                      Add to Collection
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={onExport}

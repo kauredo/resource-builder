@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Copy, Download, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, Download, FolderPlus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { DuplicateResourceDialog } from "./DuplicateResourceDialog";
 
@@ -63,6 +63,8 @@ interface DetailPageHeaderProps {
   deleteTitle: string;
   onDelete: () => void;
   isDeleting: boolean;
+  collections?: Array<{ _id: string; name: string }>;
+  onAddToCollection?: () => void;
 }
 
 export function DetailPageHeader({
@@ -74,6 +76,8 @@ export function DetailPageHeader({
   deleteTitle,
   onDelete,
   isDeleting,
+  collections,
+  onAddToCollection,
 }: DetailPageHeaderProps) {
   return (
     <div className="mb-8">
@@ -91,6 +95,19 @@ export function DetailPageHeader({
             {resourceName}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+          {collections && collections.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {collections.map((c) => (
+                <Link
+                  key={c._id}
+                  href={`/dashboard/resources/collections/${c._id}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-[color-mix(in_oklch,var(--coral)_8%,transparent)] text-coral/90 hover:bg-[color-mix(in_oklch,var(--coral)_14%,transparent)] transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -121,6 +138,17 @@ export function DetailPageHeader({
               </Button>
             }
           />
+          {onAddToCollection && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={onAddToCollection}
+            >
+              <FolderPlus className="size-4" aria-hidden="true" />
+              <span className="sr-only">Add to collection</span>
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
