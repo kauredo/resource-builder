@@ -14,6 +14,9 @@ import {
   Award,
   Palette,
 } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   STARTER_TEMPLATES,
@@ -46,9 +49,11 @@ const TYPE_META: Record<
 
 interface StarterLibraryProps {
   userId: Id<"users">;
+  atTemplateLimit?: boolean;
+  templateUsage?: { used: number; max: number };
 }
 
-export function StarterLibrary({ userId }: StarterLibraryProps) {
+export function StarterLibrary({ userId, atTemplateLimit, templateUsage }: StarterLibraryProps) {
   const [themeFilter, setThemeFilter] = useState<StarterTheme | null>(null);
   const [typeFilter, setTypeFilter] = useState<ResourceType | null>(null);
   const [selectedTemplate, setSelectedTemplate] =
@@ -77,6 +82,39 @@ export function StarterLibrary({ userId }: StarterLibraryProps) {
 
   return (
     <div className="space-y-5">
+      {atTemplateLimit && templateUsage && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm text-amber-800 mb-3">
+            You&apos;ve reached your monthly limit of {templateUsage.max} starter
+            templates — they&apos;ll reset next month. You can still{" "}
+            <Link
+              href="/dashboard/resources/new"
+              className="font-medium underline underline-offset-2 hover:text-amber-900 transition-colors duration-150 motion-reduce:transition-none"
+            >
+              create resources from scratch
+            </Link>
+            , or upgrade for unlimited access.
+          </p>
+          <Button
+            asChild
+            size="sm"
+            className="bg-coral text-white hover:bg-coral/90 gap-1.5"
+          >
+            <Link href="/dashboard/settings/billing">
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+              Upgrade to Pro
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Approaching limit warning */}
+      {!atTemplateLimit && templateUsage && templateUsage.used === templateUsage.max - 1 && (
+        <p className="text-sm text-amber-700">
+          1 starter template remaining this month.
+        </p>
+      )}
+
       {/* Theme filter pills */}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by theme">
         <FilterPill
@@ -124,7 +162,10 @@ export function StarterLibrary({ userId }: StarterLibraryProps) {
       )}
 
       {/* Template grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div
+        className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3", atTemplateLimit && "opacity-50")}
+        {...(atTemplateLimit ? { "aria-disabled": true, inert: true } : {})}
+      >
         {filtered.map((template) => (
           <TemplateCard
             key={template.id}

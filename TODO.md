@@ -33,7 +33,7 @@ Priorities only. Higher number = lower priority.
 
 - [x] **Visual schedules** — daily routine cards/strips for sequencing activities. High demand in ASD and anxiety work.
 - [x] **Certificates/achievement cards** — reward progress milestones. Quick to implement, single-image with text fields.
-- [ ] **Coloring pages** — generate outline-only versions of images for kids to color in session. Could extend existing types with an "outline mode" toggle.
+- [x] **Coloring pages** — generate outline-only versions of images for kids to color in session. Could extend existing types with an "outline mode" toggle.
 
 ## Priority 5 — Workflow & Productivity
 
@@ -42,6 +42,8 @@ Priorities only. Higher number = lower priority.
 - [ ] **Folder organization** — optional grouping in the library
 
 ## Priority 6 — Polish & Stickiness
+
+- [ ] **Revise onboarding flow** — current onboarding predates the starter template library. Should guide new users toward templates as the fastest path to value, surface the free tier limits (2 custom + 3 templates/month), and set expectations for the upgrade path.
 
 - [ ] **Favorites/pinning** — quick access to most-used resources from the library
 - [ ] **Usage history / recently printed** — track which resources were exported/printed recently, helps therapists find what they used last session

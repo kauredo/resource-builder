@@ -133,6 +133,7 @@ export default function NewResourcePage() {
   const limits = useQuery(api.users.getSubscriptionLimits);
   const user = useQuery(api.users.currentUser);
   const atLimit = limits?.subscription === "free" && !limits.canCreate.resource;
+  const atTemplateLimit = limits?.subscription === "free" && !limits.canCreate.template;
 
   const setMode = useCallback(
     (newMode: "scratch" | "template") => {
@@ -208,8 +209,17 @@ export default function NewResourcePage() {
           {atLimit && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6">
               <p className="text-sm text-amber-800 mb-3">
-                You&apos;ve used your {limits.limits.resourcesPerMonth} free
-                resources this month. Upgrade to Pro for unlimited resources.
+                You&apos;ve reached your monthly limit of{" "}
+                {limits.limits.resourcesPerMonth} custom resources — they&apos;ll
+                reset next month. You can still{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("template")}
+                  className="font-medium underline underline-offset-2 hover:text-amber-900 cursor-pointer transition-colors duration-150 motion-reduce:transition-none"
+                >
+                  start from a template
+                </button>
+                , or upgrade for unlimited access.
               </p>
               <Button
                 asChild
@@ -234,7 +244,11 @@ export default function NewResourcePage() {
           </div>
         </>
       ) : user?._id ? (
-        <StarterLibrary userId={user._id} />
+        <StarterLibrary
+          userId={user._id}
+          atTemplateLimit={atTemplateLimit}
+          templateUsage={limits ? { used: limits.usage.templatesThisMonth, max: limits.limits.templatesPerMonth } : undefined}
+        />
       ) : (
         <TemplateLoadingSkeleton />
       )}

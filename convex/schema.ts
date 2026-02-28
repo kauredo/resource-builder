@@ -12,6 +12,7 @@ export default defineSchema({
     dodoSubscriptionId: v.optional(v.string()),
     // Monthly resource creation tracking (stored counter for O(1) checks)
     resourcesCreatedThisMonth: v.optional(v.number()),
+    templatesCreatedThisMonth: v.optional(v.number()),
     monthResetAt: v.optional(v.number()),
     createdAt: v.number(),
     // Onboarding tracking

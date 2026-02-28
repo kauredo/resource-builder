@@ -3,7 +3,7 @@ import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Free tier limits
-export const FREE_LIMITS = { styles: 1, characters: 1, resourcesPerMonth: 2 };
+export const FREE_LIMITS = { styles: 1, characters: 1, resourcesPerMonth: 2, templatesPerMonth: 3 };
 
 // Get the start of the current calendar month (UTC)
 export function getMonthStart(now: number): number {
@@ -524,9 +524,9 @@ export const getSubscriptionLimits = query({
     if (user.subscription === "pro") {
       return {
         subscription: "pro" as const,
-        limits: { styles: Infinity, characters: Infinity, resourcesPerMonth: Infinity },
-        usage: { styles: 0, characters: 0, resourcesThisMonth: 0 },
-        canCreate: { style: true, character: true, resource: true },
+        limits: { styles: Infinity, characters: Infinity, resourcesPerMonth: Infinity, templatesPerMonth: Infinity },
+        usage: { styles: 0, characters: 0, resourcesThisMonth: 0, templatesThisMonth: 0 },
+        canCreate: { style: true, character: true, resource: true, template: true },
       };
     }
 
@@ -547,10 +547,9 @@ export const getSubscriptionLimits = query({
     // Monthly resource count
     const now = Date.now();
     const monthStart = getMonthStart(now);
-    let resourcesThisMonth = user.resourcesCreatedThisMonth ?? 0;
-    if (!user.monthResetAt || user.monthResetAt < monthStart) {
-      resourcesThisMonth = 0;
-    }
+    const isNewMonth = !user.monthResetAt || user.monthResetAt < monthStart;
+    const resourcesThisMonth = isNewMonth ? 0 : (user.resourcesCreatedThisMonth ?? 0);
+    const templatesThisMonth = isNewMonth ? 0 : (user.templatesCreatedThisMonth ?? 0);
 
     return {
       subscription: "free" as const,
@@ -559,11 +558,13 @@ export const getSubscriptionLimits = query({
         styles: customStyleCount,
         characters: characterCount,
         resourcesThisMonth,
+        templatesThisMonth,
       },
       canCreate: {
         style: customStyleCount < FREE_LIMITS.styles,
         character: characterCount < FREE_LIMITS.characters,
         resource: resourcesThisMonth < FREE_LIMITS.resourcesPerMonth,
+        template: templatesThisMonth < FREE_LIMITS.templatesPerMonth,
       },
     };
   },

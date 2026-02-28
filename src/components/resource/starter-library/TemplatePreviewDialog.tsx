@@ -77,8 +77,20 @@ export function TemplatePreviewDialog({
       });
       handleClose();
       router.push(`/dashboard/resources/${resourceId}/edit`);
-    } catch {
-      toast.error("Failed to create resource from template");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.startsWith("LIMIT_REACHED:")) {
+        const parts = message.split(":");
+        const humanMessage = parts.slice(2).join(":");
+        toast.warning(humanMessage, {
+          action: {
+            label: "Upgrade",
+            onClick: () => router.push("/dashboard/settings/billing"),
+          },
+        });
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
       setIsCreating(false);
     }
   };

@@ -7,9 +7,9 @@ import { toast } from "sonner";
 
 interface SubscriptionLimits {
   subscription: "free" | "pro";
-  limits: { styles: number; characters: number; resourcesPerMonth: number };
-  usage: { styles: number; characters: number; resourcesThisMonth: number };
-  canCreate: { style: boolean; character: boolean; resource: boolean };
+  limits: { styles: number; characters: number; resourcesPerMonth: number; templatesPerMonth: number };
+  usage: { styles: number; characters: number; resourcesThisMonth: number; templatesThisMonth: number };
+  canCreate: { style: boolean; character: boolean; resource: boolean; template: boolean };
 }
 
 interface SubscriptionStatusProps {
@@ -131,9 +131,14 @@ export function SubscriptionStatus({
       {limits && (
         <div className="space-y-3">
           <UsageBar
-            label="Resources this month"
+            label="Custom resources this month"
             used={limits.usage.resourcesThisMonth}
             max={limits.limits.resourcesPerMonth}
+          />
+          <UsageBar
+            label="Starter templates this month"
+            used={limits.usage.templatesThisMonth}
+            max={limits.limits.templatesPerMonth}
           />
           <UsageBar
             label="Custom styles"
@@ -153,7 +158,7 @@ export function SubscriptionStatus({
         <div>
           <p className="font-medium text-foreground">Upgrade to Pro</p>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Unlimited resources, styles, characters, and clean PDF exports.
+            Unlimited resources, templates, styles, characters, and clean PDF exports.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

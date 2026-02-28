@@ -54,7 +54,9 @@ export default function DashboardPage() {
           {/* Free tier usage indicator */}
           {limits?.subscription === "free" && (
             <p className="mt-2 text-sm text-muted-foreground">
-              <span>{limits.usage.resourcesThisMonth}/{limits.limits.resourcesPerMonth} resources this month</span>
+              <span>{limits.usage.resourcesThisMonth}/{limits.limits.resourcesPerMonth} custom</span>
+              <span className="mx-1.5" aria-hidden="true">&middot;</span>
+              <span>{limits.usage.templatesThisMonth}/{limits.limits.templatesPerMonth} from templates</span>
               <span className="mx-1.5" aria-hidden="true">&middot;</span>
               <Link
                 href="/dashboard/settings/billing"
